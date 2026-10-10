@@ -45,6 +45,7 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
  * blocks. A package moves on or off this list with its context behavior.
  */
 const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
+  'packages/client/ui-openubmc-cases': { kind: 'none', reason: 'Presents durable Runtime observations and invokes non-model inspection commands.' },
   'packages/experimental/openubmc-cases': { kind: 'none', reason: 'Reads durable tool metadata into a Session projection and user command without adding model input.' },
   'packages/client/product-analytics': { kind: 'none', reason: 'Desktop analytics observes selected interactions without contributing model context or Session events.' },
   'packages/experimental/speech-to-text': { kind: 'none', reason: 'Routes transient recognition without adding model requests or Session events.' },

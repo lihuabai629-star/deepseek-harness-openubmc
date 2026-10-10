@@ -174,8 +174,12 @@ interface McpToolCall {
   readonly execution: ToolExecution
   /** Configured key used to inject the trusted Session id on the wire. */
   readonly sessionIdMetadataKey?: string
+  /** Actual provider wait budget in milliseconds, when owned by this bridge. */
+  readonly toolCallTimeoutMs?: number
   /** Final-argument validators required before the provider callback can run. */
   readonly appliedPolicies: Map<string, () => void>
+  /** Provider metadata contributed by trusted dispatch middleware; never model arguments. */
+  metadata: Record<string, JsonValue>
   /** Provider arguments; middleware may replace these before wire dispatch. */
   arguments: Record<string, unknown>
 }

@@ -11,6 +11,10 @@
       name: '@deepseek-ai/dsh-experimental-openubmc-runtime'
       config:
         serverName: openubmc-target-runtime
+        operationDeadlineSeconds: 600
+        completionGraceMs: 60000
+        workflowMaxSteps: 1
+        evidenceReadLimitBytes: 65536
     - id: openubmc-runtime
       name: '@deepseek-ai/dsh-mcp-client'
       config:
@@ -18,6 +22,7 @@
         serverName: openubmc-target-runtime
         command: !!js process.execPath
         args: !!js "[process.env.DSH_CASE_RUNTIME_FIXTURE]"
+        toolCallTimeoutMs: 660000
         sessionIdMetadataKey: taskId
         requiredToolCallPolicies: [openubmc-session-authority]
         structuredContentInText: true

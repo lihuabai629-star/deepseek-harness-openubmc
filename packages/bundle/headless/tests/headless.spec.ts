@@ -236,10 +236,10 @@ describe('headless runner', () => {
       test.ctx.commands.register({ name: 'suspended', description: 'Suspended command', handler: (invocation) => {
         observedSignal = invocation.signal
         entered()
-        return new Promise(resolve => invocation.signal.addEventListener('abort', () => {
+        return new Promise((resolve) => { invocation.signal.addEventListener('abort', () => {
           settled = true
           resolve({ kind: 'error', text: 'cancelled' })
-        }, { once: true }))
+        }, { once: true }) })
       } })
       const result = test.run()
       await started

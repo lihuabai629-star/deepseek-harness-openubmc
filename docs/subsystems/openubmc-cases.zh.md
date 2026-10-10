@@ -28,6 +28,10 @@ interface OpenUbmcCaseObservation {
   inherited: boolean
   observedAtSeq: SessionSeq
   evidenceRefs: JsonValue[]
+  /** Runtime phase records reported by a full Case projection, when present. */
+  phaseRecords?: JsonValue[] | undefined
+  /** Runtime artifact fingerprints reported by a full Case projection, when present. */
+  artifactRevisions?: JsonValue[] | undefined
   nextActions: string[]
 }
 ```
@@ -35,6 +39,8 @@ interface OpenUbmcCaseObservation {
 ```ts type-equiv
 /** Read-only Case view; malformed Case metadata leaves a visible diagnostic. */
 interface OpenUbmcCasesView {
+  /** Fork prefix provided with the wire view for historical observation labels. */
+  inheritedEventCount?: SessionLogOffset | undefined
   cases: OpenUbmcCaseObservation[]
   failure: string | null
 }
@@ -63,7 +69,20 @@ interface OpenUbmcCasesState {
 /** Rebuildable grants from this Session's successful human commands. */
 interface OpenUbmcRuntimeState {
   inheritedEventCount: SessionLogOffset
+  caseId: OpenUbmcCaseId
   operations: string[]
   pendingGrants: Partial<Record<CommandId, string>>
+  /** Recorded target calls without a durable result; excludes inherited calls. */
+  pendingCalls: Partial<Record<McpToolCall['execution']['callId'], { operation: string; arguments: Record<string, JsonValue> }>>
+  /** Original current-session calls available for explicitly authorized journal reconciliation. */
+  uncertainCalls: Partial<Record<ToolCallId, { operation: string; arguments: Record<string, JsonValue> }>>
+  /** Unknown mutation call identities confirmed by the latest full Case read. */
+  reconciliableCallIds: ToolCallId[]
+  /** One exact original call approved by the native human reconciliation command. */
+  reconcileCallId: ToolCallId | null
+  /** Unknown outcomes require a full Case read and fresh human authority. */
+  recoveryRequired: boolean
+  /** Largest frozen workflow deadline from a full current-session Case read. */
+  workflowDeadlineSeconds: number | null
 }
 ```

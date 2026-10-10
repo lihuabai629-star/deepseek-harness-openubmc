@@ -142,6 +142,7 @@
     { "path": "./packages/api/workspace-files/tsconfig.client.json" },
     { "path": "./packages/client/web" },
     { "path": "./packages/context/file-reference" },
+    { "path": "./packages/client/ui-openubmc-cases/tsconfig.client.json" },
     { "path": "./apps/web" }
   ]
 }

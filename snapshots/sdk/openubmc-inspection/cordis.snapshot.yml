@@ -1,0 +1,38 @@
+- insert:
+    - id: human-inspection
+      name: './workspace/human.mjs'
+    - id: openubmc-policy
+      name: '@deepseek-ai/dsh-experimental-openubmc-runtime'
+      config:
+        serverName: openubmc-target-runtime
+        operationDeadlineSeconds: 10
+        completionGraceMs: 1000
+        workflowMaxSteps: 1
+        evidenceReadLimitBytes: 1024
+    - id: openubmc-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: openubmc-target-runtime
+        transport: stdio
+        command: !!js process.execPath
+        args: ['./runtime.mjs']
+        sessionIdMetadataKey: taskId
+        requiredToolCallPolicies: [openubmc-session-authority]
+        structuredContentInMeta: true
+        structuredContentInText: true
+        failOnStartupError: true
+- id: llm-deepseek
+  disabled: true
+- insert:
+    - id: llm-replay
+      name: '@deepseek-ai/dsh-llm-replay'
+      config:
+        providers:
+          - id: deepseek-official
+            name: DeepSeek
+            models:
+              - id: deepseek-v4-flash
+                contextWindow: 1000000
+                defaultMaxTokens: 256000
+                reasoningEfforts: [off, low, high, max]
+                defaultReasoningEffort: max

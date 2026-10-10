@@ -1,0 +1,15 @@
+- button "openUBMC Case · case-7" [expanded]
+- text: "Operation failed Revision 2 Case status: Unreported Operation: mutation_outcome_unknown Current-session observation May be stale Phase"
+- list:
+  - listitem: None
+- text: Evidence
+- list:
+  - listitem: "{\"evidence_id\":\"evidence-1\"}"
+- text: Artifacts
+- list:
+  - listitem: None
+- text: Next actions
+- list:
+  - listitem: "\"case_read\""
+- button "Refresh Case"
+- button "Read evidence evidence-1"

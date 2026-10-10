@@ -10688,6 +10688,130 @@
       }
     },
     {
+      "key": "event:openubmc/inspection",
+      "kind": "event",
+      "event": "openubmc/inspection",
+      "surface": false,
+      "digest": "b5c198b8330ec00a6febc83b94c3b93313125266da8d5a8596f008e25d33aa46",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 10,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 9,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 9,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 11,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "commandId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "message",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "meta",
+                "type": 5,
+                "optional": true
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "isError",
+                "type": 4,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "boolean"
+          },
+          {
+            "kind": "union",
+            "types": [
+              2,
+              4,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          {
+            "kind": "array",
+            "element": 5
+          },
+          {
+            "kind": "object",
+            "properties": [],
+            "indices": [
+              {
+                "key": 2,
+                "value": 5
+              }
+            ]
+          },
+          {
+            "kind": "primitive",
+            "type": "null"
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "openubmc/inspection"
+          }
+        ]
+      }
+    },
+    {
       "key": "event:permission/preset",
       "kind": "event",
       "event": "permission/preset",
@@ -23115,6 +23239,15 @@
       "sources": []
     },
     {
+      "digest": "578dc3d34b02f5cc9f291fa14398aff5cff7b32e12dc2e6555ef76663e2ada78",
+      "names": [
+        "packages/experimental/openubmc-cases/src/types.ts#OpenUbmcInspection"
+      ],
+      "sources": [
+        "packages/experimental/openubmc-cases/src/types.ts:56"
+      ]
+    },
+    {
       "digest": "57f3f606ff8b6c84d9c443faace9d1dd10cca0354f37a4f515ef075f7c351b90",
       "names": [],
       "sources": []
@@ -23628,6 +23761,13 @@
       "digest": "7df62978a2b7de8540e714152297743e0a622209a46a5ac9513fc0fad73ca23b",
       "names": [],
       "sources": []
+    },
+    {
+      "digest": "7e4faae7698d0320d1cdf8d5332447978b87c38a9cd8fcd20c09ad81ffe09e75",
+      "names": [],
+      "sources": [
+        "packages/experimental/openubmc-cases/src/types.ts:58"
+      ]
     },
     {
       "digest": "7eaef7a763ba5b949b8464bc8add8980a3a5ab566014b69787aeba71e5dfe07b",
@@ -24516,6 +24656,11 @@
       "sources": []
     },
     {
+      "digest": "b5c198b8330ec00a6febc83b94c3b93313125266da8d5a8596f008e25d33aa46",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "b63b089a00b3b9357675b3e0c3d3e9aa4fdbda1fba9c91a6b0c59ffdbb89f505",
       "names": [
         "packages/schedule/schedule/src/types.ts#LegacyAtScheduleRecord"
@@ -24977,6 +25122,11 @@
       "sources": [
         "packages/experimental/agent-team/src/types.ts:44"
       ]
+    },
+    {
+      "digest": "e067409593e0cc96e5cd75dd66659c0c1195d8e4bcd3fe181a3cbcf1ec8faef9",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "e0a787e6ec76c7c94fecbc501b489164ab0293db05bc947914077ad01e674f05",

@@ -68,6 +68,7 @@
     "apps/web/tests/plugin-install-registry.e2e.ts",
     "apps/web/tests/plugin-install-github.e2e.ts",
     "apps/web/tests/client-plugin-live.e2e.ts",
+    "apps/web/tests/openubmc-cases.e2e.ts",
     "apps/web/tests/settings-chrome.e2e.ts",
     "apps/web/tests/session-log-upload.e2e.ts",
     "apps/web/tests/caption-overlays.e2e.ts",
@@ -202,6 +203,7 @@
     "scripts/client-bundle-purity.spec.ts"
   ],
   "references": [
+    { "path": "./packages/client/ui-openubmc-cases/tsconfig.host.json" },
     { "path": "./packages/experimental/openubmc-cases" },
     { "path": "./packages/experimental/openubmc-runtime" },
     { "path": "./packages/client/product-analytics/tsconfig.host.json" },

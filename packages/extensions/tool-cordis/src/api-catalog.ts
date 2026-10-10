@@ -5715,7 +5715,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'McpToolCall',
-    declaration: 'export interface McpToolCall {\n    readonly serverName: string;\n    readonly toolName: string;\n    readonly execution: ToolExecution;\n    readonly sessionIdMetadataKey?: string;\n    readonly appliedPolicies: Map<string, () => void>;\n    arguments: Record<string, unknown>;\n}',
+    declaration: 'export interface McpToolCall {\n    readonly serverName: string;\n    readonly toolName: string;\n    readonly execution: ToolExecution;\n    readonly sessionIdMetadataKey?: string;\n    readonly toolCallTimeoutMs?: number;\n    readonly appliedPolicies: Map<string, () => void>;\n    metadata: Record<string, JsonValue>;\n    arguments: Record<string, unknown>;\n}',
   },
   {
     name: 'Message',

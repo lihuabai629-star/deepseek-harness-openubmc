@@ -369,7 +369,8 @@ async function run(ctx: Context, config: Config, io: HeadlessIo): Promise<void> 
         commandController.abort(new Error('headless command disposed'))
         await commandOperation.then(() => undefined, () => undefined)
       }, 'headless native command')
-      const command = await commandOperation.finally(stopCommand)
+      let command: Awaited<typeof commandOperation>
+      try { command = await commandOperation } finally { await stopCommand() }
       if (command !== undefined) {
         await sessions.flush(agent.session)
         const text = command.result.text ?? ''

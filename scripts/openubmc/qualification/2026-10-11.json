@@ -1,0 +1,141 @@
+{
+  "recorded_at": "2026-10-11",
+  "platform": "Linux/WSL",
+  "profile": "openubmc",
+  "implementation_branch": "codex/openubmc-recovery",
+  "layers": {
+    "model": {
+      "live": true,
+      "models": [
+        "gpt-6.1-sol"
+      ]
+    },
+    "knowledge": {
+      "live": true,
+      "query_ok": true,
+      "citations_observed": 1,
+      "command_execution_qualified": false
+    },
+    "runtime": {
+      "implementation": "existing Python Runtime",
+      "storage": "SQLite and filesystem blobs"
+    },
+    "device": {
+      "backend": "offline fixture",
+      "hardware_contact": false,
+      "real_build": false,
+      "real_firmware_upgrade": false
+    }
+  },
+  "engineering": {
+    "session_count": 1,
+    "process_restart": true,
+    "case_identity_retained": true,
+    "revisions": {
+      "before_restart": 29,
+      "after_restart": 29,
+      "final": 44
+    },
+    "phases": [
+      {
+        "phase": "developer.change",
+        "status": "completed"
+      },
+      {
+        "phase": "build.artifact",
+        "status": "completed"
+      }
+    ],
+    "artifact_identity_matches": true,
+    "workflow_next_calls": 3,
+    "workflow_steps": [
+      1,
+      1,
+      0
+    ],
+    "workflow_complete": true,
+    "case_status": "terminal",
+    "closure_status": "partial",
+    "business_acceptance": "unverified",
+    "evidence": [
+      {
+        "status": "completed",
+        "returned_bytes": 98,
+        "truncated": false
+      },
+      {
+        "status": "completed",
+        "returned_bytes": 80,
+        "truncated": false
+      }
+    ]
+  },
+  "negative_scenarios": {
+    "stale_verification_epoch": "failed without retry after restart",
+    "foreign_case": "refused before dispatch",
+    "gateway_credentials": "explicit AUTH failure before tool dispatch"
+  },
+  "reproducible_checks": [
+    "packages/experimental/openubmc-runtime/tests/workflow-protocol.spec.ts",
+    "packages/experimental/openubmc-runtime/tests/recovery-composition.spec.ts",
+    "apps/web/tests/openubmc-cases.e2e.ts",
+    "scripts/openubmc/test_manage.py",
+    "scripts/openubmc/test_python_sdk.py"
+  ],
+  "limitations": [
+    "Workflow-derived unknown mutations wait for explicit Runtime journal reconciliation; native replay grants cover direct live_patch_run and upgrade_run only.",
+    "Knowledge retrieval success and citations do not establish that a retrieved command is executable in a target workspace.",
+    "Real device qualification and installed-service deployment were not performed."
+  ],
+  "checks": {
+    "runtime_and_cases": {
+      "tests": 22,
+      "per_file_coverage_percent": 100
+    },
+    "ui": {
+      "tests": 8,
+      "per_file_coverage_percent": 100
+    },
+    "recovery_and_workflow_composition": {
+      "tests": 4,
+      "status": "passed"
+    },
+    "manager": {
+      "tests": 17,
+      "status": "passed"
+    },
+    "mcp_and_headless": {
+      "tests": 66,
+      "status": "passed"
+    },
+    "web_case_evidence_reload": "passed",
+    "gui": {
+      "passed": 9525,
+      "failed": 1,
+      "skipped": 1,
+      "failure": "Existing Linux file-manager fixture observes WSL kernel without an injected kernel override."
+    },
+    "documentation": {
+      "passed": 43,
+      "failed": 0
+    },
+    "hygiene": {
+      "passed": 18,
+      "failed": 0
+    },
+    "source_web_http": {
+      "source_web_cli": "passed",
+      "loopback_dynamic_port": true,
+      "authenticated_home": 200,
+      "script_http_statuses": [
+        200,
+        200
+      ],
+      "openubmc_config_injected": true
+    },
+    "managed_headless_startup": "passed",
+    "build": "passed",
+    "host_and_client_compilation": "passed",
+    "lint": "passed"
+  }
+}

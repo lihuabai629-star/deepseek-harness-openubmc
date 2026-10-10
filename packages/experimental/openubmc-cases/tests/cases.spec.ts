@@ -111,7 +111,7 @@ describe('openUBMC Case observations', () => {
     expect(unit.apply(initial, result(0, { ...envelope, case_id: '' }))).toBe(initial)
     for (const agent_envelope of [null, [], 'invalid']) expect(unit.apply(initial, result(0, { agent_envelope }))).toBe(initial)
     const view = unit.wire.view(initial)
-    expect(unit.wire.viewSchema.parse(JSON.parse(JSON.stringify(view)))).toEqual({ cases: [], failure: null })
+    expect(unit.wire.viewSchema.parse(JSON.parse(JSON.stringify(view)))).toEqual({ cases: [], failure: null, inheritedEventCount: 0 })
   })
 
   it('reports unknown Case state for operation-only results and replaces Case fields only when reported', () => {
@@ -203,4 +203,17 @@ describe('openUBMC Case observations', () => {
       await ctx.fiber.dispose()
     }
   })
+})
+
+it('retains phase and artifact observations across sparse results and replaces explicit empty arrays', () => {
+  const unit = cases.createCasesProjection('runtime')
+  const initial = unit.init(header('phase-owner'), SessionLogOffset(0))
+  const agent = { ...envelope, status: 'completed', operation: { name: 'case_read', status: 'completed' } }
+  const report = { schema: 'openubmc.target-runtime.v1/context-runtime', case_id: 'case-7', revision: 2, status: 'active', evidence_refs: [], next_actions: [], phase_records: [{ phase_type: 'build.artifact' }], artifact_revisions: [{ artifact_sha256: 'fingerprint' }], agent_envelope: agent }
+  const recorded = unit.apply(initial, result(0, report, 'runtime', false, 'case_read'))
+  expect(recorded.view.cases[0]).toMatchObject({ phaseRecords: report.phase_records, artifactRevisions: report.artifact_revisions })
+  const sparse = unit.apply(recorded, result(1, envelope))
+  expect(sparse.view.cases[0]).toMatchObject({ phaseRecords: report.phase_records, artifactRevisions: report.artifact_revisions })
+  const empty = unit.apply(sparse, result(2, { ...report, phase_records: [], artifact_revisions: [] }, 'runtime', false, 'case_read'))
+  expect(empty.view.cases[0]).toMatchObject({ phaseRecords: [], artifactRevisions: [] })
 })

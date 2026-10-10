@@ -126,7 +126,7 @@ patch 叠加在 `dsh-base` 之上：继承投影缓存与共享 PTC 运行时，
 <a id="model-experience"></a>
 ## 模型体验
 
-普通任务作为用户消息提交，原生命令不添加模型消息；提示词与工具由组合出的 base 与 headless 行提供。
+无，因为 runner 转发普通用户消息，并执行原生命令，本身不添加提示词或工具。
 
 #### KV Cache 影响
 

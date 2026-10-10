@@ -20,7 +20,7 @@ it('denies foreign Cases, keeps resume identity and requires a fresh human grant
     await ctx.plugin(Commands)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(Tools)
-    const fiber = await ctx.plugin(runtime, { serverName: 'runtime' })
+    const fiber = await ctx.plugin(runtime, { serverName: 'runtime', operationDeadlineSeconds: 10, completionGraceMs: 1000, workflowMaxSteps: 1, evidenceReadLimitBytes: 65536 })
     ctx.commands.register({ name: 'noop', description: 'Unrelated user command', handler: () => ({ kind: 'success' }) })
     const session = ctx.sessions.create(SessionId('owner-a'))
     const agent: Agent = {
@@ -30,7 +30,7 @@ it('denies foreign Cases, keeps resume identity and requires a fresh human grant
     }
     const call = vi.fn(async (_args: Record<string, unknown>) => ({ content: [{ type: 'text', text: 'ok' }] }))
     for (const rawName of ['case_read', 'debug_run']) ctx.tools.register(createMcpToolDefinition(ctx, {
-      name: rawName, rawName, metadataServerName: 'runtime', sessionIdMetadataKey: 'taskId', requiredToolCallPolicies: ['openubmc-session-authority'], description: rawName,
+      name: rawName, rawName, metadataServerName: 'runtime', sessionIdMetadataKey: 'taskId', requiredToolCallPolicies: ['openubmc-session-authority'], toolCallTimeoutMs: 11000, description: rawName,
       inputSchema: { type: 'object' }, call,
     }))
     const execute = (owner: Agent, name: string, args: object = {}) => ctx.tools.execute({
@@ -62,7 +62,7 @@ it('denies foreign Cases, keeps resume identity and requires a fresh human grant
       ['no-key', 'runtime', undefined], ['unprotected', 'other', undefined],
     ] as const) ctx.tools.register(createMcpToolDefinition(ctx, {
       name, rawName: name, serverName, ...(key === undefined ? {} : { sessionIdMetadataKey: key }), description: name,
-      ...(serverName === 'runtime' ? { requiredToolCallPolicies: ['openubmc-session-authority'] } : {}),
+      ...(serverName === 'runtime' ? { requiredToolCallPolicies: ['openubmc-session-authority'], toolCallTimeoutMs: 11000 } : {}),
       inputSchema: { type: 'object' }, call,
     }))
     expect((await execute(agent, 'runtime_status')).isError).toBe(false)
@@ -103,7 +103,7 @@ it('denies foreign Cases, keeps resume identity and requires a fresh human grant
     expect(ctx.sessionProjections.stateOf(session, 'openubmc/runtime')).toBeUndefined()
     expect((await execute(agent, 'case_read', { case_id: 'foreign' })).isError).toBe(true)
     expect(JSON.stringify((await execute(agent, 'case_read')).content)).toContain('Required MCP tool-call policy is unavailable')
-    await ctx.plugin(runtime, { serverName: 'runtime' })
+    await ctx.plugin(runtime, { serverName: 'runtime', operationDeadlineSeconds: 10, completionGraceMs: 1000, workflowMaxSteps: 1, evidenceReadLimitBytes: 65536 })
     expect((await execute(agent, 'case_read')).isError).toBe(false)
   } finally {
     await ctx.fiber.dispose()

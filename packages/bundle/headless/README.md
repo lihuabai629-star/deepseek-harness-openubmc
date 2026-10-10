@@ -126,7 +126,7 @@ Read these pages when you want to go deeper into the shared core, the sibling GU
 <a id="model-experience"></a>
 ## Model Experience
 
-Ordinary tasks enter as user messages; native commands add no model messages. The composed base and headless rows own the prompts and tools.
+None, as the runner forwards ordinary user messages and executes native commands without contributing prompts or tools.
 
 #### KV Cache effect
 

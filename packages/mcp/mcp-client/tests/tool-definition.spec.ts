@@ -61,7 +61,7 @@ describe('MCP result callback adaptation', () => {
       const result = await ctx.tools.execute({
         name: 'native_window', callId: ToolCallId('window-call'), arguments: { window: 7 }, signal,
       })
-      expect(call).toHaveBeenCalledWith({ window: 7 }, execution)
+      expect(call).toHaveBeenCalledWith({ window: 7 }, execution, {})
       expect(execution?.signal).toBe(signal)
       expect(result.isError).toBe(false)
       expect(result.content).toEqual([{ type: 'text', text: includeStructured ? 'Observed window.\n{"window":7}' : 'Observed window.' }])

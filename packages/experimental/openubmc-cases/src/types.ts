@@ -1,4 +1,5 @@
 /** JSON observations derived from durable MCP tool results. @module */
+import type { CommandId } from '@deepseek-ai/dsh-commands'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
@@ -20,11 +21,17 @@ export interface OpenUbmcCaseObservation {
   inherited: boolean
   observedAtSeq: SessionSeq
   evidenceRefs: JsonValue[]
+  /** Runtime phase records reported by a full Case projection, when present. */
+  phaseRecords?: JsonValue[] | undefined
+  /** Runtime artifact fingerprints reported by a full Case projection, when present. */
+  artifactRevisions?: JsonValue[] | undefined
   nextActions: string[]
 }
 
 /** Read-only Case view; malformed Case metadata leaves a visible diagnostic. */
 export interface OpenUbmcCasesView {
+  /** Fork prefix provided with the wire view for historical observation labels. */
+  inheritedEventCount?: SessionLogOffset | undefined
   cases: OpenUbmcCaseObservation[]
   failure: string | null
 }
@@ -42,5 +49,19 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
   }
   interface SessionProjectionMap {
     'openubmc/cases': OpenUbmcCasesView
+  }
+}
+
+/** Read-only native inspection, independent of the model transcript. */
+export interface OpenUbmcInspection {
+  commandId: CommandId
+  message: { isError: boolean }
+  meta?: JsonValue
+}
+
+declare module '@deepseek-ai/dsh-session/types' {
+  interface SessionEventMap {
+    /** Native Case/evidence query results outside the model transcript. */
+    'openubmc/inspection': OpenUbmcInspection
   }
 }

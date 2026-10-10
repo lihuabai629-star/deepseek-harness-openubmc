@@ -27,6 +27,8 @@ kind: "package-reference"
 
 每个组合仅注册一次此插件。卸载会移除命令和投影注册。插件没有 invariant（不变量）伴随模块：唯一状态是 Session 日志的纯投影，没有独立维护且可能偏离的 Case 存储。
 
+完整 Case 读取保留 Runtime 的阶段记录和工件修订，包括 agent envelope capsule 中提供的修订。`/case` 展示这些观察以及证据和后续动作。原生读取与工具结果使用同一投影归约。
+
 <a id="model-experience"></a>
 ## 模型体验
 

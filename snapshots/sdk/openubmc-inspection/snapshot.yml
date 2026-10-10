@@ -1,0 +1,10 @@
+version: 1
+scenario: openubmc-inspection
+profile: sdk
+composition: openubmc-inspection
+recording: authored
+header:
+  class: openubmc-inspection
+  pin: true
+replay:
+  override: true

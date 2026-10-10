@@ -27,6 +27,8 @@ The `openubmc/cases` Session projection exposes the latest observation per Case:
 
 Register this plugin once per composition. Disposing it removes the command and projection registration. No invariant companion is published: its only state is a pure projection of the Session log, with no independently maintained Case store that could diverge.
 
+Full Case reads retain Runtime phase records and artifact revisions, including revisions supplied by the agent envelope capsule. `/case` includes these observations alongside evidence and next actions. Native inspections use the same projection fold as tool results.
+
 <a id="model-experience"></a>
 ## Model Experience
 
@@ -42,8 +44,8 @@ No direct change to model requests or reusable prefixes; the MCP client owns mod
 
 - **Observation freshness** — `/case` does not refresh Runtime state. Other sessions or external actions may change a Case after its last recorded observation.
 - **Execution authority** — inherited observations are labels, not an ownership check. Runtime calls still need task ownership and fork authorization enforcement before device execution can be qualified.
-- **Result coverage** — only top-level `tool/result` metadata is observed. PTC sub-dispatches are not included.
-- **Presentation** — the projection is available to carriers, but a dedicated Web Case/evidence card is not supplied.
+- **Result coverage** — top-level `tool/result` and native inspection metadata are observed. PTC sub-dispatches are not included.
+- **Presentation** — live read controls require the optional Web Case plugin and Runtime adapter.
 
 <a id="dev-note"></a>
 ### Dev Note

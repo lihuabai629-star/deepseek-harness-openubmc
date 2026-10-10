@@ -24,7 +24,7 @@ corepack pnpm dsh --profile openubmc --dump-config
 corepack pnpm dsh --profile openubmc "Read the openUBMC runtime status."
 ```
 
-Configure the model through DSH's existing credential settings or environment before the last command. `--template web` selects the Web bundle; configure its listen port in the generated profile before launch when another Web host is running. Launch only through `dsh`; the initializer does not start a server or model request.
+Configure the model through DSH's existing credential settings or environment before the last command. `--template web` selects the Web bundle; launch with `corepack pnpm dsh --profile openubmc --no-open --port 0` to allocate a separate loopback port. Launch only through `dsh`; the initializer does not start a server or model request.
 
 The initializer refuses an existing home. It creates `profiles/openubmc/cordis.patch.yml`, a private Runtime state directory location, and a Skill root containing the manifest's full profile. Skill names follow the manifest mappings; support files are symlinked to the checkout. Skill bodies replace known home-relative script paths with checkout paths. Recreate a fresh home to pick up changes to those bodies or the manifest. The workflow and DSH checkouts must remain available; the profile links the native Case package from this DSH checkout.
 
@@ -52,3 +52,25 @@ Runtime uses this home's `credentials.env` selector, initially absent, rather th
 The [Runtime adapter](../../packages/experimental/openubmc-runtime/README.md) enforces Session-derived Case ownership before dispatch. Device and workflow execution require current-session human grants through `/target-authorize`; resume retains them and fork excludes inherited grants. This protects the DSH bridge, not direct access to Python Runtime. Existing production configuration and systemd services are outside this initializer.
 
 Authorize a specific operation in the same conversation with `corepack pnpm dsh --profile openubmc --session-id <id> "/target-authorize debug_run"`. This native command runs without model inference. Revoke with `/target-authorize revoke`.
+## Managed profile lifecycle
+
+The manager owns only `@local/dsh-openubmc`, its profile dependency and bundle-list entry, and its recorded links. User model settings, MCP configuration and `cordis.patch.yml` remain user-owned. All actions use the same profile writer lock as the DSH plugin manager; a live or unverified owner fails with its lock path; a verified exited PID is recovered using the native claim protocol. Use a separate home and stop its Host before lifecycle changes so each process observes one configuration generation.
+
+```sh
+python3 scripts/openubmc/manage.py install --home /tmp/dsh-openubmc-managed \
+  --workflow /home/workspace/openubmc-agent-workflow \
+  --node /opt/node-v24.19.0/bin/node
+python3 scripts/openubmc/manage.py check --home /tmp/dsh-openubmc-managed
+python3 scripts/openubmc/manage.py update --home /tmp/dsh-openubmc-managed
+python3 scripts/openubmc/manage.py rollback --home /tmp/dsh-openubmc-managed
+python3 scripts/openubmc/manage.py repair --home /tmp/dsh-openubmc-managed
+python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
+```
+
+`--template web` adds the optional native Case card. Each generation copies the full manifest Skill selection, scripts and references, dereferences support symlinks, and rewrites known Skill paths to owned copies. Update preserves the selected Node/Python paths and credential selector unless explicitly replaced. Missing owned entries are repairable; foreign dependency values, files or links fail before profile mutation. Each generation records its interpreter paths and credential selector. Rollback restores those selections. Activation journals ownership before publishing links and compensates a failed profile write; repair can reconstruct an entirely missing generation from the ownership record.
+
+Repair also verifies the selected generation’s workflow manifest and Skill source digests before rebuilding missing content; if those sources changed, restore that checkout or explicitly update.
+
+Rollback restores profile/Skill configuration, not executable software. Runtime, KB and DSH code stay in their checkouts; stored digests pin adapter and Runtime/KB launch files, native package sources/artifacts and dependency locks. `check`, repair and rollback reject changed pinned files. Use update to select changed executable code, or restore the intended checkout before rollback. The check does not qualify a model endpoint, KB login or device connection. Uninstall retains sessions, Runtime state, credentials, user configuration and generations.
+
+The [qualification record](qualification/2026-10-11.json) reports live model and KB retrieval, durable Runtime phase/artifact observations, and continuation after process restart with an offline device backend. It distinguishes completed workflow stages from unverified business acceptance; it contains no knowledge excerpts or credential values.

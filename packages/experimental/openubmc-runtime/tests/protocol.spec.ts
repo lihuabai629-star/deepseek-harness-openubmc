@@ -29,7 +29,7 @@ it.skipIf(workflow === undefined)('isolates explicit Cases on a shared real conn
         await ctx.plugin(Commands)
         await ctx.plugin(SystemPrompt)
         await ctx.plugin(Tools)
-        await ctx.plugin(runtime, { serverName: 'runtime' })
+        await ctx.plugin(runtime, { serverName: 'runtime', operationDeadlineSeconds: 10, completionGraceMs: 1000, workflowMaxSteps: 1, evidenceReadLimitBytes: 65536 })
         await ctx.plugin(mcp, {
           serverName: 'runtime', transport: 'stdio', command: 'python3',
           args: [join(workflow!, 'openubmc-debug/scripts/target_runtime_mcp.py')], cwd: workflow!,
@@ -64,7 +64,7 @@ it.skipIf(workflow === undefined)('isolates explicit Cases on a shared real conn
           const result = await execute(foreign, name, { case_id: runtime.sessionCaseId(session.id) })
           expect(result.isError).toBe(true)
           expect(JSON.stringify(result.content)).toContain('does not belong')
-          expect(result.meta).toBeUndefined()
+          expect(result.meta).toMatchObject({ mcp: { dispatchStatus: 'not-started' } })
         }
         expect((await execute(owner, 'case_read')).isError).toBe(false)
         expect(ctx.sessionProjections.stateOf(session, 'openubmc/runtime')?.operations).toEqual(['workflow.advance'])

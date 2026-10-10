@@ -15,8 +15,11 @@
   en: 68720ee26dfe7325
   zh: 49aac983ab0e0acf
 /deepseek-ai-dsh-experimental-openubmc-runtime/configuration-and-authority:
-  en: d8175482e239d380
-  zh: 54b94dbe94a23a78
+  en: f6253be2ee7086c9
+  zh: 5bbeb964c9fe4db3
+/deepseek-ai-dsh-experimental-openubmc-runtime/native-inspection-and-mutation-reconciliation:
+  en: 69c3471726ff4a45
+  zh: 489ec17c3f858dba
 /deepseek-ai-dsh-experimental-openubmc-runtime/model-experience:
   en: 215e7ba838619b7b
   zh: a311da3843709f90
@@ -33,8 +36,8 @@
   en: f082ce72995d8cca
   zh: fe5466e993c4fba8
 /deepseek-ai-dsh-experimental-openubmc-runtime/known-limitations-and-deferred-work:
-  en: cc948a87daefc37a
-  zh: f94e80bce001c69f
+  en: af0b286fe1dce356
+  zh: b34448737de6b3da
 /deepseek-ai-dsh-experimental-openubmc-runtime/known-limitations-and-deferred-work/dev-note:
   en: 0a1253c6f7b5e8b9
   zh: 9f56528562c7c914

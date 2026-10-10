@@ -529,6 +529,22 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-shortcuts -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-openubmc-cases -->
+<a id="deepseek-aidsh-client-ui-openubmc-cases"></a>
+
+## `@deepseek-ai/dsh-client-ui-openubmc-cases`
+
+- `source`: [`packages/client/ui-openubmc-cases/src/config.ts:4`](../packages/client/ui-openubmc-cases/src/config.ts)
+
+```ts config-catalog
+/** Select the same trusted MCP namespace as the Host Case projection. */
+export interface Config {
+  /** Trusted MCP namespace used by Host Case projection and native inspections. */
+  serverName: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-openubmc-cases -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-plugin-manager -->
 <a id="deepseek-aidsh-client-ui-plugin-manager"></a>
 
@@ -1054,14 +1070,22 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-experimental-openubmc-runtime`
 
-- `inject`: `commands` · `sessionProjections`
-- `source`: [`packages/experimental/openubmc-runtime/src/index.ts:21`](../packages/experimental/openubmc-runtime/src/index.ts)
+- `inject`: `commands` · `sessionProjections` · `tools`
+- `source`: [`packages/experimental/openubmc-runtime/src/index.ts:25`](../packages/experimental/openubmc-runtime/src/index.ts)
 
 ```ts config-catalog
 /** Exact Runtime namespace protected by this adapter. */
 export interface Config {
   /** MCP server configured with trusted Session metadata. */
   serverName: string
+  /** Maximum domain deadline admitted for a device operation, in seconds. */
+  operationDeadlineSeconds: number
+  /** Additional MCP wait beyond the bounded domain work, in milliseconds. */
+  completionGraceMs: number
+  /** Maximum automatic Runtime operations in one workflow request (protocol limit 64). */
+  workflowMaxSteps: number
+  /** Maximum bytes requested by a native evidence inspection. */
+  evidenceReadLimitBytes: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-runtime -->

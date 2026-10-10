@@ -34,8 +34,12 @@ export interface McpToolCall {
   readonly execution: ToolExecution
   /** Configured key used to inject the trusted Session id on the wire. */
   readonly sessionIdMetadataKey?: string
+  /** Actual provider wait budget in milliseconds, when owned by this bridge. */
+  readonly toolCallTimeoutMs?: number
   /** Final-argument validators required before the provider callback can run. */
   readonly appliedPolicies: Map<string, () => void>
+  /** Provider metadata contributed by trusted dispatch middleware; never model arguments. */
+  metadata: Record<string, JsonValue>
   /** Provider arguments; middleware may replace these before wire dispatch. */
   arguments: Record<string, unknown>
 }
@@ -169,13 +173,14 @@ export async function syncTools(
       ...(opts.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: opts.sessionIdMetadataKey }),
       ...(opts.requiredToolCallPolicies === undefined ? {} : { requiredToolCallPolicies: opts.requiredToolCallPolicies }),
       rawName: tool.name,
+      toolCallTimeoutMs: opts.toolCallTimeoutMs,
       description: tool.description ?? '',
       inputSchema: tool.inputSchema,
       outputSchema: tool.outputSchema,
       structuredContentInText: opts.structuredContentInText === true,
       ...(opts.structuredContentInMeta === true ? { metadataServerName: opts.serverName } : {}),
       taskRequired: tool.execution?.taskSupport === 'required',
-      call: (args, execution) => {
+      call: (args, execution, metadata) => {
         const key = opts.sessionIdMetadataKey
         const session = execution.agent?.session
         if (key !== undefined && session === undefined) {
@@ -185,7 +190,7 @@ export async function syncTools(
           {
             name: tool.name,
             arguments: args,
-            ...(key !== undefined && session !== undefined ? { _meta: { [key]: session.id } } : {}),
+            ...(key !== undefined && session !== undefined ? { _meta: { ...metadata, [key]: session.id } } : {}),
           },
           { signal: execution.signal, timeout: opts.toolCallTimeoutMs, toolDefinition: tool },
         )
@@ -249,6 +254,8 @@ export interface McpToolDefinitionOptions {
   serverName?: string
   /** Session metadata injection owned by the provider callback. */
   sessionIdMetadataKey?: string
+  /** Actual provider wait budget in milliseconds; omitted for caller-owned deadlines. */
+  toolCallTimeoutMs?: number
   /** Exact middleware policy ids that must acknowledge every dispatch. */
   requiredToolCallPolicies?: readonly string[]
   /** ToolRuntime name presented to the model. */
@@ -273,7 +280,7 @@ export interface McpToolDefinitionOptions {
    * @param execution - exact ToolRuntime invocation, including its Agent and cancellation.
    * @returns the external result object, validated before content projection.
    */
-  call(args: Record<string, unknown>, execution: ToolExecution): Promise<unknown>
+  call(args: Record<string, unknown>, execution: ToolExecution, metadata: Readonly<Record<string, JsonValue>>): Promise<unknown>
 }
 
 /**
@@ -371,21 +378,35 @@ function createExecutor(
     const argsObj = (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>
     const serverName = options.serverName ?? options.metadataServerName
     const request: McpToolCall | undefined = serverName === undefined ? undefined : {
-      serverName, toolName: rawName, execution: exec, arguments: argsObj, appliedPolicies: new Map(),
+      serverName, toolName: rawName, execution: exec, arguments: argsObj, appliedPolicies: new Map(), metadata: {},
       ...(options.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: options.sessionIdMetadataKey }),
+      ...(options.toolCallTimeoutMs === undefined ? {} : { toolCallTimeoutMs: options.toolCallTimeoutMs }),
     }
-    const rawResult = request === undefined ? await options.call(argsObj, exec)
-      : await ctx.waterfall('mcp/tool-call', request, () => {
-        for (const policy of options.requiredToolCallPolicies ?? []) {
-          const validate = request.appliedPolicies.get(policy)
-          if (validate === undefined) throw new Error(`Required MCP tool-call policy is unavailable: ${policy}.`)
-          validate()
-        }
-        return options.call(request.arguments, exec)
-      })
+    const dispatch: { status: 'unknown' | 'not-started' } = { status: 'not-started' }
+    let rawResult: unknown
+    try {
+      rawResult = request === undefined ? await options.call(argsObj, exec, {})
+        : await ctx.waterfall('mcp/tool-call', request, () => {
+          for (const policy of options.requiredToolCallPolicies ?? []) {
+            const validate = request.appliedPolicies.get(policy)
+            if (validate === undefined) throw new Error(`Required MCP tool-call policy is unavailable: ${policy}.`)
+            validate()
+          }
+          dispatch.status = 'unknown'
+          return options.call(request.arguments, exec, request.metadata)
+        })
+    } catch (error) {
+      if (options.metadataServerName === undefined) throw error
+      const message = error instanceof Error ? error.message : String(error)
+      throw new ToolFailureError(message, { mcp: {
+        serverName: options.metadataServerName, toolName: rawName, dispatchStatus: dispatch.status,
+      } })
+    }
     const parsed = specTypeSchemas.CallToolResult['~standard'].validate(rawResult)
     if (parsed.issues !== undefined) {
-      throw new Error(`Tool "${rawName}" returned an invalid MCP result: ${parsed.issues.map(issue => issue.message).join('; ')}`)
+      const message = `Tool "${rawName}" returned an invalid MCP result: ${parsed.issues.map(issue => issue.message).join('; ')}`
+      if (options.metadataServerName === undefined) throw new Error(message)
+      throw new ToolFailureError(message, { mcp: { serverName: options.metadataServerName, toolName: rawName, dispatchStatus: 'unknown' } })
     }
     const result = parsed.value
 

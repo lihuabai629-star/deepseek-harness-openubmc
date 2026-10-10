@@ -1,0 +1,76 @@
+{
+  "final_response": "SDK_INSPECTION_OK",
+  "inspection_in_run_events": 0,
+  "inspection_notifications": 1,
+  "inspection": {
+    "commandId": "{{command:1}}",
+    "message": {
+      "isError": false
+    },
+    "meta": {
+      "mcp": {
+        "serverName": "openubmc-target-runtime",
+        "toolName": "case_read",
+        "structuredContent": {
+          "schema": "openubmc.target-runtime.v1/context-runtime",
+          "case_id": "case-sdk-inspection",
+          "revision": 4,
+          "status": "active",
+          "operations": [],
+          "mutation_outcome_unknown_operations": {},
+          "workflow_inputs": {
+            "deadline": 10
+          },
+          "phase_records": [
+            {
+              "phase_type": "build.artifact",
+              "status": "completed"
+            }
+          ],
+          "evidence_refs": [
+            {
+              "evidence_id": "evidence-1",
+              "kind": "diagnostic"
+            }
+          ],
+          "next_actions": [
+            "inspect diagnostic"
+          ],
+          "agent_envelope": {
+            "schema": "openubmc.target-runtime.v1/agent-envelope",
+            "case_id": "case-sdk-inspection",
+            "revision": 4,
+            "status": "completed",
+            "operation": {
+              "name": "case_read",
+              "status": "completed"
+            },
+            "evidence_refs": [
+              {
+                "evidence_id": "evidence-1",
+                "kind": "diagnostic"
+              }
+            ],
+            "next_actions": [
+              "inspect diagnostic"
+            ],
+            "capsule": {
+              "schema": "openubmc.target-runtime.v1/context-runtime/capsule",
+              "case_id": "case-sdk-inspection",
+              "case_revision": 4,
+              "status": "active",
+              "artifact_revisions": [
+                {
+                  "artifact_sha256": "offline-digest"
+                }
+              ],
+              "next_actions": [
+                "inspect diagnostic"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
