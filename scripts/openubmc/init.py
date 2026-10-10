@@ -10,6 +10,8 @@ import shutil
 def initialize(workflow: Path, home: Path, template: str, node: str, python: str) -> None:
     """Create a fresh home; never modify an existing deployment or workflow checkout."""
     case_package = "@deepseek-ai/dsh-experimental-openubmc-cases"
+    runtime_package = "@deepseek-ai/dsh-experimental-openubmc-runtime"
+    runtime_source = Path(__file__).resolve().parents[2] / "packages/experimental/openubmc-runtime"
     case_source = Path(__file__).resolve().parents[2] / "packages/experimental/openubmc-cases"
     if not (case_source / "package.json").is_file():
         raise ValueError(f"Missing native Case package: {case_source}")
@@ -46,9 +48,10 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
         module_root = profile / "node_modules/@deepseek-ai"
         module_root.mkdir(parents=True)
         (module_root / "dsh-experimental-openubmc-cases").symlink_to(case_source, target_is_directory=True)
+        (module_root / "dsh-experimental-openubmc-runtime").symlink_to(runtime_source, target_is_directory=True)
         (profile / "package.json").write_text(json.dumps({
             "name": "dsh-profile-openubmc", "private": True, "type": "module",
-            "dependencies": {case_package: f"link:{case_source}"},
+            "dependencies": {case_package: f"link:{case_source}", runtime_package: f"link:{runtime_source}"},
             "dsh": {"profile": {"bundles": ["@deepseek-ai/dsh-base", f"@deepseek-ai/dsh-{bundle}"]}},
         }, indent=2) + "\n")
         patch = [
@@ -56,12 +59,14 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
                 "includeDefaultRoots": False, "customSkillDirs": [str(skills)], "watch": False,
             }},
             {"insert": [
+                {"id": "openubmc-runtime", "name": runtime_package, "config": {"serverName": "openubmc-target-runtime"}},
                 {"id": "openubmc-cases", "name": "@deepseek-ai/dsh-experimental-openubmc-cases",
                  "config": {"serverName": "openubmc-target-runtime"}},
                 {"id": "openubmc-target-runtime", "name": "@deepseek-ai/dsh-mcp-client", "config": {
                     "serverName": "openubmc-target-runtime", "transport": "stdio", "command": python,
                     "args": [str(runtime)], "cwd": str(workflow), "sessionIdMetadataKey": "taskId",
                     "structuredContentInText": True, "structuredContentInMeta": True,
+                    "requiredToolCallPolicies": ["openubmc-session-authority"],
                     "toolCallTimeoutMs": 660000, "failOnStartupError": True,
                     "env": {"OPENUBMC_TARGET_RUNTIME_STATE_DIR": str(home / "openubmc-state"),
                             "OPENUBMC_CREDENTIALS_FILE": str(home / "credentials.env")},

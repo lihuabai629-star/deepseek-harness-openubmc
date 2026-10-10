@@ -49,4 +49,6 @@ MCP 桥将调用方 Session ID 注入 `params._meta.taskId`。恢复同一 Sessi
 
 Runtime 使用此 home 中的 `credentials.env` 选择器，初始文件不存在，不使用生产凭据文件。访问设备前需显式配置。KB 保留现有登录和配置机制；创建配置不代表完成 KB 登录。MCP 客户端的环境变量清洗仍然生效。
 
-task 身份用于关联，不是访问控制。当前 Runtime Case 操作接受显式 Case ID，不校验 task 所有权。fork 不会创建执行授权，但复制的历史可能包含 Case 引用；仅在可信单用户环境中使用此配置。多用户 Case 授权、设备执行、KB 登录验证，以及托管更新、修复、回滚和卸载，不属于此开发初始化脚本的能力。已有 home、模型配置、生产 MCP 条目和 systemd 服务均不会被重写。
+[Runtime 适配器](../../packages/experimental/openubmc-runtime/README.zh.md) 在发送前实施 Session 派生的 Case 归属检查。设备和工作流执行需要当前 Session 的用户通过 `/target-authorize` 授权；resume 保留授权，fork 排除继承授权。此机制保护 DSH 桥接，不保护对 Python Runtime 的直接访问。已有生产配置和 systemd 服务不属于初始化器的管理范围。
+
+使用 `corepack pnpm dsh --profile openubmc --session-id <id> "/target-authorize debug_run"` 在同一会话授权具体操作。此原生命令不调用模型。使用 `/target-authorize revoke` 撤销授权。

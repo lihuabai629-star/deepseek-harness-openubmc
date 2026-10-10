@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/openubmc-runtime/README.md
+/:
+  en: d18adaae73e4b82d
+  zh: b49ee27a9749e5ba
+/deepseek-ai-dsh-experimental-openubmc-runtime:
+  en: 18e43069fba2dd08
+  zh: f27979a8944836d7
+/deepseek-ai-dsh-experimental-openubmc-runtime/summary:
+  en: 5dc4df0be5c80740
+  zh: 6f78193592744aa5
+/deepseek-ai-dsh-experimental-openubmc-runtime/table-of-contents:
+  en: 68720ee26dfe7325
+  zh: 49aac983ab0e0acf
+/deepseek-ai-dsh-experimental-openubmc-runtime/configuration-and-authority:
+  en: d8175482e239d380
+  zh: 54b94dbe94a23a78
+/deepseek-ai-dsh-experimental-openubmc-runtime/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-experimental-openubmc-runtime/model-experience/runtime-execution-results:
+  en: 3054e9c5b8471356
+  zh: db79d9f74c35ef2a
+/deepseek-ai-dsh-experimental-openubmc-runtime/model-experience/runtime-execution-results/what-the-model-sees:
+  en: f00b16ac29784e32
+  zh: 81cd7073207825e3
+/deepseek-ai-dsh-experimental-openubmc-runtime/model-experience/runtime-execution-results/token-effect:
+  en: 36e78a77a0e92c61
+  zh: 85081b1e8d822043
+/deepseek-ai-dsh-experimental-openubmc-runtime/model-experience/runtime-execution-results/kv-cache-effect:
+  en: f082ce72995d8cca
+  zh: fe5466e993c4fba8
+/deepseek-ai-dsh-experimental-openubmc-runtime/known-limitations-and-deferred-work:
+  en: cc948a87daefc37a
+  zh: f94e80bce001c69f
+/deepseek-ai-dsh-experimental-openubmc-runtime/known-limitations-and-deferred-work/dev-note:
+  en: 0a1253c6f7b5e8b9
+  zh: 9f56528562c7c914

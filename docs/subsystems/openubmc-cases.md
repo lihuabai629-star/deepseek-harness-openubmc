@@ -54,3 +54,16 @@ interface OpenUbmcCasesState {
 ## Checkpoint ownership
 
 The checkpoint contains the configured metadata source and the exact inherited prefix. It is a rebuildable fold of `tool/result` events, not a separate Case store. Historical queries do not require a live Runtime connection. The package README owns configuration and command behavior.
+
+## Runtime authority
+
+The [Runtime adapter](../../packages/experimental/openubmc-runtime/README.md) derives current-session human grants from native command lifecycle events.
+
+```ts type-equiv
+/** Rebuildable grants from this Session's successful human commands. */
+interface OpenUbmcRuntimeState {
+  inheritedEventCount: SessionLogOffset
+  operations: string[]
+  pendingGrants: Partial<Record<CommandId, string>>
+}
+```

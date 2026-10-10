@@ -46,7 +46,7 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(runtime["sessionIdMetadataKey"], "taskId")
             self.assertTrue(runtime["structuredContentInText"])
             self.assertTrue(runtime["structuredContentInMeta"])
-            self.assertEqual(patch[1]["insert"][0]["name"], "@deepseek-ai/dsh-experimental-openubmc-cases")
+            self.assertEqual(patch[1]["insert"][0]["name"], "@deepseek-ai/dsh-experimental-openubmc-runtime")
             self.assertEqual(runtime["env"]["OPENUBMC_CREDENTIALS_FILE"], str(home / "credentials.env"))
             with self.assertRaises(FileExistsError):
                 module.initialize(workflow, home, "web", "node", "python3")

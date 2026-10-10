@@ -54,3 +54,16 @@ interface OpenUbmcCasesState {
 ## 检查点归属
 
 检查点包含配置的元数据来源及确切继承前缀。它是可重建的 `tool/result` 事件归并结果，不是独立的 Case 存储。历史查询不需要在线 Runtime 连接。配置及命令行为由包 README 说明。
+
+## Runtime authority
+
+[Runtime 适配器](../../packages/experimental/openubmc-runtime/README.zh.md) 根据原生命令生命周期事件派生当前 Session 的用户授权。
+
+```ts type-equiv
+/** Rebuildable grants from this Session's successful human commands. */
+interface OpenUbmcRuntimeState {
+  inheritedEventCount: SessionLogOffset
+  operations: string[]
+  pendingGrants: Partial<Record<CommandId, string>>
+}
+```

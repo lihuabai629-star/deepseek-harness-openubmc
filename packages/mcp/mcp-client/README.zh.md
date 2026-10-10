@@ -157,9 +157,13 @@ SDK 通过旧版通知或现代协议订阅接收工具列表变化。监督器�
 
 -----
 
+配置的 `requiredToolCallPolicies` 必须在每次 `mcp/tool-call` 时校验最终参数，执行器才会调用提供方。缺少中间件，包括释放或重载期间，会拒绝请求。公开适配函数调用方使用 `serverName`，或在显式分发身份缺省时使用 `metadataServerName`，进入同一中间件。
+
 <a id="model-experience"></a>
 
 `structuredContentInMeta` 选项在顶层结果元数据中保存 `{ mcp: { serverName, toolName, structuredContent? } }`，不改变模型可见内容。失败调用通过 `ToolFailureError` 保留此元数据，且没有成功值。`createMcpToolDefinition` 调用方通过 `metadataServerName` 启用；名称由提供方指定，不读取远端载荷。
+
+`mcp/tool-call` waterfall 以可信服务器和工具标识、准确的执行对象以及可替换参数包裹提供方回调。策略插件调用 `next()` 委托后续处理。`createMcpToolDefinition` 在指定 `serverName` 时提供该事件；发现的工具始终提供该标识。
 
 ## 模型体验
 

@@ -24,6 +24,33 @@ import { assertSupportedJsonSchema, ToolFailureError } from '@deepseek-ai/dsh-to
 import type { JsonSchemaNode } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
+/** One provider dispatch with trusted source and caller identities. */
+export interface McpToolCall {
+  /** Configured namespace, independent of model tool names. */
+  readonly serverName: string
+  /** Upstream protocol name, independent of model arguments. */
+  readonly toolName: string
+  /** Exact invocation including its Agent and cancellation. */
+  readonly execution: ToolExecution
+  /** Configured key used to inject the trusted Session id on the wire. */
+  readonly sessionIdMetadataKey?: string
+  /** Final-argument validators required before the provider callback can run. */
+  readonly appliedPolicies: Map<string, () => void>
+  /** Provider arguments; middleware may replace these before wire dispatch. */
+  arguments: Record<string, unknown>
+}
+
+declare module '@deepseek-ai/cordis' {
+  interface Events {
+    /**
+     * Apply provider-specific policy immediately before an MCP tool callback.
+     * @param request - trusted source, execution and replaceable wire arguments.
+     * @mode waterfall
+     */
+    'mcp/tool-call'(request: McpToolCall, next: () => Promise<unknown>): Promise<unknown>
+  }
+}
+
 /** Resolved options relevant to tool bridging. */
 export interface ToolBridgeOptions {
   /** Whether a registry conflict is contained or rejects this synchronization. */
@@ -32,6 +59,8 @@ export interface ToolBridgeOptions {
   toolCallTimeoutMs: number
   /** Trusted Session identity metadata; omission sends no identity. */
   sessionIdMetadataKey?: string
+  /** Exact middleware policy ids that must acknowledge every dispatch. */
+  requiredToolCallPolicies?: readonly string[]
   /** Append structured success data to model-visible text. */
   structuredContentInText?: boolean
   /** Persist structured data with trusted MCP source identity in result metadata. */
@@ -136,6 +165,9 @@ export async function syncTools(
     }
     definitions.set(publicName, createMcpToolDefinition(ctx, {
       name: publicName,
+      serverName: opts.serverName,
+      ...(opts.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: opts.sessionIdMetadataKey }),
+      ...(opts.requiredToolCallPolicies === undefined ? {} : { requiredToolCallPolicies: opts.requiredToolCallPolicies }),
       rawName: tool.name,
       description: tool.description ?? '',
       inputSchema: tool.inputSchema,
@@ -213,6 +245,12 @@ function supportedOutputSchema(candidate: unknown): JsonSchemaNode | undefined {
 
 /** One upstream MCP tool and the callback that obtains its raw protocol result. */
 export interface McpToolDefinitionOptions {
+  /** Trusted server identity enabling provider dispatch middleware. */
+  serverName?: string
+  /** Session metadata injection owned by the provider callback. */
+  sessionIdMetadataKey?: string
+  /** Exact middleware policy ids that must acknowledge every dispatch. */
+  requiredToolCallPolicies?: readonly string[]
   /** ToolRuntime name presented to the model. */
   name: string
   /** Upstream name used in result diagnostics. */
@@ -250,6 +288,12 @@ export function createMcpToolDefinition(
   options: McpToolDefinitionOptions,
 ): ToolDefinition {
   const { name, rawName, description, inputSchema } = options
+  if (options.serverName !== undefined && options.metadataServerName !== undefined && options.serverName !== options.metadataServerName) {
+    throw new Error('MCP dispatch and result metadata must use the same server identity.')
+  }
+  if (options.serverName === undefined && options.metadataServerName === undefined && options.requiredToolCallPolicies?.length) {
+    throw new Error('Required MCP policies need a trusted server identity.')
+  }
   const projections = new WeakMap<ToolExecution, PreparedProjection>()
   return {
     name,
@@ -325,7 +369,21 @@ function createExecutor(
     // string/number/null). Fallback to {} lets the MCP server produce a
     // specific "missing required param" error the model can learn from.
     const argsObj = (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>
-    const parsed = specTypeSchemas.CallToolResult['~standard'].validate(await options.call(argsObj, exec))
+    const serverName = options.serverName ?? options.metadataServerName
+    const request: McpToolCall | undefined = serverName === undefined ? undefined : {
+      serverName, toolName: rawName, execution: exec, arguments: argsObj, appliedPolicies: new Map(),
+      ...(options.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: options.sessionIdMetadataKey }),
+    }
+    const rawResult = request === undefined ? await options.call(argsObj, exec)
+      : await ctx.waterfall('mcp/tool-call', request, () => {
+        for (const policy of options.requiredToolCallPolicies ?? []) {
+          const validate = request.appliedPolicies.get(policy)
+          if (validate === undefined) throw new Error(`Required MCP tool-call policy is unavailable: ${policy}.`)
+          validate()
+        }
+        return options.call(request.arguments, exec)
+      })
+    const parsed = specTypeSchemas.CallToolResult['~standard'].validate(rawResult)
     if (parsed.issues !== undefined) {
       throw new Error(`Tool "${rawName}" returned an invalid MCP result: ${parsed.issues.map(issue => issue.message).join('; ')}`)
     }

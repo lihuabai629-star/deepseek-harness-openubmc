@@ -14,6 +14,7 @@ import type {
 } from '@deepseek-ai/dsh-agent'
 import AgentDefaultModelConfig from '@deepseek-ai/dsh-agent-default-model'
 import { LlmAttemptId, ToolCallId, createAssistantMessage, createToolResultMessage, type MessageId, type StreamChunk } from '@deepseek-ai/dsh-llm'
+import Commands from '@deepseek-ai/dsh-commands'
 import SessionStore from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import type { Session, SessionId, UserMessage } from '@deepseek-ai/dsh-session'
@@ -170,6 +171,7 @@ async function bench(script: Script, options: BenchOptions = {}): Promise<{
   }
 
   await ctx.plugin(SessionStore)
+  await ctx.plugin(Commands)
   await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(AgentDefaultModelConfig, { provider: 'test-provider', model: 'test-model' })
@@ -224,6 +226,50 @@ async function bench(script: Script, options: BenchOptions = {}): Promise<{
 }
 
 describe('headless runner', () => {
+  it('aborts and settles a suspended native command when the runner is disposed', async () => {
+    const test = await bench({ afterPrompt() { throw new Error('A native command reached the model.') } }, { task: '/suspended' })
+    try {
+      let observedSignal: AbortSignal | undefined
+      let settled = false
+      let entered!: () => void
+      const started = new Promise<void>((resolve) => { entered = resolve })
+      test.ctx.commands.register({ name: 'suspended', description: 'Suspended command', handler: (invocation) => {
+        observedSignal = invocation.signal
+        entered()
+        return new Promise(resolve => invocation.signal.addEventListener('abort', () => {
+          settled = true
+          resolve({ kind: 'error', text: 'cancelled' })
+        }, { once: true }))
+      } })
+      const result = test.run()
+      await started
+      await test.ctx.fiber.dispose()
+      expect(observedSignal?.aborted).toBe(true)
+      expect(settled).toBe(true)
+      expect((await result).code).toBe(1)
+    } finally { await test.ctx.fiber.dispose() }
+  })
+
+  it.each([false, true])('executes a registered human command without model work (json=%s)', async (json) => {
+    const test = await bench({ afterPrompt() { throw new Error('A native command reached the model.') } }, { task: '/native input', json })
+    try {
+      test.ctx.commands.register({ name: 'native', description: 'Native command', handler: invocation => ({ kind: 'success', text: invocation.rawInput.trim() }) })
+      const result = await test.run()
+      expect(result.code).toBe(0)
+      expect(result.out).toContain(json ? '"type":"final","text":"input"' : 'input\n')
+      expect(result.order).toEqual(['flush', 'exit'])
+      expect(result.out).not.toContain('turn_start')
+    } finally { await test.ctx.fiber.dispose() }
+  })
+
+  it('returns a failed native command as a failing process result', async () => {
+    const test = await bench({ afterPrompt() { throw new Error('A native command reached the model.') } }, { task: '/native' })
+    try {
+      test.ctx.commands.register({ name: 'native', description: 'Native command', handler: () => ({ kind: 'error', text: 'denied' }) })
+      expect(await test.run()).toMatchObject({ code: 1, out: 'denied\n', order: ['flush', 'exit'] })
+    } finally { await test.ctx.fiber.dispose() }
+  })
+
   it('records a fresh Session in the filesystem provider working directory', async () => {
     const cwd = '/remote/workspace'
     const test = await bench({

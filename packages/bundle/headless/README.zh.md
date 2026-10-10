@@ -39,6 +39,8 @@ agent 会完成该任务，把提供方的每个非空推理（reasoning）增�
 { echo "Summarize these changes:"; git diff --stat; } | dsh --profile headless
 ```
 
+已注册的斜杠命令通过原生命令注册表执行，并记录用户来源和持久化命令事件；随后打印结果并退出，不发送模型请求。`--session-id` 将命令应用到已有会话。命令成功退出 0，命令错误退出 1。未知命令继续作为普通任务文本处理。JSON 模式下，原生命令输出 `session` 和 `final`，不产生 turn 事件。
+
 任务与运行选项通过三个设置提供：
 
 | 字段 | 默认值 | 含义 |
@@ -77,7 +79,7 @@ runner 是核心 API 载体之上的直接驱动器：它确定 Agent 标识—�
 
 ### 运行流程
 
-runner 等待整个应用结算（`ctx.get('loader')?.await()`），确保已组合的工具与适配器不会半挂载，读取共享的 [`agentDefaultModel`](../../core/agent-default-model/README.zh.md) 选择，从配置或 stdin 解析任务，然后确定 Agent 标识：默认是全新的 `session-<uuid>`，或是 `--session-id` 指名的持久化 Session——通过 [`sessionQuery`](../../session-query/session-query/README.zh.md) 沿用，日志不存在时拒绝。它把任务作为普通用户消息提交。不带 `--json` 时，它把该 Agent 的非空推理增量流式写入 stderr；带 `--json` 时改为投影本次运行。它等待完全停稳，然后对会话执行 flush，并把所属区间（从 `firstSeq` 起）折叠为最后一条非空 `assistant/message` 文本与最终 `turn/end` 原因。最后，它把最终文本写入 stdout（或 `final` 事件）并请求退出。
+runner 等待整个应用结算（`ctx.get('loader')?.await()`），确保已组合的工具与适配器不会半挂载，读取共享的 [`agentDefaultModel`](../../core/agent-default-model/README.zh.md) 选择，从配置或 stdin 解析任务，然后确定 Agent 标识：默认是全新的 `session-<uuid>`，或是 `--session-id` 指名的持久化 Session——通过 [`sessionQuery`](../../session-query/session-query/README.zh.md) 沿用，日志不存在时拒绝。已注册命令由原生命令注册表执行，其他任务作为普通用户消息提交。不带 `--json` 时，它把该 Agent 的非空推理增量流式写入 stderr；带 `--json` 时改为投影本次运行。它等待完全停稳，然后对会话执行 flush，并把所属区间（从 `firstSeq` 起）折叠为最后一条非空 `assistant/message` 文本与最终 `turn/end` 原因。最后，它把最终文本写入 stdout（或 `final` 事件）并请求退出。
 
 ### 基于 base 的 patch 内容
 
@@ -124,7 +126,7 @@ patch 叠加在 `dsh-base` 之上：继承投影缓存与共享 PTC 运行时，
 <a id="model-experience"></a>
 ## 模型体验
 
-无，因为 runner 把任务作为普通用户消息提交，提示词与工具由组合出的 base 与 headless 行提供。
+普通任务作为用户消息提交，原生命令不添加模型消息；提示词与工具由组合出的 base 与 headless 行提供。
 
 #### KV Cache 影响
 

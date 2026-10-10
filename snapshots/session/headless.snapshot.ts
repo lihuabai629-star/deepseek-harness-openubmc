@@ -331,6 +331,12 @@ function taskFromSession(log: string): string | undefined {
     const task = text(record.data)
     if (task !== undefined) return task
   }
+  for (const record of records(log)) {
+    if (record.type !== 'command/run') continue
+    const data = record.data as JsonObject | undefined
+    const source = data?.source as JsonObject | undefined
+    if (source?.kind === 'user' && typeof data?.name === 'string') return `/${data.name}${typeof data.args === 'string' ? data.args : ''}`
+  }
   return undefined
 }
 
@@ -342,7 +348,10 @@ function finalTextFromSession(log: string): string {
     return message === undefined ? [] : [message]
   })
   const content = messages.at(-1)?.content
-  if (!Array.isArray(content)) return ''
+  if (!Array.isArray(content)) {
+    const done = records(log).filter(record => record.type === 'command/done').at(-1)?.data as JsonObject | undefined
+    return typeof done?.text === 'string' ? done.text : ''
+  }
   return (content as JsonObject[])
     .flatMap(block => block.type === 'text' && typeof block.text === 'string' ? [block.text] : [])
     .join('')
@@ -753,6 +762,11 @@ async function verifyProviderCwdResume(
 }
 
 async function verifyHeaders(scenario: HeadlessScenario, actualLogs: readonly SessionLog[], ctx: NormalizeContext): Promise<void> {
+  const selected = await readFile(join(scenario.dir, await primaryFixtureFile(scenario.dir)), 'utf8')
+  if (records(selected).some(record => record.type === 'command/run') && normalizedHeaders(selected, fixtureContext(selected)).length === 0) {
+    for (const log of actualLogs) expect(normalizedHeaders(log.content, ctx), 'native command has no model request').toHaveLength(0)
+    return
+  }
   const pin = pinOf(scenario)
   const fixture = await readFile(join(pin.dir, await primaryFixtureFile(pin.dir)), 'utf8')
   const pinned = normalizedHeaders(fixture, fixtureContext(fixture))
@@ -1135,6 +1149,7 @@ describe('headless recorded-session snapshots', () => {
           ],
           tsconfigPath,
           expectedExitCode: turnReasonFromSession(primaryFixture)?.kind === 'completed'
+            || (records(primaryFixture).filter(record => record.type === 'command/done').at(-1)?.data as JsonObject | undefined)?.kind === 'success'
             || turnReasonFromSession(primaryFixture) === undefined && scenario.manifest.input?.task !== undefined
             ? 0
             : 1,

@@ -1,0 +1,10 @@
+version: 1
+scenario: openubmc-authority
+profile: headless
+composition: openubmc-authority
+recording: authored
+header:
+  class: openubmc-authority
+  pin: true
+replay:
+  override: true

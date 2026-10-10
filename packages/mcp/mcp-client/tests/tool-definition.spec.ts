@@ -7,6 +7,36 @@ import { describe, expect, it, vi } from 'vitest'
 import { createMcpToolDefinition } from '../src/index.ts'
 
 describe('MCP result callback adaptation', () => {
+  it('rejects policy configuration without identity and inconsistent metadata identity', async () => {
+    const ctx = new Context()
+    try {
+      const options = { name: 'protected', rawName: 'read', description: 'Read', inputSchema: { type: 'object' }, call: async () => ({ content: [] }) }
+      expect(() => createMcpToolDefinition(ctx, { ...options, requiredToolCallPolicies: ['required'] })).toThrow('trusted server identity')
+      expect(() => createMcpToolDefinition(ctx, { ...options, serverName: 'a', metadataServerName: 'b' })).toThrow('same server identity')
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('requires policy acknowledgement through metadata-only public adapter calls', async () => {
+    const ctx = new Context()
+    try {
+      await ctx.plugin(SystemPrompt)
+      await ctx.plugin(ToolRuntime)
+      const call = vi.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+      ctx.tools.register(createMcpToolDefinition(ctx, {
+        name: 'protected', rawName: 'read', description: 'Read', inputSchema: { type: 'object' },
+        metadataServerName: 'runtime', requiredToolCallPolicies: ['required'], call,
+      }))
+      const execute = () => ctx.tools.execute({ name: 'protected', callId: ToolCallId('policy'), arguments: {}, signal: new AbortController().signal })
+      expect((await execute()).isError).toBe(true)
+      expect(call).not.toHaveBeenCalled()
+      const stop = ctx.on('mcp/tool-call', (request, next) => { request.appliedPolicies.set('required', () => {}); return next() })
+      expect((await execute()).isError).toBe(false)
+      stop()
+      expect((await execute()).isError).toBe(true)
+      expect(call).toHaveBeenCalledTimes(1)
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it.each([false, true])('preserves structured values and includes them in text only when enabled (%s)', async (includeStructured) => {
     const ctx = new Context()
     try {

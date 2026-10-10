@@ -1,0 +1,26 @@
+- insert:
+    - id: openubmc-runtime
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: openubmc-target-runtime
+        command: !!js process.execPath
+        args: ['./runtime.mjs']
+        sessionIdMetadataKey: taskId
+        requiredToolCallPolicies: [openubmc-session-authority]
+        structuredContentInText: true
+        structuredContentInMeta: true
+        failOnStartupError: true
+        reconnect:
+          enabled: false
+- insert:
+    - id: openubmc-cases
+      name: '@deepseek-ai/dsh-experimental-openubmc-cases'
+      config:
+        serverName: openubmc-target-runtime
+
+- insert:
+    - id: openubmc-policy
+      name: '@deepseek-ai/dsh-experimental-openubmc-runtime'
+      config:
+        serverName: openubmc-target-runtime

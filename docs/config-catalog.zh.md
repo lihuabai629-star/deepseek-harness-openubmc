@@ -1051,6 +1051,23 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-cases -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-runtime -->
+<a id="deepseek-aidsh-experimental-openubmc-runtime"></a>
+
+## `@deepseek-ai/dsh-experimental-openubmc-runtime`
+
+- `inject`: `commands` · `sessionProjections`
+- `source`: [`packages/experimental/openubmc-runtime/src/index.ts:21`](../packages/experimental/openubmc-runtime/src/index.ts)
+
+```ts config-catalog
+/** Exact Runtime namespace protected by this adapter. */
+export interface Config {
+  /** MCP server configured with trusted Session metadata. */
+  serverName: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-runtime -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-ptc-runtime-python -->
 <a id="deepseek-aidsh-experimental-ptc-runtime-python"></a>
 
@@ -1300,8 +1317,8 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-headless`
 
-- `inject`: `agentDefaultModel` · `agents` · `sessions`
-- `source`: [`packages/bundle/headless/src/index.ts:42`](../packages/bundle/headless/src/index.ts)
+- `inject`: `agentDefaultModel` · `agents` · `sessions` · `commands`
+- `source`: [`packages/bundle/headless/src/index.ts:43`](../packages/bundle/headless/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config: the task and run options resolved from this app's injected provider service. */
@@ -2033,7 +2050,7 @@ export interface LspLocalServerConfig {
 ## `@deepseek-ai/dsh-mcp-client`
 
 - `inject`: `tools`
-- `source`: [`packages/mcp/mcp-client/src/index.ts:116`](../packages/mcp/mcp-client/src/index.ts)
+- `source`: [`packages/mcp/mcp-client/src/index.ts:120`](../packages/mcp/mcp-client/src/index.ts)
 
 ```ts config-catalog
 /** Configuration for one stdio or Streamable HTTP MCP server. */
@@ -2061,6 +2078,8 @@ export interface StdioConfig {
   toolCallTimeoutMs: number
   /** Inject the calling Session id into tools/call _meta under this key; calls without an Agent fail. */
   sessionIdMetadataKey?: string
+  /** Middleware policy ids required before each provider dispatch, including after reload. */
+  requiredToolCallPolicies?: string[]
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
   /** Persist structured data with trusted server/tool identity on success and failure. */
@@ -2091,6 +2110,8 @@ export interface StreamableHttpConfig {
   toolCallTimeoutMs: number
   /** Inject the calling Session id into tools/call _meta under this key; calls without an Agent fail. */
   sessionIdMetadataKey?: string
+  /** Middleware policy ids required before each provider dispatch, including after reload. */
+  requiredToolCallPolicies?: string[]
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
   /** Persist structured data with trusted server/tool identity on success and failure. */

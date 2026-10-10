@@ -24,7 +24,7 @@ import { registerServerContext } from './server-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 
 export { createMcpToolDefinition } from './tools.ts'
-export type { McpResult, McpToolDefinitionOptions } from './tools.ts'
+export type { McpResult, McpToolDefinitionOptions, McpToolCall } from './tools.ts'
 export type { ReconnectConfig, ResolvedReconnectPolicy } from './connection.ts'
 
 /** Cordis plugin name used by loader diagnostics. */
@@ -70,6 +70,8 @@ export interface StdioConfig {
   toolCallTimeoutMs: number
   /** Inject the calling Session id into tools/call _meta under this key; calls without an Agent fail. */
   sessionIdMetadataKey?: string
+  /** Middleware policy ids required before each provider dispatch, including after reload. */
+  requiredToolCallPolicies?: string[]
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
   /** Persist structured data with trusted server/tool identity on success and failure. */
@@ -100,6 +102,8 @@ export interface StreamableHttpConfig {
   toolCallTimeoutMs: number
   /** Inject the calling Session id into tools/call _meta under this key; calls without an Agent fail. */
   sessionIdMetadataKey?: string
+  /** Middleware policy ids required before each provider dispatch, including after reload. */
+  requiredToolCallPolicies?: string[]
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
   /** Persist structured data with trusted server/tool identity on success and failure. */
@@ -138,6 +142,7 @@ export const Config = z.union([
     cwd: z.string().default(''),
     toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
     sessionIdMetadataKey: z.string().min(1),
+    requiredToolCallPolicies: z.array(z.string().min(1)),
     structuredContentInText: z.boolean(),
     structuredContentInMeta: z.boolean(),
     failOnStartupError: z.boolean().default(false),
@@ -151,6 +156,7 @@ export const Config = z.union([
     headers: z.dict(String).default({}),
     toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
     sessionIdMetadataKey: z.string().min(1),
+    requiredToolCallPolicies: z.array(z.string().min(1)),
     structuredContentInText: z.boolean(),
     structuredContentInMeta: z.boolean(),
     failOnStartupError: z.boolean().default(false),

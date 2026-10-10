@@ -157,9 +157,13 @@ Read these pages when the package-level contract is not enough. They move from t
 
 -----
 
+Configured `requiredToolCallPolicies` must validate final arguments for each `mcp/tool-call` before the executor invokes its provider callback. A missing middleware, including during disposal or reload, refuses dispatch. Public adapter callers use `serverName`, or `metadataServerName` when the explicit dispatch identity is absent, to enter the same middleware.
+
 <a id="model-experience"></a>
 
 The `structuredContentInMeta` option stores `{ mcp: { serverName, toolName, structuredContent? } }` in top-level result metadata. It leaves model-visible content unchanged. Failed calls retain this metadata through `ToolFailureError` and have no successful value. `createMcpToolDefinition` callers opt in with `metadataServerName`; the name comes from the provider, not the remote payload.
+
+The `mcp/tool-call` waterfall wraps provider callbacks with trusted server/tool identities, the exact execution and replaceable arguments. Policy plugins call `next()` to delegate. `createMcpToolDefinition` exposes it when `serverName` is supplied; discovered tools always supply that identity.
 
 ## Model Experience
 

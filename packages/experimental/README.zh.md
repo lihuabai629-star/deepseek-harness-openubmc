@@ -24,6 +24,7 @@ kind: "package-group"
 
 | 包 | 职责 | ctx 键 |
 |---|---|---|
+| [`openubmc-runtime`](openubmc-runtime/README.zh.md) | Session-owned Runtime dispatch and human execution grants | Session projection |
 | [`openubmc-cases`](openubmc-cases/README.zh.md) | 已观察 Case 的只读视图和原生 /case 命令 | Session 投影 |
 | [`speech-to-text`](speech-to-text/README.zh.md) | 具名语音识别 Provider | `ctx.speechToText` |
 | [`speech-to-text-sensevoice`](speech-to-text-sensevoice/README.zh.md) | 托管本地 SenseVoice 推理 | — |
