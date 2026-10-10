@@ -129,8 +129,10 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
   const incompleteDisposalMessage = `${label}: transport closure could not be confirmed during disposal — server shutdown may be incomplete`
   const opts: ToolBridgeOptions = {
     registrationFailure: 'contain',
+    ...(config.structuredContentInText === undefined ? {} : { structuredContentInText: config.structuredContentInText }),
     serverName: config.serverName,
     toolCallTimeoutMs: config.toolCallTimeoutMs,
+    ...(config.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: config.sessionIdMetadataKey }),
   }
   // The initial sync uses 'throw' when failOnStartupError is configured, so
   // a registration conflict propagates to the startup-await path. Re-syncs

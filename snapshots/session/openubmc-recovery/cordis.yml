@@ -1,0 +1,13 @@
+- insert:
+    - id: openubmc-runtime
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: openubmc-target-runtime
+        command: !!js process.execPath
+        args: ['./runtime.mjs']
+        sessionIdMetadataKey: taskId
+        structuredContentInText: true
+        failOnStartupError: true
+        reconnect:
+          enabled: false

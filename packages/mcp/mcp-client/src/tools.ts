@@ -30,6 +30,10 @@ export interface ToolBridgeOptions {
   registrationFailure: 'contain' | 'throw'
   serverName: string
   toolCallTimeoutMs: number
+  /** Trusted Session identity metadata; omission sends no identity. */
+  sessionIdMetadataKey?: string
+  /** Append structured success data to model-visible text. */
+  structuredContentInText?: boolean
 }
 
 /** State for one sync generation: the current set of disposers keyed by public name. */
@@ -134,11 +138,23 @@ export async function syncTools(
       description: tool.description ?? '',
       inputSchema: tool.inputSchema,
       outputSchema: tool.outputSchema,
+      structuredContentInText: opts.structuredContentInText === true,
       taskRequired: tool.execution?.taskSupport === 'required',
-      call: (args, execution) => client.callTool(
-        { name: tool.name, arguments: args },
-        { signal: execution.signal, timeout: opts.toolCallTimeoutMs, toolDefinition: tool },
-      ),
+      call: (args, execution) => {
+        const key = opts.sessionIdMetadataKey
+        const session = execution.agent?.session
+        if (key !== undefined && session === undefined) {
+          throw new Error(`mcp-client(${opts.serverName}): session identity requires an Agent`)
+        }
+        return client.callTool(
+          {
+            name: tool.name,
+            arguments: args,
+            ...(key !== undefined && session !== undefined ? { _meta: { [key]: session.id } } : {}),
+          },
+          { signal: execution.signal, timeout: opts.toolCallTimeoutMs, toolDefinition: tool },
+        )
+      },
     }))
   }
 
@@ -206,6 +222,8 @@ export interface McpToolDefinitionOptions {
   outputSchema?: unknown
   /** Whether the upstream tool requires the unsupported task execution extension. */
   taskRequired?: boolean
+  /** Append structured success data to model-visible text; errors always retain it. */
+  structuredContentInText?: boolean
   /**
    * Obtain one raw MCP result from the provider.
    * @param args - model arguments admitted by the ToolRuntime.
@@ -232,7 +250,7 @@ export function createMcpToolDefinition(
     name,
     description,
     parameters: inputSchema,
-    output: createOutput(rawName, supportedOutputSchema(options.outputSchema)),
+    output: createOutput(rawName, supportedOutputSchema(options.outputSchema), options.structuredContentInText === true),
     execute: createExecutor(ctx, options, projections),
     projectContent(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>) {
       const projection = projections.get(exec)
@@ -247,7 +265,7 @@ export function createMcpToolDefinition(
 }
 
 /** Build the canonical result schema and existing Native text projection. */
-function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefined): ToolDefinition['output'] {
+function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefined, includeStructured: boolean): ToolDefinition['output'] {
   return {
     schema: {
       type: 'object',
@@ -260,9 +278,14 @@ function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefi
     },
     render(_args: unknown, value: JsonValue) {
       const result = value as McpResult
-      return [{ type: 'text', text: extractText(result.content, rawName) }]
+      return [{ type: 'text', text: extractText(result.content, rawName) + structuredText(result, includeStructured) }]
     },
   }
+}
+
+/** Serialize structured data only when explicitly included in successful model context. */
+function structuredText(result: McpResult, include: boolean): string {
+  return include && result.structuredContent !== undefined ? `\n${JSON.stringify(result.structuredContent)}` : ''
 }
 
 /**
@@ -295,7 +318,9 @@ function createExecutor(
 
     // MCP isError → throw so ToolRuntime produces an isError result for the model.
     if (result.isError === true) {
-      throw new Error(text)
+      throw new Error(result.structuredContent === undefined
+        ? text
+        : `${text}\n${JSON.stringify(result.structuredContent)}`)
     }
 
     const value: McpResult = {
@@ -305,8 +330,10 @@ function createExecutor(
         : {},
     }
     if (containsImage(content)) {
-      const fallback: ContentBlock[] = [{ type: 'text', text: extractText(content, rawName) }]
+      const suffix = structuredText(value, options.structuredContentInText === true)
+      const fallback: ContentBlock[] = [{ type: 'text', text: extractText(content, rawName) + suffix }]
       const projected = await prepareImageProjection(ctx, exec, content, rawName)
+      if (suffix !== '') projected.push({ type: 'text', text: suffix })
       projections.set(exec, { value, fallback, content: projected })
     }
     return value

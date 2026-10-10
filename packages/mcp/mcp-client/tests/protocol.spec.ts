@@ -8,7 +8,7 @@ import { McpServer } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime from '@deepseek-ai/dsh-tools'
+import ToolRuntime, { type ToolExecution } from '@deepseek-ai/dsh-tools'
 import McpResources from '@deepseek-ai/dsh-mcp-resources'
 import { startConnection, resolveReconnectPolicy } from '../src/connection.ts'
 import type { Config } from '../src/index.ts'
@@ -21,14 +21,14 @@ const config: Config = {
   toolCallTimeoutMs: 60_000, failOnStartupError: true,
 }
 
-async function connect(server: McpServer, options?: { resources: true }): Promise<Context> {
+async function connect(server: McpServer, options?: { resources?: true; sessionIdMetadataKey?: string }): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const serving = serveStdio(() => server, { transport: serverTransport })
   mockTransport.mockReturnValue(clientTransport)
-  const connection = startConnection(ctx, config, resolveReconnectPolicy({ enabled: false }, 'fixture'))
+  const connection = startConnection(ctx, { ...config, ...(options?.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: options.sessionIdMetadataKey }) }, resolveReconnectPolicy({ enabled: false }, 'fixture'))
   onTestFinished(async () => {
     await connection.dispose()
     await serving.close()
@@ -43,6 +43,28 @@ async function connect(server: McpServer, options?: { resources: true }): Promis
 }
 
 describe('modern MCP connections', () => {
+  it('isolates shared calls by Session and rejects calls without a Session before dispatch', async () => {
+    const server = new McpServer({ name: 'identity', version: '1' })
+    const seen: unknown[] = []
+    server.registerTool('identity', { inputSchema: z.looseObject({}) }, async (_args, extra) => {
+      seen.push(extra.mcpReq._meta)
+      return { content: [{ type: 'text', text: JSON.stringify(extra.mcpReq._meta) }] }
+    })
+    const ctx = await connect(server, { sessionIdMetadataKey: 'taskId' })
+    const invoke = (id?: string) => ctx.tools.execute({
+      name: 'mcp__fixture__identity', callId: ToolCallId(`identity-${id}`),
+      arguments: { _meta: { taskId: 'model-chosen' } }, signal: new AbortController().signal,
+      ...(id === undefined ? {} : { agent: { session: { id } } as NonNullable<ToolExecution['agent']> }),
+    })
+    const results = await Promise.all([invoke('session-a'), invoke('session-b')])
+    expect(results.map(result => result.isError ? result.error : null)).toEqual([null, null])
+    expect(seen).toEqual(expect.arrayContaining([{ taskId: 'session-a' }, { taskId: 'session-b' }]))
+    expect((await invoke('session-a')).isError).toBe(false)
+    expect(seen.at(-1)).toEqual({ taskId: 'session-a' })
+    expect((await invoke()).isError).toBe(true)
+    expect(seen).toHaveLength(3)
+  })
+
   it('keeps a resource-only server connected without requesting tools', async () => {
     const server = new McpServer({ name: 'resources', version: '1' })
     server.registerResource('memo', 'memo://readme', {}, async () => ({

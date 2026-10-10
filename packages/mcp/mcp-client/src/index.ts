@@ -68,6 +68,10 @@ export interface StdioConfig {
   cwd: string
   /** Timeout per tool call or resource request in milliseconds. */
   toolCallTimeoutMs: number
+  /** Inject the calling Session id into tools/call _meta under this key; calls without an Agent fail. */
+  sessionIdMetadataKey?: string
+  /** Append successful structuredContent JSON to durable model-visible text. */
+  structuredContentInText?: boolean
   /** Fail plugin activation when the initial connection or tool synchronization fails. */
   failOnStartupError: boolean
   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */
@@ -92,6 +96,10 @@ export interface StreamableHttpConfig {
   headers: Record<string, string>
   /** Timeout per tool call or resource request in milliseconds. */
   toolCallTimeoutMs: number
+  /** Inject the calling Session id into tools/call _meta under this key; calls without an Agent fail. */
+  sessionIdMetadataKey?: string
+  /** Append successful structuredContent JSON to durable model-visible text. */
+  structuredContentInText?: boolean
   /** Fail plugin activation when the initial connection or tool synchronization fails. */
   failOnStartupError: boolean
   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */
@@ -125,6 +133,8 @@ export const Config = z.union([
     env: z.dict(String).default({}),
     cwd: z.string().default(''),
     toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
+    sessionIdMetadataKey: z.string().min(1),
+    structuredContentInText: z.boolean(),
     failOnStartupError: z.boolean().default(false),
     maxInstructionBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INSTRUCTION_BYTES),
     reconnect: Reconnect,
@@ -135,6 +145,8 @@ export const Config = z.union([
     url: z.string().required(),
     headers: z.dict(String).default({}),
     toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
+    sessionIdMetadataKey: z.string().min(1),
+    structuredContentInText: z.boolean(),
     failOnStartupError: z.boolean().default(false),
     maxInstructionBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INSTRUCTION_BYTES),
     reconnect: Reconnect,

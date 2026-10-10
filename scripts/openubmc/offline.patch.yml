@@ -1,0 +1,6 @@
+- id: llm-deepseek
+  disabled: true
+
+- insert:
+    - id: openubmc-offline-model
+      name: '../../packages/mcp/mcp-client/tests/fixtures/runtime-status-model.ts'

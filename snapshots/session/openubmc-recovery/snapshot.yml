@@ -1,0 +1,10 @@
+version: 1
+scenario: openubmc-recovery
+profile: headless
+composition: openubmc-recovery
+recording: authored
+header:
+  class: openubmc-recovery
+  pin: true
+replay:
+  override: true

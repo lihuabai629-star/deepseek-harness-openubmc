@@ -59,6 +59,8 @@ kind: "package-reference"
 | `command` / `args` / `env` / `cwd` | — | stdio：可执行文件、参数、合并到清洗过的环境之上的额外环境变量、工作目录 |
 | `url` / `headers` | — | streamable-http：端点 URL 与额外请求标头 |
 | `toolCallTimeoutMs` | `60,000` | 每次 `tools/call` 或资源请求的超时 |
+| `sessionIdMetadataKey` | 省略 | 将调用方 Session ID 注入 `tools/call` 的 `_meta` 指定键；没有 Agent 时拒绝调用 |
+| `structuredContentInText` | 省略 | 将成功结果的结构化内容作为 JSON 追加到模型可见的持久化文本 |
 | `maxInstructionBytes` | `32,768` | 包括服务器归属信息在内的服务器指令 UTF-8 字节上限；超出时连接失败 |
 | `failOnStartupError` | `false` | 初始连接或工具同步失败时拒绝插件激活 |
 | `reconnect.enabled` | `true` | 连接丢失后自动重新连接 |
@@ -131,7 +133,7 @@ SDK 通过旧版通知或现代协议订阅接收工具列表变化。监督器�
 
 ### 工具执行内部细节
 
-工具调用向 SDK 提供原始名称、完整工具定义、JSON 参数、取消信号及配置的超时。SDK 负责协议校验、已声明输出 schema 的校验和现代协议请求 header。成功结果规范值为 `{ content: JsonValue[], structuredContent? }`，为编程调用方及 PTC 模式保留有效的 MCP JSON 块。MCP `isError` 结果会在图片持久化前抛出。桥接器在保存前校验整批图片；拒绝时将每张图片投影为诊断文本。
+工具调用向 SDK 提供原始名称、完整工具定义、JSON 参数、取消信号及配置的超时。SDK 负责协议校验、已声明输出 schema 的校验和现代协议请求 header。成功结果规范值为 `{ content: JsonValue[], structuredContent? }`，为编程调用方及 PTC 模式保留有效的 MCP JSON 块。MCP `isError` 结果会在图片持久化前抛出；存在 `structuredContent` 时，错误文本包含其序列化内容，在 Session 日志中保留恢复引用。`structuredContentInText` 也会将成功结果的结构化数据追加到模型投影。`sessionIdMetadataKey` 使用当前 Session ID，因此恢复沿用原身份，fork 使用新身份；模型参数无法覆盖此元数据。服务端仍负责授权。桥接器在保存前校验整批图片；拒绝时将每张图片投影为诊断文本。
 
 ### 环境清洗（stdio）
 

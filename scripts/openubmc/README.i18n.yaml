@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write scripts/openubmc/README.md
+/:
+  en: db37fc57b5780d64
+  zh: feea1e7a5157d152
+/openubmc-development-profile:
+  en: 355370eb7bd7f74d
+  zh: 1adbc9c790c5bbc7
+/openubmc-development-profile/create-and-launch:
+  en: d88025c9033146a7
+  zh: 5d85ceba5ba1331c
+/openubmc-development-profile/offline-startup-check:
+  en: a9b68352ca70afa7
+  zh: a63867194a878020
+/openubmc-development-profile/identity-and-recovery:
+  en: ed9ba3d82362bc2e
+  zh: 9c9e24e35ee5db60
+/openubmc-development-profile/credentials-and-limitations:
+  en: 4eb12c822ed5f67d
+  zh: 7e1603e9e89fe293

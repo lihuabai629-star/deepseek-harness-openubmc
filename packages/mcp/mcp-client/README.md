@@ -59,6 +59,8 @@ Add one entry per server; nothing else is required. After the harness starts, th
 | `command` / `args` / `env` / `cwd` | — | stdio: executable, arguments, extra env merged over scrubbed ambient env, working directory |
 | `url` / `headers` | — | streamable-http: endpoint URL and extra request headers |
 | `toolCallTimeoutMs` | `60,000` | Timeout per `tools/call` or resource request |
+| `sessionIdMetadataKey` | omitted | Inject the calling Session ID into `tools/call` `_meta` under this key; reject calls without an Agent |
+| `structuredContentInText` | omitted | Append successful structured content as JSON to model-visible, durable text |
 | `maxInstructionBytes` | `32,768` | Maximum UTF-8 bytes of server instructions including attribution; an oversized value rejects the connection |
 | `failOnStartupError` | `false` | Reject plugin activation when the initial connection or tool synchronization fails |
 | `reconnect.enabled` | `true` | Reconnect automatically after a lost connection |
@@ -131,7 +133,7 @@ The SDK receives tool-list changes through legacy notifications or a modern subs
 
 ### Tool execution internals
 
-A tool call uses the SDK with the raw name, complete tool definition, JSON arguments, abort signal, and configured timeout. The SDK owns protocol validation, advertised output-schema validation, and modern request headers. Canonical success is `{ content: JsonValue[], structuredContent? }`, preserving valid MCP JSON blocks for programmatic and PTC mode callers. An MCP `isError` result throws before image persistence. The bridge validates each image batch before saving it; a refusal projects every image as diagnostic text.
+A tool call uses the SDK with the raw name, complete tool definition, JSON arguments, abort signal, and configured timeout. The SDK owns protocol validation, advertised output-schema validation, and modern request headers. Canonical success is `{ content: JsonValue[], structuredContent? }`, preserving valid MCP JSON blocks for programmatic and PTC mode callers. An MCP `isError` result throws before image persistence; its error text includes serialized `structuredContent` when present, preserving recovery references in the Session log. `structuredContentInText` also appends structured success data to the model projection. `sessionIdMetadataKey` uses the current Session ID, so resume retains identity and fork uses its new identity; model arguments cannot override this metadata. The server remains responsible for authorization. The bridge validates each image batch before saving it; a refusal projects every image as diagnostic text.
 
 ### Environment scrubbing (stdio)
 
