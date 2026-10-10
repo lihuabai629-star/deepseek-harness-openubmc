@@ -1043,9 +1043,9 @@ export interface InspectorOptions {
 - `source`: [`packages/experimental/openubmc-cases/src/index.ts:18`](../packages/experimental/openubmc-cases/src/index.ts)
 
 ```ts config-catalog
-/** Selects the trusted MCP server that owns Case observations. */
+/** Selects the trusted metadata source in the durable Session log. */
 export interface Config {
-  /** Exact MCP namespace; the corresponding client must enable structuredContentInMeta. */
+  /** Exact MCP namespace; live connectivity is not required for historical queries. */
   serverName: string
 }
 ```

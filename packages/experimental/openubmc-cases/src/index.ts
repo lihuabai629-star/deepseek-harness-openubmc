@@ -14,9 +14,9 @@ export const name = 'openubmc-cases'
 /** Existing registries used for observation and user queries. */
 export const inject = ['sessionProjections', 'commands']
 
-/** Selects the trusted MCP server that owns Case observations. */
+/** Selects the trusted metadata source in the durable Session log. */
 export interface Config {
-  /** Exact MCP namespace; the corresponding client must enable structuredContentInMeta. */
+  /** Exact MCP namespace; live connectivity is not required for historical queries. */
   serverName: string
 }
 /** Required source selection; no public tool-name parsing. */
@@ -24,7 +24,8 @@ export const Config: z<Config> = z.object({ serverName: z.string().required().pa
 
 const caseIdSchema = schema.string().min(1).transform(value => brandString<OpenUbmcCaseId>(value))
 const observationSchema: schema.ZodType<OpenUbmcCaseObservation> = schema.object({
-  caseId: caseIdSchema, revision: schema.number().int().nonnegative().nullable(), status: schema.string().min(1),
+  caseId: caseIdSchema, revision: schema.number().int().nonnegative(), status: schema.string().min(1).nullable(),
+  operationStatus: schema.string().min(1),
   toolName: schema.string().min(1), isError: schema.boolean(), inherited: schema.boolean(),
   observedAtSeq: schema.number().int().nonnegative().transform(SessionSeq),
   evidenceRefs: schema.array(schema.json()), nextActions: schema.array(schema.string()),
@@ -36,10 +37,31 @@ const metadataSchema = schema.object({ mcp: schema.object({
   serverName: schema.string(), toolName: schema.string().min(1),
   structuredContent: schema.record(schema.string(), schema.json()).optional(),
 }) })
+const agentSchema = 'openubmc.target-runtime.v1/agent-envelope'
+const contextSchema = 'openubmc.target-runtime.v1/context-runtime'
+const discriminatorSchema = schema.object({ schema: schema.literal(agentSchema) })
 const envelopeSchema = schema.object({
-  case_id: caseIdSchema, revision: schema.number().int().nonnegative().nullable().default(null), status: schema.string().min(1),
-  evidence_refs: schema.array(schema.json()).default([]), next_actions: schema.array(schema.string()).default([]),
-})
+  schema: schema.literal(agentSchema), case_id: schema.string(),
+  revision: schema.number().int().nonnegative(), status: schema.string().min(1),
+  operation: schema.object({ name: schema.string().min(1), status: schema.string().min(1) }),
+  evidence_refs: schema.array(schema.json()), next_actions: schema.array(schema.string()), capsule: schema.json().optional(),
+}).refine(value => value.status === value.operation.status)
+const caseReportSchema = schema.union([
+  schema.object({
+    schema: schema.literal(contextSchema), case_id: caseIdSchema, revision: schema.number().int().nonnegative(),
+    status: schema.string().min(1), evidence_refs: schema.array(schema.json()), next_actions: schema.array(schema.string()),
+  }).transform(value => ({
+    caseId: value.case_id, revision: value.revision, status: value.status,
+    evidenceRefs: value.evidence_refs, nextActions: value.next_actions,
+  })),
+  schema.object({
+    schema: schema.literal(`${contextSchema}/capsule`), case_id: caseIdSchema, case_revision: schema.number().int().nonnegative(),
+    status: schema.string().min(1), next_actions: schema.array(schema.string()),
+  }).transform(value => ({
+    caseId: value.case_id, revision: value.case_revision, status: value.status,
+    evidenceRefs: undefined, nextActions: value.next_actions,
+  })),
+]).optional()
 
 /**
  * Create a rebuildable Case projection for one configured Runtime server.
@@ -63,16 +85,29 @@ export function createCasesProjection(serverName: string): Omit<ProjectionDefini
       const structured = metadata.data.mcp.structuredContent
       if (structured === undefined) return state
       const envelope = Object.hasOwn(structured, 'agent_envelope') ? structured.agent_envelope : structured
-      if (typeof envelope !== 'object' || envelope === null || Array.isArray(envelope)) return state
-      if (envelope.case_id === undefined || envelope.case_id === '') return state
+      if (!discriminatorSchema.safeParse(envelope).success) return state
+      const invalid = () => ({ ...state, view: { ...state.view, failure: `Invalid openUBMC Case metadata at event ${event.seq}.` } })
       const parsed = envelopeSchema.safeParse(envelope)
-      if (!parsed.success) return { ...state, view: { ...state.view, failure: `Invalid openUBMC Case metadata at event ${event.seq}.` } }
+      if (!parsed.success) return invalid()
       const value = parsed.data
+      if (value.case_id === '') return state
+      const report = caseReportSchema.safeParse(structured.schema === contextSchema ? structured : value.capsule)
+      if (!report.success) return invalid()
+      const caseReport = report.data
+      if (value.operation.name !== metadata.data.mcp.toolName
+        || caseReport !== undefined && (caseReport.caseId !== value.case_id || caseReport.revision !== value.revision)) return invalid()
+      const previous = state.view.cases.find(c => c.caseId === value.case_id)
+      const isError = event.data.message.isError === true
+      const reportsRecovery = isError || !['runtime_status', 'evidence_read'].includes(value.operation.name)
       const observation: OpenUbmcCaseObservation = {
-        caseId: value.case_id, revision: value.revision, status: value.status,
-        toolName: metadata.data.mcp.toolName, isError: event.data.message.isError === true,
-        inherited: event.seq < state.inheritedEventCount, observedAtSeq: event.seq,
-        evidenceRefs: value.evidence_refs, nextActions: value.next_actions,
+        caseId: brandString<OpenUbmcCaseId>(value.case_id), revision: value.revision,
+        status: caseReport?.status ?? previous?.status ?? null,
+        operationStatus: value.status, toolName: metadata.data.mcp.toolName, isError,
+        inherited: event.seq < state.inheritedEventCount || previous?.inherited === true && caseReport?.evidenceRefs === undefined,
+        observedAtSeq: event.seq,
+        evidenceRefs: caseReport?.evidenceRefs
+          ?? (reportsRecovery && value.evidence_refs.length > 0 ? value.evidence_refs : previous?.evidenceRefs ?? []),
+        nextActions: caseReport?.nextActions ?? (reportsRecovery ? value.next_actions : previous?.nextActions ?? []),
       }
       return { ...state, view: { cases: [...state.view.cases.filter(c => c.caseId !== observation.caseId), observation], failure: null } }
     },
@@ -97,7 +132,7 @@ export function apply(ctx: Context, config: Config): void {
       const observed = state.view.cases.filter(c => query === '' || c.caseId === query)
       if (query !== '' && observed.length === 0) return { kind: 'error', text: `No observed openUBMC Case matches ${query}. Usage: /case [case-id]` }
       const lines = observed.flatMap(c => [
-        `${c.caseId} | ${c.status} | revision ${c.revision ?? 'unknown'} | ${c.isError ? 'failed' : 'succeeded'} | ${c.inherited ? 'inherited observation' : 'session observation'}`,
+        `${c.caseId} | Case status ${c.status ?? 'unreported'} | revision ${c.revision} | operation ${c.operationStatus} | ${c.isError ? 'failed' : 'succeeded'} | ${c.inherited ? 'inherited observation' : 'session observation'}`,
         `Tool: ${c.toolName}`,
         `Evidence: ${JSON.stringify(c.evidenceRefs)}`,
         `Next actions: ${c.nextActions.join(', ') || 'none reported'}`,

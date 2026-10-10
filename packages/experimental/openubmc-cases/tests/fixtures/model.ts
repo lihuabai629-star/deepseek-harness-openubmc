@@ -23,7 +23,7 @@ class CaseModel extends LlmAdapter {
       const [agent] = this.ctx.agents.roots()
       if (agent === undefined) throw new Error('Missing composed Agent')
       const view = this.ctx.sessionProjections.stateOf(agent.session, 'openubmc/cases')?.view
-      if (view?.cases.length !== 1 || view.cases[0]?.status !== 'completed') throw new Error('Case observation was not restored')
+      if (view?.cases.length !== 1 || view.cases[0]?.status !== 'mutation_outcome_unknown' || view.cases[0]?.operationStatus !== 'completed') throw new Error('Case observation was not restored')
       const command = await this.ctx.commands.execute(agent, '/case case-7', [], options.signal ?? new AbortController().signal)
       if (command?.result.kind !== 'success' || !command.result.text?.includes('inspect_mutation_records')) throw new Error('Native Case query failed')
       yield { type: 'block-start', index: 0, blockType: 'text' }
@@ -36,7 +36,7 @@ class CaseModel extends LlmAdapter {
       const [agent] = this.ctx.agents.roots()
       if (agent === undefined) throw new Error('Missing composed Agent')
       const observed = this.ctx.sessionProjections.stateOf(agent.session, 'openubmc/cases')?.view.cases[0]
-      if (observed?.status !== 'mutation_outcome_unknown' || !observed.isError) throw new Error('Structured failure observation is missing')
+      if (observed?.operationStatus !== 'mutation_outcome_unknown' || !observed.isError) throw new Error('Structured failure observation is missing')
     }
     yield { type: 'block-start', index: 0, blockType: 'tool-call' }
     yield { type: 'block-end', index: 0, block: {

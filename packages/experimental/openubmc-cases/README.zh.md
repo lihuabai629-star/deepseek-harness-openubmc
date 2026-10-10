@@ -21,9 +21,9 @@ kind: "package-reference"
 <a id="configuration-and-use"></a>
 ## 配置与使用
 
-将 `serverName` 设置为 Runtime MCP 客户端的确切命名空间，并启用该客户端的 `structuredContentInMeta`。[开发 profile（配置档）](../../../scripts/openubmc/README.zh.md)组合这两项设置。`/case` 列出已观察到的 Case；`/case case-7` 选择其中一个。未知 ID 返回错误。命令不会发起模型请求或查询设备。
+`serverName` 选择持久化元数据中的确切 MCP 命名空间；历史查询不需要在线 MCP 连接。采集新观察时，启用对应客户端的 `structuredContentInMeta`。[开发 profile（配置档）](../../../scripts/openubmc/README.zh.md)组合这两项设置。`/case` 列出已观察到的 Case；`/case case-7` 选择其中一个。未知 ID 返回错误。命令不会发起模型请求或查询设备。
 
-`openubmc/cases` Session 投影公开每个 Case 的最近观察：已报告的修订号、状态、原始工具名、失败标志、证据引用、后续动作、事件序号及继承标志。JSON 类型通过 `./types` 导出。重启时投影从已有 `tool/result` 元数据重建；checkpoint（检查点）仅是派生缓存。`agent_envelope` 下的字段优先于读取结果合并后的字段。格式错误的 Case 字段留下可见诊断，并保留上一次有效观察；后续有效观察会清除诊断。没有 Case ID 的结果及其他服务器的结果不改变视图。
+`openubmc/cases` Session 投影公开每个 Case 的最近观察：修订号、已报告的 Case 状态、操作状态、原始工具名、失败标志、证据引用、后续动作、事件序号及继承标志。JSON 类型通过 `./types` 导出。重启时投影从已有 `tool/result` 元数据重建；checkpoint（检查点）仅是派生缓存。仅接收 v1 agent-envelope 模式。存在 `agent_envelope` 时从中读取操作状态；Case 状态来自 context-runtime Case 投影或 capsule（状态摘要），未报告前保持未知。成功的状态和证据读取保留已知 Case 状态及恢复信息。完整 Case 读取替换已报告的 Case 字段；其他操作未报告证据引用时保留已有引用。格式错误的 Case 字段留下可见诊断，并保留上一次有效观察；后续有效观察会清除诊断。没有 Case ID 的结果及其他服务器的结果不改变视图。继承的 Case 信息保持标记，直到当前会话的完整 Case 报告替换它。
 
 每个组合仅注册一次此插件。卸载会移除命令和投影注册。插件没有 invariant（不变量）伴随模块：唯一状态是 Session 日志的纯投影，没有独立维护且可能偏离的 Case 存储。
 

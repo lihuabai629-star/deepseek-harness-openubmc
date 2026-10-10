@@ -19,11 +19,17 @@ for await (const line of lines) {
       if (!request.params._meta?.taskId) throw new Error('Missing trusted task identity')
       if (request.params.name === 'case_read') {
         if (request.params.arguments.case_id !== 'case-7') throw new Error('Unexpected Case')
-        result = { content: [{ type: 'text', text: 'Case 已读取' }], structuredContent: { case_id: 'case-7', status: 'completed', mutation_status: 'unknown', next_actions: ['inspect_mutation_records'] } }
+        result = { content: [{ type: 'text', text: 'Case 已读取' }], structuredContent: {
+          schema: 'openubmc.target-runtime.v1/context-runtime', case_id: 'case-7', revision: 2, status: 'mutation_outcome_unknown',
+          evidence_refs: [{ evidence_id: 'evidence-1' }], next_actions: ['inspect_mutation_records'],
+          agent_envelope: { schema: 'openubmc.target-runtime.v1/agent-envelope', case_id: 'case-7', revision: 2, status: 'completed',
+            operation: { name: 'case_read', status: 'completed' }, evidence_refs: [{ evidence_id: 'evidence-1' }], next_actions: ['inspect_mutation_records'] },
+        } }
         break
       }
       result = { isError: true, content: [{ type: 'text', text: '需要恢复' }], structuredContent: {
-        case_id: 'case-7', status: 'mutation_outcome_unknown', evidence_refs: ['evidence-1'], next_actions: ['case_read'],
+        schema: 'openubmc.target-runtime.v1/agent-envelope', case_id: 'case-7', revision: 2, status: 'mutation_outcome_unknown',
+        operation: { name: 'debug_run', status: 'mutation_outcome_unknown' }, evidence_refs: [{ evidence_id: 'evidence-1' }], next_actions: ['case_read'],
       } }
       break
     default:

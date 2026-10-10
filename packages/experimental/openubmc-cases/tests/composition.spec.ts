@@ -27,7 +27,7 @@ it('runs the failure, native query and persisted resume path through dsh', async
       label: 'native openUBMC Cases', cwd, configPath: patch,
       binScript: join(root, 'apps/cli/src/bin.ts'), sourceImport: 'tsx/esm', tsconfigPath: join(root, 'tsconfig.json'),
       binArgs: ['--profile', 'headless', '--patch', patch, ...args],
-      env: { DSH_CASE_RUNTIME_FIXTURE: join(root, 'snapshots/session/openubmc-recovery/workspace/runtime.mjs') },
+      env: { DSH_CASE_RUNTIME_FIXTURE: join(root, 'snapshots/session/openubmc-case-observations/workspace/runtime.mjs') },
     })
     expect((await run(['observe'])).stdout).toContain('CASE_COMMAND_OK')
     const sessionsDir = join(cwd, '.dsh/sessions')
@@ -38,7 +38,7 @@ it('runs the failure, native query and persisted resume path through dsh', async
     const log = await readFile(logPath, 'utf8')
     const header = JSON.parse(log.split('\n')[0]!) as SessionHeader
     const sessionId = header.id
-    expect(log).toContain('"structuredContent":{"case_id":"case-7","status":"mutation_outcome_unknown"')
+    expect(log).toContain('"operation":{"name":"debug_run","status":"mutation_outcome_unknown"}')
     expect(log).toContain('"name":"case"')
     expect((await run(['--session-id', sessionId, 'resume'])).stdout).toContain('CASE_RESUMED_OK')
     const after = await readFile(logPath, 'utf8')

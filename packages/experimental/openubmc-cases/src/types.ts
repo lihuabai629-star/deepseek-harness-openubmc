@@ -9,10 +9,14 @@ export type OpenUbmcCaseId = Branded<'openubmc.case'>
 /** Latest observed result for one Case; this carries no execution authorization. */
 export interface OpenUbmcCaseObservation {
   caseId: OpenUbmcCaseId
-  revision: number | null
-  status: string
+  revision: number
+  /** Case state reported by a Case projection or capsule, never an operation outcome. */
+  status: string | null
+  /** Outcome of the latest observed tool operation, independent of Case state. */
+  operationStatus: string
   toolName: string
   isError: boolean
+  /** Inherited Case information remains marked until a current-session full Case report replaces it. */
   inherited: boolean
   observedAtSeq: SessionSeq
   evidenceRefs: JsonValue[]
