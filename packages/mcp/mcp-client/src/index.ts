@@ -72,6 +72,8 @@ export interface StdioConfig {
   sessionIdMetadataKey?: string
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
+  /** Persist structured data with trusted server/tool identity on success and failure. */
+  structuredContentInMeta?: boolean
   /** Fail plugin activation when the initial connection or tool synchronization fails. */
   failOnStartupError: boolean
   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */
@@ -100,6 +102,8 @@ export interface StreamableHttpConfig {
   sessionIdMetadataKey?: string
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
+  /** Persist structured data with trusted server/tool identity on success and failure. */
+  structuredContentInMeta?: boolean
   /** Fail plugin activation when the initial connection or tool synchronization fails. */
   failOnStartupError: boolean
   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */
@@ -135,6 +139,7 @@ export const Config = z.union([
     toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
     sessionIdMetadataKey: z.string().min(1),
     structuredContentInText: z.boolean(),
+    structuredContentInMeta: z.boolean(),
     failOnStartupError: z.boolean().default(false),
     maxInstructionBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INSTRUCTION_BYTES),
     reconnect: Reconnect,
@@ -147,6 +152,7 @@ export const Config = z.union([
     toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
     sessionIdMetadataKey: z.string().min(1),
     structuredContentInText: z.boolean(),
+    structuredContentInMeta: z.boolean(),
     failOnStartupError: z.boolean().default(false),
     maxInstructionBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INSTRUCTION_BYTES),
     reconnect: Reconnect,

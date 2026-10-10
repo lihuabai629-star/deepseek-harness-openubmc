@@ -130,6 +130,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
   const opts: ToolBridgeOptions = {
     registrationFailure: 'contain',
     ...(config.structuredContentInText === undefined ? {} : { structuredContentInText: config.structuredContentInText }),
+    ...(config.structuredContentInMeta === undefined ? {} : { structuredContentInMeta: config.structuredContentInMeta }),
     serverName: config.serverName,
     toolCallTimeoutMs: config.toolCallTimeoutMs,
     ...(config.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: config.sessionIdMetadataKey }),

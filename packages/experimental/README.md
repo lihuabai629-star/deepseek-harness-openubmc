@@ -24,6 +24,7 @@ The experimental group contains prototype capabilities whose contracts can chang
 
 | Package | Role | ctx key |
 |---|---|---|
+| [`openubmc-cases`](openubmc-cases/README.md) | Read-only observed Cases and native /case command | Session projection |
 | [`speech-to-text`](speech-to-text/README.md) | Named speech recognition providers | `ctx.speechToText` |
 | [`speech-to-text-sensevoice`](speech-to-text-sensevoice/README.md) | Managed local SenseVoice inference | — |
 | [`api-speech-to-text`](api-speech-to-text/README.md) | Authenticated transient transcription Remote | `ctx.speechController` |

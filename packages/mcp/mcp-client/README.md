@@ -60,6 +60,7 @@ Add one entry per server; nothing else is required. After the harness starts, th
 | `url` / `headers` | — | streamable-http: endpoint URL and extra request headers |
 | `toolCallTimeoutMs` | `60,000` | Timeout per `tools/call` or resource request |
 | `sessionIdMetadataKey` | omitted | Inject the calling Session ID into `tools/call` `_meta` under this key; reject calls without an Agent |
+| `structuredContentInMeta` | omitted | Persist structured results with trusted server/tool identity on both success and failure |
 | `structuredContentInText` | omitted | Append successful structured content as JSON to model-visible, durable text |
 | `maxInstructionBytes` | `32,768` | Maximum UTF-8 bytes of server instructions including attribution; an oversized value rejects the connection |
 | `failOnStartupError` | `false` | Reject plugin activation when the initial connection or tool synchronization fails |
@@ -157,6 +158,9 @@ Read these pages when the package-level contract is not enough. They move from t
 -----
 
 <a id="model-experience"></a>
+
+The `structuredContentInMeta` option stores `{ mcp: { serverName, toolName, structuredContent? } }` in top-level result metadata. It leaves model-visible content unchanged. Failed calls retain this metadata through `ToolFailureError` and have no successful value. `createMcpToolDefinition` callers opt in with `metadataServerName`; the name comes from the provider, not the remote payload.
+
 ## Model Experience
 
 ### Discovered MCP tools

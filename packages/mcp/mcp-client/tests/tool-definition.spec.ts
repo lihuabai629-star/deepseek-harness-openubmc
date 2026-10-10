@@ -43,6 +43,29 @@ describe('MCP result callback adaptation', () => {
     }
   })
 
+  it.each([false, true])('retains trusted structured metadata without changing failure status (%s)', async (isError) => {
+    const ctx = new Context()
+    try {
+      await ctx.plugin(SystemPrompt)
+      await ctx.plugin(ToolRuntime)
+      const envelope = { case_id: 'case-7', status: isError ? 'blocked' : 'completed', evidence_refs: ['ev-1'] }
+      ctx.tools.register(createMcpToolDefinition(ctx, {
+        name: 'case_metadata', rawName: 'workflow.next', description: 'Read the next phase.',
+        inputSchema: { type: 'object' }, metadataServerName: 'openubmc-target-runtime',
+        call: async () => ({ content: [{ type: 'text', text: 'Observed.' }], structuredContent: envelope, isError }),
+      }))
+      const result = await ctx.tools.execute({
+        name: 'case_metadata', callId: ToolCallId('meta-call'), arguments: {}, signal: new AbortController().signal,
+      })
+      expect(result.isError).toBe(isError)
+      expect(result.meta).toEqual({ mcp: { serverName: 'openubmc-target-runtime', toolName: 'workflow.next', structuredContent: envelope } })
+      if (isError) expect(result.value).toBeUndefined()
+      expect(Object.isFrozen(result.meta)).toBe(true)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('keeps structured text beside image refusal diagnostics', async () => {
     const ctx = new Context()
     try {

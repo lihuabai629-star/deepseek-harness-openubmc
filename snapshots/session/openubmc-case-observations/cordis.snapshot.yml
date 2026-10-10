@@ -1,0 +1,36 @@
+- id: llm-deepseek
+  disabled: true
+
+- insert:
+    - id: llm-replay
+      name: '@deepseek-ai/dsh-llm-replay'
+      config:
+        providers:
+          - id: deepseek-official
+            name: DeepSeek
+            models:
+              - id: deepseek-v4-flash
+                contextWindow: 1000000
+                defaultMaxTokens: 256000
+                reasoningEfforts: [off, low, high, max]
+                defaultReasoningEffort: max
+
+- insert:
+    - id: openubmc-runtime
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: openubmc-target-runtime
+        command: !!js process.execPath
+        args: ['./runtime.mjs']
+        sessionIdMetadataKey: taskId
+        structuredContentInText: true
+        structuredContentInMeta: true
+        failOnStartupError: true
+        reconnect:
+          enabled: false
+- insert:
+    - id: openubmc-cases
+      name: '@deepseek-ai/dsh-experimental-openubmc-cases'
+      config:
+        serverName: openubmc-target-runtime

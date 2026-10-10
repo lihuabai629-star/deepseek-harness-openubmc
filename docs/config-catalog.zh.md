@@ -1034,6 +1034,23 @@ export interface InspectorOptions {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-inspector -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-cases -->
+<a id="deepseek-aidsh-experimental-openubmc-cases"></a>
+
+## `@deepseek-ai/dsh-experimental-openubmc-cases`
+
+- `inject`: `sessionProjections` · `commands`
+- `source`: [`packages/experimental/openubmc-cases/src/index.ts:18`](../packages/experimental/openubmc-cases/src/index.ts)
+
+```ts config-catalog
+/** Selects the trusted MCP server that owns Case observations. */
+export interface Config {
+  /** Exact MCP namespace; the corresponding client must enable structuredContentInMeta. */
+  serverName: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-cases -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-ptc-runtime-python -->
 <a id="deepseek-aidsh-experimental-ptc-runtime-python"></a>
 
@@ -2016,7 +2033,7 @@ export interface LspLocalServerConfig {
 ## `@deepseek-ai/dsh-mcp-client`
 
 - `inject`: `tools`
-- `source`: [`packages/mcp/mcp-client/src/index.ts:112`](../packages/mcp/mcp-client/src/index.ts)
+- `source`: [`packages/mcp/mcp-client/src/index.ts:116`](../packages/mcp/mcp-client/src/index.ts)
 
 ```ts config-catalog
 /** Configuration for one stdio or Streamable HTTP MCP server. */
@@ -2046,6 +2063,8 @@ export interface StdioConfig {
   sessionIdMetadataKey?: string
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
+  /** Persist structured data with trusted server/tool identity on success and failure. */
+  structuredContentInMeta?: boolean
   /** Fail plugin activation when the initial connection or tool synchronization fails. */
   failOnStartupError: boolean
   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */
@@ -2074,6 +2093,8 @@ export interface StreamableHttpConfig {
   sessionIdMetadataKey?: string
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
+  /** Persist structured data with trusted server/tool identity on success and failure. */
+  structuredContentInMeta?: boolean
   /** Fail plugin activation when the initial connection or tool synchronization fails. */
   failOnStartupError: boolean
   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */

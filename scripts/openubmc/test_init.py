@@ -31,6 +31,10 @@ class ProfileTests(unittest.TestCase):
                 path.touch()
             home = root / "home"
             module.initialize(workflow, home, "headless", "node", "python3")
+            case_module = home / "profiles/openubmc/node_modules/@deepseek-ai/dsh-experimental-openubmc-cases"
+            self.assertTrue((case_module / "package.json").is_file())
+            profile_manifest = json.loads((home / "profiles/openubmc/package.json").read_text())
+            self.assertIn("@deepseek-ai/dsh-experimental-openubmc-cases", profile_manifest["dependencies"])
             deployed = home / "openubmc-skills/openubmc-dt-testing"
             self.assertIn(str(skill), (deployed / "SKILL.md").read_text())
             self.assertEqual((deployed / "scripts/check.py").read_text(), "print('ok')\n")
@@ -38,9 +42,11 @@ class ProfileTests(unittest.TestCase):
             original = patch_path.read_bytes()
             patch = json.loads(original)
             self.assertFalse(patch[0]["config"]["includeDefaultRoots"])
-            runtime = patch[1]["insert"][0]["config"]
+            runtime = next(entry["config"] for entry in patch[1]["insert"] if entry["id"] == "openubmc-target-runtime")
             self.assertEqual(runtime["sessionIdMetadataKey"], "taskId")
             self.assertTrue(runtime["structuredContentInText"])
+            self.assertTrue(runtime["structuredContentInMeta"])
+            self.assertEqual(patch[1]["insert"][0]["name"], "@deepseek-ai/dsh-experimental-openubmc-cases")
             self.assertEqual(runtime["env"]["OPENUBMC_CREDENTIALS_FILE"], str(home / "credentials.env"))
             with self.assertRaises(FileExistsError):
                 module.initialize(workflow, home, "web", "node", "python3")

@@ -26,7 +26,7 @@ corepack pnpm dsh --profile openubmc "Read the openUBMC runtime status."
 
 执行最后一条命令前，通过 DSH 现有凭据设置或环境配置模型。`--template web` 选择 Web bundle；如果已有其他 Web 服务运行，应在生成的配置中设置监听端口后再启动。仅通过 `dsh` 启动；初始化脚本不会启动服务或请求模型。
 
-初始化脚本拒绝已有 home。它创建 `profiles/openubmc/cordis.patch.yml`、私有 Runtime 状态目录位置，以及包含清单 full 配置全部技能的 Skill 根目录。Skill 名称遵循清单映射；支持文件通过符号链接指向源码。Skill 正文中已知的 home 相对脚本路径会替换为源码路径。正文或清单变化后，重新创建一个新 home。源码目录必须保持可用。
+初始化脚本拒绝已有 home。它创建 `profiles/openubmc/cordis.patch.yml`、私有 Runtime 状态目录位置，以及包含清单 full 配置全部技能的 Skill 根目录。Skill 名称遵循清单映射；支持文件通过符号链接指向源码。Skill 正文中已知的 home 相对脚本路径会替换为源码路径。正文或清单变化后，重新创建一个新 home。工作流和 DSH 源码目录必须保持可用；profile 链接此 DSH 源码中的原生 Case 包。
 
 ## 离线启动检查
 
@@ -41,7 +41,7 @@ corepack pnpm dsh --profile openubmc \
 
 ## 身份与恢复
 
-MCP 桥将调用方 Session ID 注入 `params._meta.taskId`。恢复同一 Session 时，Host 和 MCP 重启后仍沿用该 ID；fork 使用不同 ID。没有 Agent 的调用会在分发前失败。模型参数无法替换请求元数据。Runtime 负责 task 与 Case 的关联、证据和工作流状态；DSH 将返回的结构化数据作为摘要旁的文本写入日志，包括失败结果，不创建另一套工作流状态机。
+MCP 桥将调用方 Session ID 注入 `params._meta.taskId`。恢复同一 Session 时，Host 和 MCP 重启后仍沿用该 ID；fork 使用不同 ID。没有 Agent 的调用会在分发前失败。模型参数无法替换请求元数据。Runtime 负责 task 与 Case 的关联、证据和工作流状态；DSH 将返回的结构化数据同时保留为摘要旁的文本和持久化元数据，包括失败结果。[Case 插件](../../packages/experimental/openubmc-cases/README.zh.md)从该元数据派生观察。在原生命令界面使用 `/case` 查看；此查询不调用 Runtime，也不授予执行权限。
 
 此配置给 Runtime 调用 660 秒，允许常规 600 秒诊断截止时间内的操作结束。使用其他领域截止时间时，调整 `toolCallTimeoutMs`。取消和超时不能证明设备操作已经停止或回滚。重试结果不确定的操作前，先读取 Case 和变更记录。
 

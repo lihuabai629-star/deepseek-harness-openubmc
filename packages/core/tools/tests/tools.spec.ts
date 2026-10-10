@@ -10,6 +10,7 @@ import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import ApprovalService, { type ApprovalOutcome, type ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
 import ToolRuntime, {
   defineContentToolFixture, defineTool, JsonSchemaError, parameterSchemaSpecToJsonSchema, validateArgs, ToolArgsError, ToolNotFoundError,
+  ToolFailureError,
   TOOL_ABORTED, TOOL_ABORTED_BEFORE_DISPATCH,
   type InferArgs, type ParameterSchemaSpec, type PreToolDecision, type PostToolDecision,
   type JsonSchemaNode, type ToolDefinition, type ToolDispatchExecution, type ToolExecutionResult, type ToolExecutionToken,
@@ -52,6 +53,32 @@ const echoTool = defineTool({
 })
 
 describe('ToolRuntime', () => {
+  it('retains JSON metadata on authored failures through policies and final observers', async () => {
+    const ctx = await setup()
+    try {
+      const meta = { caseId: 'case-7', status: 'blocked' }
+      ctx.tools.register(defineContentToolFixture({
+        name: 'failed-case', description: '', parameters: {},
+        async execute() { throw new ToolFailureError('Needs recovery', meta) },
+      }))
+      let observed: Readonly<ToolExecutionResult> | undefined
+      ctx.on('tools/result', (_exec, result) => { observed = result })
+      ctx.on('tools/post-execute', (_exec, result, next) => {
+        expect(result.meta).toEqual(meta)
+        return next()
+      })
+      const result = await ctx.tools.execute({ name: 'failed-case', callId: ToolCallId('failure'), arguments: {}, signal: testToolSignal })
+      expect(result).toMatchObject({ isError: true, meta, error: { message: 'Needs recovery' } })
+      expect(result.value).toBeUndefined()
+      expect(observed).toBe(result)
+      meta.status = 'changed by caller'
+      expect(result.meta).toEqual({ caseId: 'case-7', status: 'blocked' })
+      expect(Object.isFrozen(result.meta)).toBe(true)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('preserves deferred loading through registry and prompt schema projection', async () => {
     const ctx = await setup()
     try {

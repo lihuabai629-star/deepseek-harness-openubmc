@@ -1,0 +1,31 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/openubmc-cases/README.md
+/:
+  en: ca5df98b52ecc54d
+  zh: 7f98858a92f07a1f
+/deepseek-ai-dsh-experimental-openubmc-cases:
+  en: 92f2184bb31d9965
+  zh: b2594ae3b51a0e12
+/deepseek-ai-dsh-experimental-openubmc-cases/summary:
+  en: 7cf8275b874d1512
+  zh: 16932fe9e0923498
+/deepseek-ai-dsh-experimental-openubmc-cases/table-of-contents:
+  en: 7a92986f80e6f02b
+  zh: 947f9006662d9b6b
+/deepseek-ai-dsh-experimental-openubmc-cases/configuration-and-use:
+  en: 04c4d57b341736d2
+  zh: 4f90282faff06616
+/deepseek-ai-dsh-experimental-openubmc-cases/model-experience:
+  en: c7bd0fb69e1c5d2b
+  zh: fd5a5949b543e8d9
+/deepseek-ai-dsh-experimental-openubmc-cases/model-experience/kv-cache-effect:
+  en: 082c53e891a95603
+  zh: 9b45c72b72359071
+/deepseek-ai-dsh-experimental-openubmc-cases/known-limitations-and-deferred-work:
+  en: f10da62b9af4b542
+  zh: a107a00a3f2c705e
+/deepseek-ai-dsh-experimental-openubmc-cases/known-limitations-and-deferred-work/dev-note:
+  en: 0a1253c6f7b5e8b9
+  zh: 9f56528562c7c914

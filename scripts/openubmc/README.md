@@ -26,7 +26,7 @@ corepack pnpm dsh --profile openubmc "Read the openUBMC runtime status."
 
 Configure the model through DSH's existing credential settings or environment before the last command. `--template web` selects the Web bundle; configure its listen port in the generated profile before launch when another Web host is running. Launch only through `dsh`; the initializer does not start a server or model request.
 
-The initializer refuses an existing home. It creates `profiles/openubmc/cordis.patch.yml`, a private Runtime state directory location, and a Skill root containing the manifest's full profile. Skill names follow the manifest mappings; support files are symlinked to the checkout. Skill bodies replace known home-relative script paths with checkout paths. Recreate a fresh home to pick up changes to those bodies or the manifest. The checkout must remain available.
+The initializer refuses an existing home. It creates `profiles/openubmc/cordis.patch.yml`, a private Runtime state directory location, and a Skill root containing the manifest's full profile. Skill names follow the manifest mappings; support files are symlinked to the checkout. Skill bodies replace known home-relative script paths with checkout paths. Recreate a fresh home to pick up changes to those bodies or the manifest. The workflow and DSH checkouts must remain available; the profile links the native Case package from this DSH checkout.
 
 ## Offline startup check
 
@@ -41,7 +41,7 @@ A successful run prints `OPENUBMC_OFFLINE_OK` after receiving the structured com
 
 ## Identity and recovery
 
-The MCP bridge injects the calling Session ID as `params._meta.taskId`. Resuming the same Session reuses that ID across Host and MCP restarts; a fork has a different ID. Calls without an Agent fail before dispatch. Model arguments cannot replace request metadata. Runtime owns task-to-Case associations, evidence and workflow state; DSH logs the returned structured data as text beside the summary, including failures, without creating another workflow state machine.
+The MCP bridge injects the calling Session ID as `params._meta.taskId`. Resuming the same Session reuses that ID across Host and MCP restarts; a fork has a different ID. Calls without an Agent fail before dispatch. Model arguments cannot replace request metadata. Runtime owns task-to-Case associations, evidence and workflow state; DSH retains returned structured data both as text beside the summary and as durable metadata, including failures. The [Case plugin](../../packages/experimental/openubmc-cases/README.md) derives observations from that metadata. Use `/case` in a native command interface to view them; this query does not call Runtime or grant execution authority.
 
 The profile gives Runtime calls 660 seconds, allowing the usual 600-second diagnostic deadline to finish. Adjust `toolCallTimeoutMs` for another domain deadline. Cancellation and timeout do not establish whether a device action stopped or rolled back. Read the Case and mutation records before retrying an uncertain action.
 

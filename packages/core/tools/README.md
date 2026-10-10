@@ -156,6 +156,9 @@ The package-level contract is enough for most consumers; read these when you nee
 -----
 
 <a id="model-experience"></a>
+
+Tool bodies may throw `ToolFailureError(message, meta)` to retain JSON failure facts in result metadata. The result remains failed and has no successful canonical value; ordinary throws keep their existing text-only behavior. Post-execute policies may still replace or block the outcome. The final metadata is detached and frozen with the result.
+
 ## Model Experience
 
 ### Normal tool schemas

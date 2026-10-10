@@ -20,7 +20,7 @@ import { isImageAdmissionError } from '@deepseek-ai/dsh-attachment'
 import type { AttachmentStore, ImageAttachmentRef, ImageMediaType, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { ToolDefinition, ToolExecution, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
-import { assertSupportedJsonSchema } from '@deepseek-ai/dsh-tools'
+import { assertSupportedJsonSchema, ToolFailureError } from '@deepseek-ai/dsh-tools'
 import type { JsonSchemaNode } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
@@ -34,6 +34,8 @@ export interface ToolBridgeOptions {
   sessionIdMetadataKey?: string
   /** Append structured success data to model-visible text. */
   structuredContentInText?: boolean
+  /** Persist structured data with trusted MCP source identity in result metadata. */
+  structuredContentInMeta?: boolean
 }
 
 /** State for one sync generation: the current set of disposers keyed by public name. */
@@ -139,6 +141,7 @@ export async function syncTools(
       inputSchema: tool.inputSchema,
       outputSchema: tool.outputSchema,
       structuredContentInText: opts.structuredContentInText === true,
+      ...(opts.structuredContentInMeta === true ? { metadataServerName: opts.serverName } : {}),
       taskRequired: tool.execution?.taskSupport === 'required',
       call: (args, execution) => {
         const key = opts.sessionIdMetadataKey
@@ -224,6 +227,8 @@ export interface McpToolDefinitionOptions {
   taskRequired?: boolean
   /** Append structured success data to model-visible text; errors always retain it. */
   structuredContentInText?: boolean
+  /** Trusted server identity enabling durable MCP result metadata; omission disables it. */
+  metadataServerName?: string
   /**
    * Obtain one raw MCP result from the provider.
    * @param args - model arguments admitted by the ToolRuntime.
@@ -250,7 +255,9 @@ export function createMcpToolDefinition(
     name,
     description,
     parameters: inputSchema,
-    output: createOutput(rawName, supportedOutputSchema(options.outputSchema), options.structuredContentInText === true),
+    output: createOutput(
+      rawName, supportedOutputSchema(options.outputSchema), options.structuredContentInText === true, options.metadataServerName,
+    ),
     execute: createExecutor(ctx, options, projections),
     projectContent(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>) {
       const projection = projections.get(exec)
@@ -265,7 +272,10 @@ export function createMcpToolDefinition(
 }
 
 /** Build the canonical result schema and existing Native text projection. */
-function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefined, includeStructured: boolean): ToolDefinition['output'] {
+function createOutput(
+  rawName: string, structuredSchema: JsonSchemaNode | undefined,
+  includeStructured: boolean, metadataServerName: string | undefined,
+): ToolDefinition['output'] {
   return {
     schema: {
       type: 'object',
@@ -276,11 +286,19 @@ function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefi
       required: structuredSchema === undefined ? ['content'] : ['content', 'structuredContent'],
       additionalProperties: false,
     },
+    ...(metadataServerName === undefined ? {} : {
+      presentationMeta: (_args: unknown, value: JsonValue) => mcpMetadata(metadataServerName, rawName, value as McpResult),
+    }),
     render(_args: unknown, value: JsonValue) {
       const result = value as McpResult
       return [{ type: 'text', text: extractText(result.content, rawName) + structuredText(result, includeStructured) }]
     },
   }
+}
+
+/** Preserve validated protocol data separately from model-visible prose. */
+function mcpMetadata(serverName: string, toolName: string, result: McpResult): JsonValue {
+  return { mcp: { serverName, toolName, ...result.structuredContent === undefined ? {} : { structuredContent: result.structuredContent } } }
 }
 
 /** Serialize structured data only when explicitly included in successful model context. */
@@ -316,18 +334,18 @@ function createExecutor(
     const content = result.content as unknown as JsonValue[]
     const text = extractText(content, rawName)
 
-    // MCP isError → throw so ToolRuntime produces an isError result for the model.
-    if (result.isError === true) {
-      throw new Error(result.structuredContent === undefined
-        ? text
-        : `${text}\n${JSON.stringify(result.structuredContent)}`)
-    }
-
     const value: McpResult = {
       content,
       ...result.structuredContent !== undefined
         ? { structuredContent: result.structuredContent as JsonValue }
         : {},
+    }
+    if (result.isError === true) {
+      const message = text + structuredText(value, true)
+      if (options.metadataServerName !== undefined) {
+        throw new ToolFailureError(message, mcpMetadata(options.metadataServerName, rawName, value))
+      }
+      throw new Error(message)
     }
     if (containsImage(content)) {
       const suffix = structuredText(value, options.structuredContentInText === true)
