@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-11",
+  "component": "network_adapter",
+  "source_version": "1.500.58",
+  "candidate_base_revision": "c19b2b52d14f326032f4cf9ac8d988c7110a65b4",
+  "patch_sha256": "7f397da1151fa67d2fe2b9fe7ca860582dd270b7161f4dabb1e84955694e10e5",
+  "original_candidate_untouched": true,
+  "dependency_graph": {
+    "scope": "development component checks",
+    "historical_mdb_interface": "1.110.16",
+    "selected_mdb_interface": "1.110.17",
+    "target_equivalence": "unverified",
+    "graph_sha256": "1f1b687f4642db17c2752c389784f068890bfec645a764e28101353d554612a4"
+  },
+  "before": {
+    "executed": 45,
+    "passed": 44,
+    "failed": 1
+  },
+  "after": {
+    "executed": 46,
+    "passed": 46,
+    "failed": 0
+  },
+  "regression": "A one-query poll budget serves all four ports while keeping initial-failure retry and BMA version stability.",
+  "unit_log_sha256": "8fbc2a871dc4679e00d017fde0fd2d93f9f1e992ac02066c3496b1364b48a032",
+  "integration": {
+    "entry": "test/integration/test_network_adapter.lua",
+    "command": "bingo test -it --package_info <task-private-development-graph>",
+    "process_exit_code": 0,
+    "completion_marker": true,
+    "entry_failure_marker": false,
+    "individual_case_count": "not reported by this entry",
+    "log_sha256": "229a8d558b6c9adeabe5929ad03623330ca489a3fe804d64e07adb6259feb07d"
+  },
+  "delivery": {
+    "source_patch": "local_only",
+    "package_published": false,
+    "hpm_built": false,
+    "device_patch_applied": false
+  },
+  "limitations": [
+    "The selected test graph does not establish deployed component or SDK equivalence.",
+    "Component IT uses local fixture services and does not qualify target hardware.",
+    "No product-compatible firmware upgrade and original-version rollback pair has been verified."
+  ],
+  "unit_command": "bingo test -ut -f TestNativeNcsi --package_info <task-private-development-graph>",
+  "runtime_record": {
+    "same_case": true,
+    "case_id": "case-880a9ed54a83f70cec3205bc",
+    "revision": 45,
+    "phase_type": "developer.change",
+    "phase_status": "completed",
+    "recording_call_status": "completed",
+    "local_patch": true,
+    "ut": {
+      "executed": 46,
+      "passed": 46,
+      "failed": 0
+    },
+    "it_completion_marker": true,
+    "target_equivalence": "unverified",
+    "earlier_build_failure_retained": true
+  },
+  "web": {
+    "homepage_status": 200,
+    "cards": 61,
+    "case_id": "case-880a9ed54a83f70cec3205bc",
+    "revision_45": true,
+    "completed_developer_phase": true,
+    "failed_build_phase": true,
+    "native_refresh": true,
+    "reload_cards": 62,
+    "page_errors": 0
+  }
+}

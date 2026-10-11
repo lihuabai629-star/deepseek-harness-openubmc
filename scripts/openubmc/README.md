@@ -79,6 +79,12 @@ The [provider qualification record](qualification/2026-10-11.json) reports live 
 
 ## Service staging
 
+A source CLI wrapper that preserves the caller’s working directory must set `TSX_TSCONFIG_PATH` to the snapshot’s `tsconfig.json` and load the snapshot’s `tsx/esm` hook. Workspace imports depend on those source mappings; an absolute CLI path alone does not select them.
+
 Use a separate systemd unit, private home and loopback port for a source deployment. Keep authentication URLs and service logs private. Stop that unit before profile lifecycle changes. The install-time template selects its application carrier; update retains that carrier. Use another headless profile to inspect a private Case snapshot from the CLI rather than passing headless flags to the Web carrier.
 
 A software rollback selects the previous executable and its compatible home. Builds without the required `openubmc/inspection` event refuse the new Session logs; retain the candidate home for recovery rather than opening it with the older build. A consistent state snapshot uses SQLite backup and excludes copied process locks. The [deployment record](qualification/2026-10-11-deployment.json) reports hosted CI, isolated service restart, native Case continuity, old-runtime startup and restoration of the source runtime. The production service is outside that rehearsal.
+
+The [production deployment record](qualification/2026-10-11-production.json) covers an independently rebuilt software snapshot with verified files and resolver links, the installed loopback service, native Case refresh/reload, live model/KB calls and old-runtime rollback. Software rollback selects the retained older runtime and its separate home; it preserves the newer Session files for restoration. Existing credentials, the original Web profile and the other user MCP entries remain available.
+
+The [component qualification record](qualification/2026-10-11-component.json) reports selected NC-SI unit tests and the local component integration entry using a repaired development dependency graph. It identifies a local polling-fairness patch by digest; it does not establish deployed-source equivalence or qualify a firmware upgrade.
