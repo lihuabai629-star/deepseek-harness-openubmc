@@ -39,6 +39,8 @@ corepack pnpm dsh --profile openubmc \
 
 成功运行会在收到结构化完成状态后输出 `OPENUBMC_OFFLINE_OK`。该检查无需模型凭据或设备访问，验证源码配置、MCP 工具发现和模型可见结果投影；不验证知识检索或真实模型决策。工作流源码中必须已安装 Runtime 和 KB 依赖。
 
+[openUBMC CI 工作流](../../.github/workflows/openubmc.yml) 在本集成仓库的 GitHub 托管 Linux runner 上运行。它构建 DSH，使用固定版本的 Python Runtime 源码检查原生 MCP、Case、授权和恢复行为，重放已记录的 Session 与 SDK 输出，并验证托管 profile 和 Web 查看功能。它不使用模型、KB 或设备凭据，也不验证真实提供方或固件兼容性。本地 Python SDK 检查从 `PATH` 解析受支持的 Node 可执行文件。
+
 ## 身份与恢复
 
 MCP 桥将调用方 Session ID 注入 `params._meta.taskId`。恢复同一 Session 时，Host 和 MCP 重启后仍沿用该 ID；fork 使用不同 ID。没有 Agent 的调用会在分发前失败。模型参数无法替换请求元数据。Runtime 负责 task 与 Case 的关联、证据和工作流状态；DSH 将返回的结构化数据同时保留为摘要旁的文本和持久化元数据，包括失败结果。[Case 插件](../../packages/experimental/openubmc-cases/README.zh.md)从该元数据派生观察。在原生命令界面使用 `/case` 查看；此查询不调用 Runtime，也不授予执行权限。

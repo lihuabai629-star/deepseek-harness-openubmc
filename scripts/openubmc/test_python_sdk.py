@@ -2,6 +2,8 @@
 import json
 import os
 from pathlib import Path
+import shlex
+import shutil
 import tempfile
 import unittest
 
@@ -31,7 +33,9 @@ class PythonSdkInspectionTests(unittest.TestCase):
             patch = cwd / 'inspection.yml'
             patch.write_text("- id: session-persistence-jsonl\n  config:\n    root: " + json.dumps(str(home / "sessions")) + "\n    compression: none\n" + (SCENARIO / 'cordis.snapshot.yml').read_text().replace("'./workspace/human.mjs'", json.dumps(str(SCENARIO / 'workspace/human.mjs'))))
             dsh = cwd / 'dsh'
-            dsh.write_text('#!/bin/sh\nexec /opt/node-v24.19.0/bin/node ' + str(ROOT / 'apps/cli/lib/bin.js') + ' "$@"\n')
+            node = shutil.which('node')
+            self.assertIsNotNone(node, 'The supported Node executable must be on PATH')
+            dsh.write_text('#!/bin/sh\nexec ' + shlex.quote(node) + ' ' + shlex.quote(str(ROOT / 'apps/cli/lib/bin.js')) + ' "$@"\n')
             dsh.chmod(0o700)
             with DeepSeekHarness(DeepSeekHarnessConfig(dsh_bin=str(dsh), dsh_home=str(home), cwd=str(cwd), patches=(str(patch),), env={'DSH_SNAPSHOT': 'replay', 'DSH_SNAPSHOT_FILE': str(SCENARIO / 'session.v4.jsonl'), 'DSH_SNAPSHOT_OVERRIDE': str(SCENARIO / 'replay.override.json')}, request_timeout_seconds=30, shutdown_timeout_seconds=5)) as sdk:
                 with sdk.client.subscribe_notifications() as subscription:

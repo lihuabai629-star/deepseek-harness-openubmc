@@ -39,6 +39,8 @@ corepack pnpm dsh --profile openubmc \
 
 A successful run prints `OPENUBMC_OFFLINE_OK` after receiving the structured completed status. This checks the source profile, MCP discovery and model-visible result projection without model credentials or device access; it does not test knowledge search or real-model decisions. Runtime and KB dependencies must already be installed in the workflow checkout.
 
+The [openUBMC CI workflow](../../.github/workflows/openubmc.yml) runs on a GitHub-hosted Linux runner in this integration repository. It builds DSH, checks native MCP/Case/authority/recovery behavior against pinned Python Runtime source, replays recorded Session and SDK output, and verifies managed profiles and Web inspection. It uses no model, KB or device credentials and does not qualify live providers or firmware compatibility. Local Python SDK checks resolve the supported Node executable from `PATH`.
+
 ## Identity and recovery
 
 The MCP bridge injects the calling Session ID as `params._meta.taskId`. Resuming the same Session reuses that ID across Host and MCP restarts; a fork has a different ID. Calls without an Agent fail before dispatch. Model arguments cannot replace request metadata. Runtime owns task-to-Case associations, evidence and workflow state; DSH retains returned structured data both as text beside the summary and as durable metadata, including failures. The [Case plugin](../../packages/experimental/openubmc-cases/README.md) derives observations from that metadata. Use `/case` in a native command interface to view them; this query does not call Runtime or grant execution authority.
