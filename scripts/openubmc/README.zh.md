@@ -73,4 +73,4 @@ python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
 
 回滚恢复 profile/Skill 配置，不恢复可执行软件。Runtime、KB 和 DSH 代码仍保留在各自 checkout 中；摘要固定适配器和 Runtime/KB 启动文件、原生包源码与构建产物，以及依赖锁文件。`check`、修复和回滚会拒绝已变化的固定文件。使用 update 选择变化后的执行代码，或先恢复预期 checkout 再回滚。此检查不验证模型端点、KB 登录或设备连接。卸载保留会话、Runtime 状态、凭据、用户配置和各代配置。
 
-[资格验证记录](qualification/2026-10-11.json) 包含真实模型与 KB 检索、持久化 Runtime 阶段和工件观察，以及离线设备后端的进程重启续接结果。记录区分工作流阶段完成与未验证的业务验收，不包含知识原文或凭据值。
+[提供方资格验证记录](qualification/2026-10-11.json) 包含真实模型与 KB 检索、持久化 Runtime 阶段和工件观察，以及离线设备后端的进程重启续接结果。独立的[真实目标记录](qualification/2026-10-11-real-target.json) 覆盖 A860 A5 上的诊断、MDB 身份核对、临时文件 Apply、DSH 重启和校验和保护回退。两份记录均不代表业务验收或固件升级兼容性，也不包含凭据和原始设备日志。
