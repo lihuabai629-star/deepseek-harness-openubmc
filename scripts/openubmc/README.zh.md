@@ -87,4 +87,4 @@ python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
 
 [正式部署记录](qualification/2026-10-11-production.json) 包含独立源码快照重建、文件和依赖解析链接校验、已安装的回环服务、原生 Case 刷新与重载、真实模型和 KB 调用，以及旧 Runtime 回退。软件回退使用保留的旧 Runtime 及其独立 home，并保留新版 Session 文件以便恢复。既有凭据、原 Web profile 和其他用户 MCP 条目继续可用。
 
-[组件验证记录](qualification/2026-10-11-component.json) 报告了使用修复后的开发依赖图运行的 NC-SI 单元测试和本地组件集成入口，并用摘要标识本地轮询公平性补丁；它不证明部署源码等价，也不验证固件升级。
+[组件验证记录](qualification/2026-10-11-component.json) 报告了使用修复后的开发依赖图运行的 NC-SI 单元测试和本地组件集成入口。[业务热补丁记录](qualification/2026-10-11-business.json) 覆盖 collector、调用方和 I350 配置的校验值匹配、collector 临时替换、四通道查询覆盖，以及通过同一 DSH Session 和 Runtime Case 恢复原文件。这些记录不证明完整固件与源码等价，也不验证固件升级。

@@ -1,0 +1,233 @@
+{
+  "date": "2026-10-11",
+  "scope": "Temporary NC-SI business Lua qualification through the installed DSH profile",
+  "execution": {
+    "harness": "installed DSH source/dependency snapshot",
+    "driver": "Scripted LLM adapter selecting reviewed tools; real DSH loop, MCP adapter, Python Runtime and target transports",
+    "same_session_and_case": true,
+    "case_id": "case-880a9ed54a83f70cec3205bc",
+    "final_case_revision": 87,
+    "target_epoch_before": 2,
+    "target_epoch_after": 4,
+    "unknown_mutation_operations": 0,
+    "execution_grants_revoked": true
+  },
+  "source": {
+    "component_qualification": "2026-10-11-component.json",
+    "original_candidate_untouched": true,
+    "matching_deployed_files": [
+      {
+        "path": "lualib/ncsi/ncsi_native_collector.lua",
+        "sha256": "3e77fac7df5f2c50d595169d8a8d59ca2ae861ee514ede5dc870a097d8e93638"
+      },
+      {
+        "path": "lualib/ncsi/ncsi_comm.lua",
+        "sha256": "a5814c0a0ac852375135a05751c699d87b0d015dec402ed66c3dff9c2abcd33a"
+      }
+    ],
+    "matching_deployed_configuration": {
+      "path": "lualib/hardware_config/I350AM4.lua",
+      "sha256": "74793247e480f710a702c28cd8aa5a4142f3e70f76e2df684705e03c989eafc7"
+    },
+    "equivalence_scope": "The collector, its direct caller and I350 profile; other NC-SI files and the complete product dependency graph are not qualified."
+  },
+  "apply": {
+    "status": "completed",
+    "journal_stage": "verified",
+    "target_epoch": 3,
+    "before_sha256": "3e77fac7df5f2c50d595169d8a8d59ca2ae861ee514ede5dc870a097d8e93638",
+    "after_sha256": "ccc9b515705c50d5d3c54db25e19ec08c1fdc1504b91d3ea0411ca19d1fa577e",
+    "before_metadata": {
+      "gid": 0,
+      "mode": "444",
+      "uid": 0
+    },
+    "after_metadata": {
+      "gid": 0,
+      "mode": "444",
+      "uid": 0
+    },
+    "backup_created": true,
+    "restart_scope": "skynet",
+    "root_mount_before": [
+      "ro",
+      "relatime"
+    ],
+    "root_mount_restored": true
+  },
+  "verification": {
+    "status": "completed",
+    "mdb_ports": [
+      {
+        "PortID": "0",
+        "PermanentMACAddress": true,
+        "MACAddress": true,
+        "FirmwareVersion": "00.49.00.01",
+        "LinkStatus": "Connected"
+      },
+      {
+        "PortID": "1",
+        "PermanentMACAddress": true,
+        "MACAddress": true,
+        "FirmwareVersion": "1.63,0x800009fa",
+        "LinkStatus": "Disconnected"
+      },
+      {
+        "PortID": "2",
+        "PermanentMACAddress": true,
+        "MACAddress": true,
+        "FirmwareVersion": "00.49.00.01",
+        "LinkStatus": "Disconnected"
+      },
+      {
+        "PortID": "3",
+        "PermanentMACAddress": true,
+        "MACAddress": true,
+        "FirmwareVersion": "1.63,0x800009fa",
+        "LinkStatus": "Disconnected"
+      }
+    ],
+    "query_coverage": {
+      "mac_success_channels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "version_success_records": 3,
+      "query_failure_records": 0,
+      "all_log_entries_complete": true,
+      "evidence_id": "7d497e9b3da113f8574b49ea823b6c060e496e8c966897e9706b67f0193f3ea4"
+    },
+    "evidence_ids": [
+      "c6e1e101885d98c4482fdeb0d1cd36f476d573a7148aca2e55efbc1481b43831"
+    ],
+    "target_epoch": 3,
+    "failed_selectors_after_rediscovery": 0
+  },
+  "rollback": {
+    "status": "completed",
+    "journal_stage": "verified",
+    "target_epoch": 4,
+    "restored_sha256": "3e77fac7df5f2c50d595169d8a8d59ca2ae861ee514ede5dc870a097d8e93638",
+    "metadata": {
+      "gid": 0,
+      "mode": "444",
+      "uid": 0
+    },
+    "restart_scope": "skynet",
+    "root_mount_restored": true,
+    "backup_retained": true,
+    "fresh_target_verification": {
+      "status": "completed",
+      "target_epoch": 4,
+      "mdb_ports": [
+        {
+          "PortID": "0",
+          "PermanentMACAddress": true,
+          "MACAddress": true,
+          "FirmwareVersion": "1.63,0x800009fa",
+          "LinkStatus": "Connected"
+        },
+        {
+          "PortID": "1",
+          "PermanentMACAddress": true,
+          "MACAddress": true,
+          "FirmwareVersion": "1.63,0x800009fa",
+          "LinkStatus": "Disconnected"
+        },
+        {
+          "PortID": "2",
+          "PermanentMACAddress": true,
+          "MACAddress": true,
+          "FirmwareVersion": "1.63,0x800009fa",
+          "LinkStatus": "Disconnected"
+        },
+        {
+          "PortID": "3",
+          "PermanentMACAddress": true,
+          "MACAddress": true,
+          "FirmwareVersion": "1.63,0x800009fa",
+          "LinkStatus": "Disconnected"
+        }
+      ],
+      "freshness_status": "complete",
+      "stale_evidence": [],
+      "failed_selectors": [],
+      "evidence_ids": [
+        "00a07455fb1dd5f1e9643d77f4f6f1cd30fbb87337c8637b8c35abed80cfdf36"
+      ]
+    },
+    "framework_startup": {
+      "total_components": 57,
+      "normal_components": 57,
+      "new_startup_record_after_restart": true
+    }
+  },
+  "retained_failures": [
+    {
+      "operation": "Initial MDB collection",
+      "status": "partial",
+      "reason": "NcsiNCInfo and NcsiNCPortInfo are not exposed MDB classes."
+    },
+    {
+      "operation": "First post-Apply MDB read",
+      "status": "partial",
+      "reason": "Four pre-restart object names were no longer present. Rediscovery of NetworkAdapter and NetworkPort produced complete fresh evidence."
+    },
+    {
+      "operation": "First post-rollback MDB collection",
+      "status": "completed",
+      "coverage": "Only the onboard adapter had reappeared. This transport result did not satisfy target-port acceptance; the subsequent fresh collection observed all four target ports."
+    }
+  ],
+  "firmware": {
+    "version_unchanged": true,
+    "upgrade_performed": false,
+    "rollback_hpm_verified": false,
+    "device_package_discovery": {
+      "complete_empty_scopes": [
+        "/tmp through depth 4",
+        "/var/lib through depth 4"
+      ],
+      "unavailable_scope": "/opt/pme/pram is absent"
+    },
+    "compatible_upgrade_and_original_version_pair": "unverified",
+    "historical_artifact_assessment": {
+      "historical_candidate_version": "11.02.03.10",
+      "hpm_sha256": "e9d2e08ec2b9ff84f7b1fbf7822dc31eeff068270637b3be6d2ae05f4987f238",
+      "byte_count": 91085884,
+      "matches_historical_containment_report": true,
+      "historical_containment_status": "proved",
+      "historical_same_device_installation_record": true,
+      "current_11_02_03_20_recovery_artifact": false,
+      "artifact_approved_for_current_upgrade": false,
+      "early_11_02_03_07_candidate_rejected": "Historical report records truncated NC-SI Lua and network_adapter load failure.",
+      "current_manifest_sdk": "5.14.00.01.b001",
+      "required_target_sdk": "5.13.00.01",
+      "matching_complete_product_graph": "unverified",
+      "exact_original_version_package": "not located in the targeted searches",
+      "search_limitations": [
+        "The mounted-drive inventory was stopped after filesystem traversal errors; it does not establish global absence.",
+        "Known Linux build outputs, the selected historical Windows F904T work directory and local manifest outputs were inspected including ignored files."
+      ]
+    }
+  },
+  "limitations": [
+    "The live exercise verifies compatibility, query coverage and recovery; it does not establish a pre-existing target hardware defect.",
+    "Native NC-SI and BMA can publish different version fields; observed field differences alone do not establish a defect.",
+    "No compatible complete-product build graph or upgrade/original-version HPM pair is verified.",
+    "The permanent component repair remains local; the target collector has been restored."
+  ],
+  "web": {
+    "homepage_status": 200,
+    "cards": 39,
+    "case_id": "case-880a9ed54a83f70cec3205bc",
+    "revision_87": true,
+    "completed_developer_phase": true,
+    "failed_build_phase": true,
+    "native_refresh": true,
+    "reload_cards": 40,
+    "page_errors": 0
+  }
+}
