@@ -39,7 +39,9 @@
     "original_session_files_changed": 0,
     "managed_profile": "healthy",
     "application_profile": "openubmc",
-    "model_selection": "separate overlay using existing credential source"
+    "model_selection": "separate overlay using existing credential source",
+    "wrapper_preserves_caller_working_directory": true,
+    "source_tsx_configuration_explicit": true
   },
   "web": {
     "same_session_and_case": true,
