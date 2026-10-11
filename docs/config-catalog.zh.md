@@ -531,6 +531,22 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-shortcuts -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-openubmc-cases -->
+<a id="deepseek-aidsh-client-ui-openubmc-cases"></a>
+
+## `@deepseek-ai/dsh-client-ui-openubmc-cases`
+
+- `source`: [`packages/client/ui-openubmc-cases/src/config.ts:4`](../packages/client/ui-openubmc-cases/src/config.ts)
+
+```ts config-catalog
+/** Select the same trusted MCP namespace as the Host Case projection. */
+export interface Config {
+  /** Trusted MCP namespace used by Host Case projection and native inspections. */
+  serverName: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-openubmc-cases -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-plugin-manager -->
 <a id="deepseek-aidsh-client-ui-plugin-manager"></a>
 
@@ -1034,6 +1050,48 @@ export interface InspectorOptions {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-inspector -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-cases -->
+<a id="deepseek-aidsh-experimental-openubmc-cases"></a>
+
+## `@deepseek-ai/dsh-experimental-openubmc-cases`
+
+- `inject`: `sessionProjections` · `commands`
+- `source`: [`packages/experimental/openubmc-cases/src/index.ts:18`](../packages/experimental/openubmc-cases/src/index.ts)
+
+```ts config-catalog
+/** Selects the trusted metadata source in the durable Session log. */
+export interface Config {
+  /** Exact MCP namespace; live connectivity is not required for historical queries. */
+  serverName: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-cases -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-runtime -->
+<a id="deepseek-aidsh-experimental-openubmc-runtime"></a>
+
+## `@deepseek-ai/dsh-experimental-openubmc-runtime`
+
+- `inject`: `commands` · `sessionProjections` · `tools`
+- `source`: [`packages/experimental/openubmc-runtime/src/index.ts:25`](../packages/experimental/openubmc-runtime/src/index.ts)
+
+```ts config-catalog
+/** Exact Runtime namespace protected by this adapter. */
+export interface Config {
+  /** MCP server configured with trusted Session metadata. */
+  serverName: string
+  /** Maximum domain deadline admitted for a device operation, in seconds. */
+  operationDeadlineSeconds: number
+  /** Additional MCP wait beyond the bounded domain work, in milliseconds. */
+  completionGraceMs: number
+  /** Maximum automatic Runtime operations in one workflow request (protocol limit 64). */
+  workflowMaxSteps: number
+  /** Maximum bytes requested by a native evidence inspection. */
+  evidenceReadLimitBytes: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-runtime -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-ptc-runtime-python -->
 <a id="deepseek-aidsh-experimental-ptc-runtime-python"></a>
 
@@ -1283,8 +1341,8 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-headless`
 
-- `inject`: `agentDefaultModel` · `agents` · `sessions`
-- `source`: [`packages/bundle/headless/src/index.ts:42`](../packages/bundle/headless/src/index.ts)
+- `inject`: `agentDefaultModel` · `agents` · `sessions` · `commands`
+- `source`: [`packages/bundle/headless/src/index.ts:43`](../packages/bundle/headless/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config: the task and run options resolved from this app's injected provider service. */
@@ -2016,7 +2074,7 @@ export interface LspLocalServerConfig {
 ## `@deepseek-ai/dsh-mcp-client`
 
 - `inject`: `tools`
-- `source`: [`packages/mcp/mcp-client/src/index.ts:112`](../packages/mcp/mcp-client/src/index.ts)
+- `source`: [`packages/mcp/mcp-client/src/index.ts:120`](../packages/mcp/mcp-client/src/index.ts)
 
 ```ts config-catalog
 /** Configuration for one stdio or Streamable HTTP MCP server. */
@@ -2044,8 +2102,12 @@ export interface StdioConfig {
   toolCallTimeoutMs: number
   /** Inject the calling Session id into tools/call _meta under this key; calls without an Agent fail. */
   sessionIdMetadataKey?: string
+  /** Middleware policy ids required before each provider dispatch, including after reload. */
+  requiredToolCallPolicies?: string[]
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
+  /** Persist structured data with trusted server/tool identity on success and failure. */
+  structuredContentInMeta?: boolean
   /** Fail plugin activation when the initial connection or tool synchronization fails. */
   failOnStartupError: boolean
   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */
@@ -2072,8 +2134,12 @@ export interface StreamableHttpConfig {
   toolCallTimeoutMs: number
   /** Inject the calling Session id into tools/call _meta under this key; calls without an Agent fail. */
   sessionIdMetadataKey?: string
+  /** Middleware policy ids required before each provider dispatch, including after reload. */
+  requiredToolCallPolicies?: string[]
   /** Append successful structuredContent JSON to durable model-visible text. */
   structuredContentInText?: boolean
+  /** Persist structured data with trusted server/tool identity on success and failure. */
+  structuredContentInMeta?: boolean
   /** Fail plugin activation when the initial connection or tool synchronization fails. */
   failOnStartupError: boolean
   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */

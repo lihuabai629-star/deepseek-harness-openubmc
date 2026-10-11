@@ -7,6 +7,36 @@ import { describe, expect, it, vi } from 'vitest'
 import { createMcpToolDefinition } from '../src/index.ts'
 
 describe('MCP result callback adaptation', () => {
+  it('rejects policy configuration without identity and inconsistent metadata identity', async () => {
+    const ctx = new Context()
+    try {
+      const options = { name: 'protected', rawName: 'read', description: 'Read', inputSchema: { type: 'object' }, call: async () => ({ content: [] }) }
+      expect(() => createMcpToolDefinition(ctx, { ...options, requiredToolCallPolicies: ['required'] })).toThrow('trusted server identity')
+      expect(() => createMcpToolDefinition(ctx, { ...options, serverName: 'a', metadataServerName: 'b' })).toThrow('same server identity')
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('requires policy acknowledgement through metadata-only public adapter calls', async () => {
+    const ctx = new Context()
+    try {
+      await ctx.plugin(SystemPrompt)
+      await ctx.plugin(ToolRuntime)
+      const call = vi.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+      ctx.tools.register(createMcpToolDefinition(ctx, {
+        name: 'protected', rawName: 'read', description: 'Read', inputSchema: { type: 'object' },
+        metadataServerName: 'runtime', requiredToolCallPolicies: ['required'], call,
+      }))
+      const execute = () => ctx.tools.execute({ name: 'protected', callId: ToolCallId('policy'), arguments: {}, signal: new AbortController().signal })
+      expect((await execute()).isError).toBe(true)
+      expect(call).not.toHaveBeenCalled()
+      const stop = ctx.on('mcp/tool-call', (request, next) => { request.appliedPolicies.set('required', () => {}); return next() })
+      expect((await execute()).isError).toBe(false)
+      stop()
+      expect((await execute()).isError).toBe(true)
+      expect(call).toHaveBeenCalledTimes(1)
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it.each([false, true])('preserves structured values and includes them in text only when enabled (%s)', async (includeStructured) => {
     const ctx = new Context()
     try {
@@ -31,13 +61,36 @@ describe('MCP result callback adaptation', () => {
       const result = await ctx.tools.execute({
         name: 'native_window', callId: ToolCallId('window-call'), arguments: { window: 7 }, signal,
       })
-      expect(call).toHaveBeenCalledWith({ window: 7 }, execution)
+      expect(call).toHaveBeenCalledWith({ window: 7 }, execution, {})
       expect(execution?.signal).toBe(signal)
       expect(result.isError).toBe(false)
       expect(result.content).toEqual([{ type: 'text', text: includeStructured ? 'Observed window.\n{"window":7}' : 'Observed window.' }])
       expect(result.value).toEqual({
         content: [{ type: 'text', text: 'Observed window.' }], structuredContent: { window: 7 },
       })
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it.each([false, true])('retains trusted structured metadata without changing failure status (%s)', async (isError) => {
+    const ctx = new Context()
+    try {
+      await ctx.plugin(SystemPrompt)
+      await ctx.plugin(ToolRuntime)
+      const envelope = { case_id: 'case-7', status: isError ? 'blocked' : 'completed', evidence_refs: ['ev-1'] }
+      ctx.tools.register(createMcpToolDefinition(ctx, {
+        name: 'case_metadata', rawName: 'workflow.next', description: 'Read the next phase.',
+        inputSchema: { type: 'object' }, metadataServerName: 'openubmc-target-runtime',
+        call: async () => ({ content: [{ type: 'text', text: 'Observed.' }], structuredContent: envelope, isError }),
+      }))
+      const result = await ctx.tools.execute({
+        name: 'case_metadata', callId: ToolCallId('meta-call'), arguments: {}, signal: new AbortController().signal,
+      })
+      expect(result.isError).toBe(isError)
+      expect(result.meta).toEqual({ mcp: { serverName: 'openubmc-target-runtime', toolName: 'workflow.next', structuredContent: envelope } })
+      if (isError) expect(result.value).toBeUndefined()
+      expect(Object.isFrozen(result.meta)).toBe(true)
     } finally {
       await ctx.fiber.dispose()
     }

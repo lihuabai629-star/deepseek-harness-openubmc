@@ -1,0 +1,221 @@
+{
+  "recorded_at": "2026-10-11",
+  "platform": "Linux/WSL",
+  "profile": "openubmc",
+  "implementation_branch": "codex/openubmc-recovery",
+  "target_alias": "device-a",
+  "target_identity": {
+    "mdb_device_name": "Chaoqiang A860 A5",
+    "firmware_version": "11.02.03.20",
+    "openubmc_version": "26.03",
+    "sdk_version": "5.13.00.01",
+    "serial_number_field_present": true,
+    "serial_number_nonempty": false,
+    "uuid_confirmed": false
+  },
+  "layers": {
+    "model": {
+      "live": true,
+      "model": "gpt-6.1-sol"
+    },
+    "runtime": {
+      "implementation": "existing Python Runtime",
+      "storage": "SQLite and filesystem blobs",
+      "tools_discovered": 12
+    },
+    "device": {
+      "hardware_contact": true,
+      "preflight_lanes": [
+        "SSH",
+        "MDBCTL",
+        "D-Bus",
+        "busctl",
+        "Telnet",
+        "LOG_FILES"
+      ],
+      "real_build": false,
+      "real_firmware_upgrade": false,
+      "device_mutation": "temporary non-executable file in /tmp; removed by verified rollback"
+    }
+  },
+  "diagnosis": {
+    "status": "completed",
+    "freshness": "complete",
+    "identity_freshness": "partial",
+    "active_alarms_before": 0,
+    "active_alarms_after": 0,
+    "root_cause_established": false,
+    "evidence": [
+      {
+        "purpose": "diagnostic",
+        "evidence_id": "b244ba81646046d2b4b2c93a481ff391bc6e7e09c3a0869461b51eedf9c7cd2f",
+        "bytes": 222519
+      },
+      {
+        "purpose": "MDB identity",
+        "evidence_id": "b951e797fafa1b0e490d3dd44e1a3d2dd4a40758c324482ba771b24f4443e902",
+        "bytes": 32211
+      }
+    ]
+  },
+  "continuity": {
+    "same_session_after_process_restart": true,
+    "same_case_after_process_restart": true,
+    "native_case_refresh_before_mutation": true,
+    "native_case_refresh_between_apply_and_rollback": true,
+    "case_revision_after_rollback": 23,
+    "business_acceptance": "unverified"
+  },
+  "mutations": [
+    {
+      "action": "live_patch",
+      "status": "completed",
+      "journal_stage": "verified",
+      "verification_state": "verified",
+      "epoch_before": 0,
+      "epoch_after": 1,
+      "root_mount_restored": true,
+      "restart_state": "completed:none",
+      "idempotent_replay": false,
+      "file_checksum_verified": true,
+      "file_absence_verified": false,
+      "evidence_id": "682c89b556a213b8d322142ea19fdc2124295499063051e6d2df69c9d47992d1",
+      "bytes": 2316
+    },
+    {
+      "action": "rollback",
+      "status": "completed",
+      "journal_stage": "verified",
+      "verification_state": "verified",
+      "epoch_before": 1,
+      "epoch_after": 2,
+      "root_mount_restored": true,
+      "restart_state": "completed:none",
+      "idempotent_replay": false,
+      "file_checksum_verified": false,
+      "file_absence_verified": true,
+      "evidence_id": "cd767ea68820613b58d5a2c2a58d95153495411cef103c719d80ec80d0ebc5c0",
+      "bytes": 1709
+    }
+  ],
+  "limits": [
+    "The temporary-file scenario qualifies file mutation, checksum verification, restart continuity and rollback; it does not qualify a business Lua patch or firmware upgrade.",
+    "The discovered K620 product outputs use openUBMC 26.06 / SDK 5.14 and have not been qualified for this A860 A5 target.",
+    "MDB-only identity evidence has partial freshness and does not establish overall device health.",
+    "Runtime closeout prose can refer to an earlier operation; operation evidence is required for current identity and diagnosis conclusions.",
+    "Workflow-derived unknown mutations still require explicit Runtime journal reconciliation; this run did not simulate transport loss during mutation.",
+    "BMC SSH used the Runtime development insecure host-key policy; strict host-key verification was not performed.",
+    "The installed DSH systemd service was not changed.",
+    "NetworkAdapter and port firmware fields differ; this read does not determine whether the difference is stale data, source selection or a device problem."
+  ],
+  "web": {
+    "source_web": true,
+    "real_case_imported": true,
+    "initial_cards": 17,
+    "case_refresh": true,
+    "rollback_evidence_read": true,
+    "browser_reload_preserved": true,
+    "final_cards": 19,
+    "page_errors": 0,
+    "model_inference_for_inspection": false
+  },
+  "source_discovery": {
+    "component": "network_adapter",
+    "adapter": "GuangRunTong F904T / Intel I350",
+    "tracked_branch": "f904t-260330-20260924",
+    "runtime_match": "GRT F904T-OCP / I350AM4 identity observed; exact deployed source revision remains unverified",
+    "firmware_upgrade_artifact": "unverified",
+    "candidate_source_revision": "c19b2b52d14f326032f4cf9ac8d988c7110a65b4",
+    "candidate_component_version": "1.500.58",
+    "version_field_interpretation": "11.02.03.20 comes from BMC /etc/version.json; adapter firmware is a separate MDB field",
+    "source_behavior": "The candidate collector preserves later BMA port reports when the native version is unchanged; deployed-source equivalence and the actual port-report source remain unverified"
+  },
+  "negative_scenarios": {
+    "diagnosis_intent_after_rollback": "Runtime refused incompatible retained delivery strategy before device dispatch",
+    "post_rollback_read": "debug_collect completed at target epoch 2 while retaining the existing task intent"
+  },
+  "network_adapter": {
+    "manufacturer": "GRT",
+    "name": "F904T-OCP",
+    "model": "I350AM4",
+    "supported_mctp": false,
+    "port_count": 4,
+    "connected_port_count": 1,
+    "port_0_speed_mbps": 100,
+    "adapter_and_port_0_firmware": "00.49.00.01",
+    "other_ports_firmware": "1.63,0x800009fa",
+    "firmware_field_consistency": "unverified",
+    "current_alarm_count": 0,
+    "evidence_id": "9358205c74cf12c30dd65f72a700aeb1d845d5ef89d83f3e72621243d065c9d7",
+    "bytes": 141258,
+    "freshness": "collection only; no end freshness pass",
+    "device_mutation": false,
+    "follow_up": {
+      "profile": "standard",
+      "status": "completed",
+      "case_revision_after_collection": 34,
+      "target_epoch": 2,
+      "evidence_id": "20d7ea27062f17f76a1410dc53d0fca4b39321a7e48b66af74c99d44fdff57de",
+      "bytes": 207296,
+      "freshness": "complete",
+      "active_alarms_after": 0,
+      "native_version_query_log_observed": true,
+      "native_version": "00.49.00.01",
+      "native_channels_with_success_logs": [
+        0,
+        1
+      ],
+      "source_correlation_root": "selected candidate checkout",
+      "exact_deployed_revision_verified": false,
+      "device_mutation": false,
+      "blob_id": "7b1698b0f8dead171f7ab2bc3ea270f80f7dbb5ba7699266b40e6731e7329cea"
+    }
+  },
+  "component_validation": {
+    "component": "network_adapter",
+    "source_revision": "c19b2b52d14f326032f4cf9ac8d988c7110a65b4",
+    "source_version": "1.500.58",
+    "selected_test": "TestNativeNcsiCollector",
+    "test_file": "test/unit/test_ncsi_native_collector.lua",
+    "status": "failed before framework startup",
+    "executed_cases": 0,
+    "test_pass_claim": false,
+    "initial_attempt": {
+      "plan_id": "0efa91b2007e7f4e3df6db140934c90df664ccaeb09d65e999b6e6fb0247b708",
+      "component_compile": "completed before test deployment",
+      "test_deploy_failure": "hwdiscovery requires libmc4lua <1.130.0; the unpinned graph selected 1.130.40"
+    },
+    "conan_binary_cache_repair": {
+      "exact_missing_binaries_redownloaded": 4,
+      "physical_packages_verified": true,
+      "existing_binary_directories_removed": 0
+    },
+    "baseline_attempt": {
+      "plan_id": "9c85d597c7fb09a6e917d198d54273b8b3c6c221fc916b179b41178e00d8c4c6",
+      "status": "failed",
+      "process_rc": 255,
+      "log_sha256": "93db3463dc4adfe65f977862b6e66ce6a0018d6f45c259fbf413fe1eff847ae1",
+      "first_failing_phase": "dependency expansion for mdb_interface/1.110.16@openubmc/stable#de9ebb8f3c5f6f7d79802c2418b12920",
+      "missing_recipe_checked_in_configured_remotes": 3
+    },
+    "tool_compatibility": "Task-private Bingo copy accepts HTTP Git remotes and omits an absent Conan remote argument; global tools and repository remotes were not changed",
+    "workspace_drift": {},
+    "target_baseline_equivalence": "unverified",
+    "package_published": false,
+    "hpm_built": false,
+    "runtime_phase_record": {
+      "recording_call_status": "completed",
+      "phase_type": "build.artifact",
+      "phase_status": "failed",
+      "case_revision_after_recording": 39,
+      "failed_phase_visible_in_session_projection_after_refresh": true,
+      "native_case_view_after_process_restart": true
+    }
+  },
+  "staged_deployment": {
+    "managed_web_profile": "installed and healthy",
+    "generation": "20e4d50545ed4d218099572c497a1328",
+    "executable_source_tree": "743acdf460e5eea34171ace585b199339a1d4d88",
+    "installed_service_changed": false
+  }
+}

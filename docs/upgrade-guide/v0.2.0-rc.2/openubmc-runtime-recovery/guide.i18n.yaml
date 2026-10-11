@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.0-rc.2/openubmc-runtime-recovery/guide.md
+/:
+  en: acfbea9828caa922
+  zh: 2b9d0f0902e0b300
+/openubmc-runtime-recovery:
+  en: 3a009dac061439ba
+  zh: 79e4f097173f6891
+/openubmc-runtime-recovery/change:
+  en: 59818d43e06ccf6f
+  zh: 92b2673b63827b4c
+/openubmc-runtime-recovery/migration:
+  en: 041717ac647ef1f7
+  zh: be1f9881c86c8ef2

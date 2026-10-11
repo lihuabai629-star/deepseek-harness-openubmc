@@ -9,8 +9,8 @@
   en: e7c80d1de4d328b4
   zh: d9f368c27fd9f998
 /session-persistence-event-catalog/persistence-type-fingerprints:
-  en: 33dd28b1c768cd8b
-  zh: 7256442baf2faed1
+  en: a25eb4ce262a5209
+  zh: eb6fef96f069ff02
 /session-persistence-event-catalog/event-envelope:
   en: 7ebb1a2e0dd1f916
   zh: 8946f415dda5c1b8
@@ -134,6 +134,12 @@
 /session-persistence-event-catalog/events/model/model-selection-log-only:
   en: ea963e9ec025c667
   zh: f6eea77d22442cd8
+/session-persistence-event-catalog/events/openubmc:
+  en: 04e540dc0a4efdd9
+  zh: 04e540dc0a4efdd9
+/session-persistence-event-catalog/events/openubmc/openubmc-inspection-log-only:
+  en: 66b532b8c355ef51
+  zh: c4677190714bb791
 /session-persistence-event-catalog/events/permission:
   en: 19917bc5438e60af
   zh: 19917bc5438e60af
@@ -588,8 +594,11 @@
   en: 00df59bcc5c6edbb
   zh: 00df59bcc5c6edbb
 /session-persistence-event-catalog/resolved-persistence-types/one-shot:
-  en: afd1613dd3d4da80
-  zh: afd1613dd3d4da80
+  en: 4201ce3fb83882d6
+  zh: 4201ce3fb83882d6
+/session-persistence-event-catalog/resolved-persistence-types/openubmc-inspection:
+  en: 369ce317f00e43f6
+  zh: 369ce317f00e43f6
 /session-persistence-event-catalog/resolved-persistence-types/other:
   en: 588a8f46adda6707
   zh: 588a8f46adda6707
@@ -1092,8 +1101,11 @@
   en: a3300babe57b6b67
   zh: 4aaf06a149b399c3
 /session-persistence-event-catalog/resolved-persistence-types/oneshotsubagentdescriptordata:
-  en: 9ba0cfd5ee9d6a38
-  zh: 1414fd7468c42651
+  en: a3e6534eb9e7f4db
+  zh: a74abe883a35050f
+/session-persistence-event-catalog/resolved-persistence-types/openubmcinspection:
+  en: ba337843275b1765
+  zh: 90d4cf50392a4b25
 /session-persistence-event-catalog/resolved-persistence-types/optionalsessionseq:
   en: 7baa520fa984480e
   zh: 6f809a83a720416d
@@ -1455,8 +1467,11 @@
   en: f2167c4cf3aa9b4d
   zh: b4ed04a9a526f49e
 /session-persistence-event-catalog/resolved-persistence-types/interrupted-message-step-stream:
-  en: f460572284c92755
-  zh: bae7561ce887b040
+  en: c222dfd248d57918
+  zh: 999260c7dbef5140
+/session-persistence-event-catalog/resolved-persistence-types/iserror:
+  en: a5237c179ce25f48
+  zh: 4b08cf1b0d834838
 /session-persistence-event-catalog/resolved-persistence-types/kind-aborted-reason:
   en: c7755cbd343d67ee
   zh: e00a7477cd664cb5
@@ -1929,8 +1944,11 @@
   en: c0ad371b1f636530
   zh: 6b79634088e8d9da
 /session-persistence-event-catalog/resolved-persistence-types/type-model-selection:
-  en: 0c6a1ef6a38ac10b
-  zh: 0522b4477e992088
+  en: 4f9b1f51c393b172
+  zh: 3eee1cc25aba48a3
+/session-persistence-event-catalog/resolved-persistence-types/type-openubmc-inspection:
+  en: 754bdba31997b754
+  zh: a2bc22eea15f2862
 /session-persistence-event-catalog/resolved-persistence-types/type-permission-preset:
   en: 965e836b012404b3
   zh: 0ab923cc8a41e7f2

@@ -1,0 +1,48 @@
+- insert:
+    - id: recovery-human
+      name: './workspace/human.ts'
+    - id: openubmc-policy
+      name: '@deepseek-ai/dsh-experimental-openubmc-runtime'
+      config:
+        serverName: openubmc-target-runtime
+        operationDeadlineSeconds: 1
+        completionGraceMs: 100
+        workflowMaxSteps: 1
+        evidenceReadLimitBytes: 65536
+    - id: openubmc-runtime
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: openubmc-target-runtime
+        transport: stdio
+        command: !!js process.execPath
+        args: ['./runtime.mjs']
+        toolCallTimeoutMs: 1200
+        sessionIdMetadataKey: taskId
+        requiredToolCallPolicies: [openubmc-session-authority]
+        structuredContentInMeta: true
+        structuredContentInText: true
+        failOnStartupError: true
+        reconnect:
+          enabled: false
+- id: llm-deepseek
+  disabled: true
+- insert:
+    - id: llm-replay
+      name: '@deepseek-ai/dsh-llm-replay'
+      config:
+        providers:
+          - id: deepseek-official
+            name: DeepSeek
+            models:
+              - id: deepseek-v4-flash
+                contextWindow: 1000000
+                defaultMaxTokens: 256000
+                reasoningEfforts: [off, low, high, max]
+                defaultReasoningEffort: max
+
+- id: headless-runner
+  inject: [headlessStartup, recoveryFixtureReady]
+  config:
+    task: !!js ctx.headlessStartup.task
+    sessionId: openubmc-recovery-snapshot
+    json: !!js ctx.headlessStartup.json

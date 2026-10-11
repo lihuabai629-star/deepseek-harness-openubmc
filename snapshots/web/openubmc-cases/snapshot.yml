@@ -1,0 +1,7 @@
+version: 1
+scenario: openubmc-cases
+profile: web
+composition: openubmc-cases
+recording: authored
+header:
+  class: openubmc-cases

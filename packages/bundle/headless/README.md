@@ -39,6 +39,8 @@ The agent works through the task, streams each non-empty provider reasoning delt
 { echo "Summarize these changes:"; git diff --stat; } | dsh --profile headless
 ```
 
+A registered slash command runs through the native command registry with human source attribution, persists its command records, prints its result, and exits without a model request. `--session-id` applies it to the existing conversation. Command success exits 0; a command error exits 1. An unknown command remains ordinary task text. In JSON mode a native command emits `session` and `final` without turn events.
+
 The task and run options are supplied through three settings:
 
 | Field | Default | Meaning |
@@ -77,7 +79,7 @@ The runner is a direct driver over the core API carrier: it resolves the Agent i
 
 ### Run flow
 
-The runner awaits the complete application (`ctx.get('loader')?.await()`) so the composed tools and adapters are not half-mounted, reads the shared [`agentDefaultModel`](../../core/agent-default-model/README.md) selection, resolves the task from config or stdin, then resolves the Agent identity: a fresh `session-<uuid>` by default, or the persisted Session `--session-id` names, which it adopts through [`sessionQuery`](../../session-query/session-query/README.md) and refuses when no log exists. It submits the task as an ordinary user message. Without `--json` it streams that Agent's non-empty reasoning deltas to stderr; with `--json` it projects the run instead. It waits for quiescence, then flushes the Session and folds the owned interval (`firstSeq` onward) into the last non-empty `assistant/message` text and final `turn/end` reason. It writes the final text to stdout (or the `final` event) and requests exit.
+The runner awaits the complete application (`ctx.get('loader')?.await()`) so the composed tools and adapters are not half-mounted, reads the shared [`agentDefaultModel`](../../core/agent-default-model/README.md) selection, resolves the task from config or stdin, then resolves the Agent identity: a fresh `session-<uuid>` by default, or the persisted Session `--session-id` names, which it adopts through [`sessionQuery`](../../session-query/session-query/README.md) and refuses when no log exists. It executes registered commands through the native command registry and submits other tasks as ordinary user messages. Without `--json` it streams that Agent's non-empty reasoning deltas to stderr; with `--json` it projects the run instead. It waits for quiescence, then flushes the Session and folds the owned interval (`firstSeq` onward) into the last non-empty `assistant/message` text and final `turn/end` reason. It writes the final text to stdout (or the `final` event) and requests exit.
 
 ### Patch surface over base
 
@@ -124,7 +126,7 @@ Read these pages when you want to go deeper into the shared core, the sibling GU
 <a id="model-experience"></a>
 ## Model Experience
 
-None, as the runner submits the task as an ordinary user message and the composed base and headless rows own the prompts and tools.
+None, as the runner forwards ordinary user messages and executes native commands without contributing prompts or tools.
 
 #### KV Cache effect
 

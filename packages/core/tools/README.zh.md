@@ -156,6 +156,9 @@ ctx.tools.register(defineTool({
 -----
 
 <a id="model-experience"></a>
+
+工具主体可抛出 `ToolFailureError(message, meta)`，将 JSON 失败事实保留在结果元数据中。结果仍是失败且没有成功规范值；普通异常保持原有纯文本行为。后置执行策略仍可替换或阻断结果。最终元数据随结果一起分离并冻结。
+
 ## 模型体验
 
 ### 普通工具 schema

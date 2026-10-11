@@ -130,9 +130,11 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
   const opts: ToolBridgeOptions = {
     registrationFailure: 'contain',
     ...(config.structuredContentInText === undefined ? {} : { structuredContentInText: config.structuredContentInText }),
+    ...(config.structuredContentInMeta === undefined ? {} : { structuredContentInMeta: config.structuredContentInMeta }),
     serverName: config.serverName,
     toolCallTimeoutMs: config.toolCallTimeoutMs,
     ...(config.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: config.sessionIdMetadataKey }),
+    ...(config.requiredToolCallPolicies === undefined ? {} : { requiredToolCallPolicies: config.requiredToolCallPolicies }),
   }
   // The initial sync uses 'throw' when failOnStartupError is configured, so
   // a registration conflict propagates to the startup-await path. Re-syncs

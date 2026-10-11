@@ -181,6 +181,20 @@ interface ToolRestriction {
 
 `ctx.tools.execute()` accepts a caller-owned `ToolExecutionInput` with a required readonly `signal`, materializes its parsed JSON arguments once into a pipeline-owned `ToolExecution`, and runs that call through `tools/pre-execute` (the reorderable allow/deny/ask waterfall) → registered monotonic guards → `tools/execute` (around-dispatch wrappers) → `projectContent` → `tools/post-execute` (inspect/replace the result) → optional definition-owned `finalizeContent` → `tools/result` (the immutable authoritative outcome). Only the `tools/execute` view may replace the required signal. The outcome is a `ToolExecutionResult`.
 
+Throwing `ToolFailureError` preserves JSON `meta` on the failed result without supplying a successful canonical value. Result policies may replace it; the final metadata is detached and frozen before persistence.
+
+```ts public-api
+/** A failed tool outcome whose JSON metadata remains available in the durable result. */
+declare class ToolFailureError extends Error {
+  /**
+   * Create a failure without a successful canonical value.
+   * @param message - model-visible failure summary.
+   * @param meta - JSON facts retained by result policies and Session persistence.
+   */
+  constructor(message: string, readonly meta: JsonValue);
+}
+```
+
 ```ts type-equiv
 /** Opaque call identity that permits correlation without exposing mutable execution state. */
 type ToolExecutionToken = symbol & { readonly [toolExecutionTokenBrand]: true }

@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for openubmc-cases.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/openubmc-cases.md
+/openubmc-case-observations:
+  en: ac428ac231f4210b
+  zh: 5f9e6e31d0170ea4
+/openubmc-case-observations/observation-and-view-types:
+  en: 5fd42ac2f62b5bb2
+  zh: fbe89311aba4b5e3
+/openubmc-case-observations/checkpoint-ownership:
+  en: 57d30507afca3d4e
+  zh: 762814bdcb2da397
+/openubmc-case-observations/runtime-authority:
+  en: b19fdaecf8e779d5
+  zh: c2030b5c5094a66e

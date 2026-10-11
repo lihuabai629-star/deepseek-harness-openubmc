@@ -28,6 +28,7 @@ import { SessionQueryError } from '@deepseek-ai/dsh-session-query'
 // Context merge for exact Session adoption.
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-cmdline'
+import type {} from '@deepseek-ai/dsh-commands'
 import type {} from '@deepseek-ai/dsh-session-query'
 import { internals } from './runner-internals.ts'
 import { projectJsonRun, boundJsonLine } from './json-stream.ts'
@@ -36,7 +37,7 @@ import { projectJsonRun, boundJsonLine } from './json-stream.ts'
 export const name = 'headless-runner'
 
 /** Core services required before the one-shot turn can start. */
-export const inject = ['agentDefaultModel', 'agents', 'sessions']
+export const inject = ['agentDefaultModel', 'agents', 'sessions', 'commands']
 
 /** Plugin config: the task and run options resolved from this app's injected provider service. */
 export interface Config {
@@ -362,6 +363,22 @@ async function run(ctx: Context, config: Config, io: HeadlessIo): Promise<void> 
   const stopReasoning = projection === undefined ? streamReasoning(ctx, agent, io.stderr) : undefined
   try {
     try {
+      const commandController = new AbortController()
+      const commandOperation = ctx.commands.execute(agent, task, [], commandController.signal)
+      const stopCommand = ctx.effect(() => async () => {
+        commandController.abort(new Error('headless command disposed'))
+        await commandOperation.then(() => undefined, () => undefined)
+      }, 'headless native command')
+      let command: Awaited<typeof commandOperation>
+      try { command = await commandOperation } finally { await stopCommand() }
+      if (command !== undefined) {
+        await sessions.flush(agent.session)
+        const text = command.result.text ?? ''
+        if (projection === undefined) io.stdout.write(text + '\n')
+        else projection.finish(text)
+        io.exit(command.result.kind === 'success' ? 0 : 1)
+        return
+      }
       agent.followup(createUserMessage({
         content: [{ type: 'text', text: task }],
         source: { kind: 'user' },

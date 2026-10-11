@@ -9,14 +9,20 @@
   en: 355370eb7bd7f74d
   zh: 1adbc9c790c5bbc7
 /openubmc-development-profile/create-and-launch:
-  en: d88025c9033146a7
-  zh: 5d85ceba5ba1331c
+  en: 46fd434a00bc40f6
+  zh: f69517661a18868b
 /openubmc-development-profile/offline-startup-check:
-  en: a9b68352ca70afa7
-  zh: a63867194a878020
+  en: 035b33e42c16f7be
+  zh: 9b67caf263e21d9e
 /openubmc-development-profile/identity-and-recovery:
-  en: ed9ba3d82362bc2e
-  zh: 9c9e24e35ee5db60
+  en: 2b810a52e8be93ba
+  zh: c548309a62111b8a
 /openubmc-development-profile/credentials-and-limitations:
-  en: 4eb12c822ed5f67d
-  zh: 7e1603e9e89fe293
+  en: 4201b4748825130a
+  zh: 18e7d0c934b37bb5
+/openubmc-development-profile/managed-profile-lifecycle:
+  en: e4f3037b8266e224
+  zh: f7dc18c7ef96d428
+/openubmc-development-profile/service-staging:
+  en: cad1e189c203aa54
+  zh: 81c1f0c604d9a418

@@ -28,6 +28,10 @@
     // not declaration path aliases, keep each package/vendor source compiled
     // under its own tsconfig boundary.
     "paths": {
+      "@deepseek-ai/dsh-experimental-openubmc-runtime/types": ["./packages/experimental/openubmc-runtime/src/types.ts"],
+      "@deepseek-ai/dsh-experimental-openubmc-runtime": ["./packages/experimental/openubmc-runtime/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-openubmc-cases": ["./packages/experimental/openubmc-cases/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-openubmc-cases/types": ["./packages/experimental/openubmc-cases/src/types.ts"],
       "@deepseek-ai/dsh-client-product-analytics": ["./packages/client/product-analytics/src/index.ts"],
       "@deepseek-ai/dsh-client-product-analytics/types": ["./packages/client/product-analytics/src/events.ts"],
       "@deepseek-ai/dsh-client-product-analytics/client": ["./packages/client/product-analytics/src/client/index.ts"],
@@ -291,6 +295,8 @@
       "@deepseek-ai/dsh-client-ui-jobs/invariant": ["./packages/client/ui-jobs/src/invariant.ts"],
       "@deepseek-ai/dsh-client-ui-schedule": ["./packages/client/ui-schedule/src"],
       "@deepseek-ai/dsh-client-ui-schedule/client": ["./packages/client/ui-schedule/src/client/index.ts"],
+      "@deepseek-ai/dsh-client-ui-openubmc-cases": ["./packages/client/ui-openubmc-cases/src"],
+      "@deepseek-ai/dsh-client-ui-openubmc-cases/client": ["./packages/client/ui-openubmc-cases/src/client/index.ts"],
       "@deepseek-ai/dsh-client-ui-plan": ["./packages/client/ui-plan/src"],
       "@deepseek-ai/dsh-client-ui-user-questions": ["./packages/client/ui-user-questions/src"],
       "@deepseek-ai/dsh-client-ui-trajectory": ["./packages/client/ui-trajectory/src"],

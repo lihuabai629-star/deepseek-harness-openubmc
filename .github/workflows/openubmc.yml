@@ -1,0 +1,80 @@
+name: openUBMC integration
+
+on:
+  push:
+    branches: [main, 'codex/openubmc-*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openubmc-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    if: github.repository == 'lihuabai629-star/deepseek-harness-openubmc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DSH_TELEMETRY_DISABLED: '1'
+      DSH_SNAPSHOT: replay
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          repository: lihuabai629-star/openubmc-agent-workflow
+          ref: 0bffe225b3710e20ed1eb4a6b1aeea42ff3bb373
+          path: .ci-runtime
+          persist-credentials: false
+      - name: Isolate pinned Runtime source
+        run: |
+          mv .ci-runtime "$RUNNER_TEMP/openubmc-workflow"
+          echo "DSH_OPENUBMC_WORKFLOW=$RUNNER_TEMP/openubmc-workflow" >> "$GITHUB_ENV"
+      - uses: pnpm/action-setup@v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install locked dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          python3 -m pip install 'pydantic>=2.12,<3'
+      - name: Build supported applications
+        run: pnpm run build
+      - name: Check client types and documentation
+        run: |
+          pnpm run typecheck:contracts-ready
+          pnpm run test:docs
+          pnpm run verify-repository-references
+      - name: Check native Case, MCP, ownership and recovery behavior
+        run: >-
+          pnpm exec vitest run
+          packages/mcp/mcp-client/tests/openubmc-runtime.spec.ts
+          packages/experimental/openubmc-cases/tests
+          packages/experimental/openubmc-runtime/tests
+          packages/client/ui-openubmc-cases/tests
+      - name: Check managed lifecycle and Python SDK
+        env:
+          PYTHONPATH: python/sdk/src:python/sdk-runtime/src
+        run: python3 -m unittest discover -s scripts/openubmc -p 'test_*.py' -v
+      - name: Replay recorded Session and TypeScript SDK output
+        run: >-
+          pnpm run test:snapshot
+          snapshots/session/headless.snapshot.ts
+          snapshots/sdk/sdk.snapshot.ts
+          -t openubmc
+      - name: Install browser
+        run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install --with-deps chromium
+      - name: Check native Web inspection and reload
+        run: pnpm run test:web:built apps/web/tests/openubmc-cases.e2e.ts

@@ -1906,13 +1906,38 @@ function createExecutionToken(): ToolExecutionToken {
   return Symbol('dsh.tool.execution') as ToolExecutionToken
 }
 
+/** A failed tool outcome whose JSON metadata remains available in the durable result. */
+export class ToolFailureError extends Error {
+  /**
+   * Create a failure without a successful canonical value.
+   * @param message - model-visible failure summary.
+   * @param meta - JSON facts retained by result policies and Session persistence.
+   */
+  constructor(message: string, readonly meta: JsonValue) {
+    super(message)
+    this.name = 'ToolFailureError'
+  }
+}
+
+/** Arbitrary thrown values may trap prototype inspection or metadata access. */
+function toolFailureMeta(error: unknown): JsonValue | undefined {
+  try {
+    return error instanceof ToolFailureError ? error.meta : undefined
+  } catch (_inspectionError: unknown) {
+    // A hostile thrown value has no admitted tool-owned metadata.
+    return undefined
+  }
+}
+
 function toolErrorResult(error: unknown): ToolExecutionResult {
   const info = errorInfo(error)
   const message = errorMessage(error)
+  const meta = toolFailureMeta(error)
   return {
     content: [{ type: 'text', text: `Error: ${message}` }],
     isError: true,
     error: { message, ...info ? { info } : {} },
+    ...meta === undefined ? {} : { meta },
   }
 }
 

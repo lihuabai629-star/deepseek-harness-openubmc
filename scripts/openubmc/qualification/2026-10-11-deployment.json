@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-11",
+  "environment": "Linux/WSL with systemd",
+  "source_tree": "659231a85b9f4b8b5510c3657a85eb3160b9248d",
+  "remote_ci": {
+    "run_url": "https://github.com/lihuabai629-star/deepseek-harness-openubmc/actions/runs/38111758353",
+    "conclusion": "success",
+    "runtime_source": "fixed external workflow revision in the CI configuration",
+    "build": "complete DSH build",
+    "documentation_checks_passed": 43,
+    "native_behavior_tests_passed": 43,
+    "python_lifecycle_and_sdk_tests_passed": 19,
+    "session_and_typescript_sdk_replays_passed": 6,
+    "web_tests_passed": 1,
+    "live_provider_or_device_requests": false,
+    "coverage_and_platform_matrix": "focused Linux integration; not the upstream exhaustive matrix"
+  },
+  "service_staging": {
+    "profile": "independent managed Web profile",
+    "source_web_shell_after_restart": { "homepage_status": 200, "page_errors": 0 },
+    "real_case_web_continuity": {
+      "same_session_and_case": true,
+      "initial_cards": 47,
+      "case_revision": 39,
+      "failed_build_phase_visible": true,
+      "native_case_refresh": true,
+      "refresh_revision_and_phase_match": true,
+      "browser_reload_cards": 48,
+      "page_errors": 0,
+      "model_inference": false
+    },
+    "configuration_update_and_rollback": "healthy original generation restored",
+    "native_cli_continuity": {
+      "profile": "separate managed headless profile with a private state snapshot",
+      "same_session_and_case": true,
+      "case_revision": 39,
+      "failed_build_phase_visible": true,
+      "model_inference": false
+    },
+    "installed_runtime_rollback": {
+      "version": "0.2.0-rc.2",
+      "profile_home": "separate old-format home",
+      "homepage_status": 200,
+      "page_errors": 0,
+      "candidate_session_files_unchanged": true
+    },
+    "source_runtime_restored": { "homepage_status": 200, "page_errors": 0 },
+    "production_service": { "unit_and_wrapper_unchanged": true, "active": true, "switched": false }
+  },
+  "limitations": [
+    "Managed generations restore configuration and Skills; executable checkouts are verified by digest and require separate software rollback.",
+    "The service rehearsal uses the development checkout and private snapshot homes; it does not establish an immutable production software release.",
+    "The old runtime uses its own home because it cannot read the required openubmc/inspection event.",
+    "This record does not qualify a business Lua patch or compatible firmware upgrade and rollback artifacts."
+  ]
+}

@@ -60,6 +60,7 @@ kind: "package-reference"
 | `url` / `headers` | — | streamable-http：端点 URL 与额外请求标头 |
 | `toolCallTimeoutMs` | `60,000` | 每次 `tools/call` 或资源请求的超时 |
 | `sessionIdMetadataKey` | 省略 | 将调用方 Session ID 注入 `tools/call` 的 `_meta` 指定键；没有 Agent 时拒绝调用 |
+| `structuredContentInMeta` | 省略 | 成功与失败结果均持久化结构化数据及可信服务器／工具标识 |
 | `structuredContentInText` | 省略 | 将成功结果的结构化内容作为 JSON 追加到模型可见的持久化文本 |
 | `maxInstructionBytes` | `32,768` | 包括服务器归属信息在内的服务器指令 UTF-8 字节上限；超出时连接失败 |
 | `failOnStartupError` | `false` | 初始连接或工具同步失败时拒绝插件激活 |
@@ -156,7 +157,14 @@ SDK 通过旧版通知或现代协议订阅接收工具列表变化。监督器�
 
 -----
 
+配置的 `requiredToolCallPolicies` 必须在每次 `mcp/tool-call` 时校验最终参数，执行器才会调用提供方。缺少中间件，包括释放或重载期间，会拒绝请求。公开适配函数调用方使用 `serverName`，或在显式分发身份缺省时使用 `metadataServerName`，进入同一中间件。
+
 <a id="model-experience"></a>
+
+`structuredContentInMeta` 选项在顶层结果元数据中保存 `{ mcp: { serverName, toolName, structuredContent? } }`，不改变模型可见内容。失败调用通过 `ToolFailureError` 保留此元数据，且没有成功值。`createMcpToolDefinition` 调用方通过 `metadataServerName` 启用；名称由提供方指定，不读取远端载荷。
+
+`mcp/tool-call` waterfall 以可信服务器和工具标识、准确的执行对象以及可替换参数包裹提供方回调。策略插件调用 `next()` 委托后续处理。`createMcpToolDefinition` 在指定 `serverName` 时提供该事件；发现的工具始终提供该标识。
+
 ## 模型体验
 
 ### 已发现的 MCP 工具

@@ -4134,6 +4134,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'options', description: 'the full request. A LOOP-built request carries the process-local {@link markAgentLoopRequest} identity and arrives deep-frozen (mutation throws): its content is a pure function of the session log (the reconstructability Agent Note), so listeners read it, never rewrite it. Hand-built calls do not carry that marker; callers own their request inputs and must keep them unchanged until the stream settles.' }],
   },
   {
+    name: 'mcp/tool-call',
+    mode: 'waterfall',
+    signature: '\'mcp/tool-call\'(request: McpToolCall, next: () => Promise<unknown>): Promise<unknown>',
+    summary: 'Apply provider-specific policy immediately before an MCP tool callback.',
+    description: 'Apply provider-specific policy immediately before an MCP tool callback.',
+    parameters: [{ name: 'request', description: 'trusted source, execution and replaceable wire arguments.' }],
+  },
+  {
     name: 'permission-presets/catalog-changed',
     mode: 'emit',
     signature: '\'permission-presets/catalog-changed\'(): void',
@@ -5704,6 +5712,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'McpResourceRequest',
     declaration: 'export type McpResourceRequest = {\n    method: \'resources/list\' | \'resources/templates/list\';\n    cursor?: string;\n} | {\n    method: \'resources/read\';\n    uri: string;\n};',
+  },
+  {
+    name: 'McpToolCall',
+    declaration: 'export interface McpToolCall {\n    readonly serverName: string;\n    readonly toolName: string;\n    readonly execution: ToolExecution;\n    readonly sessionIdMetadataKey?: string;\n    readonly toolCallTimeoutMs?: number;\n    readonly appliedPolicies: Map<string, () => void>;\n    metadata: Record<string, JsonValue>;\n    arguments: Record<string, unknown>;\n}',
   },
   {
     name: 'Message',

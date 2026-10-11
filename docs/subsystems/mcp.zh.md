@@ -136,4 +136,51 @@ register(server: string, provider: McpResourceProvider): () => void
 ```
 
 Source: [`packages/mcp/mcp-resources/src/index.ts`](../../packages/mcp/mcp-resources/src/index.ts)
+
+<a id="mcp-events"></a>
+
+### `mcp/*` events
+
+<a id="mcptool-call--waterfall"></a>
+
+#### `mcp/tool-call` — waterfall
+
+Apply provider-specific policy immediately before an MCP tool callback.
+
+```ts cordis-catalog
+/**
+ * Apply provider-specific policy immediately before an MCP tool callback.
+ * @param request - trusted source, execution and replaceable wire arguments.
+ * @mode waterfall
+ */
+'mcp/tool-call'(request: McpToolCall, next: () => Promise<unknown>): Promise<unknown>
+```
+
+Source: [`packages/mcp/mcp-client/src/tools.ts`](../../packages/mcp/mcp-client/src/tools.ts)
 <!-- END GENERATED cordis-surface -->
+
+## Provider dispatch policy
+
+`mcp/tool-call` 通过策略中间件委托提供方回调。桥接提供可信标识和 Session 元数据选择；策略可以替换发送参数。
+
+```ts type-equiv
+/** One provider dispatch with trusted source and caller identities. */
+interface McpToolCall {
+  /** Configured namespace, independent of model tool names. */
+  readonly serverName: string
+  /** Upstream protocol name, independent of model arguments. */
+  readonly toolName: string
+  /** Exact invocation including its Agent and cancellation. */
+  readonly execution: ToolExecution
+  /** Configured key used to inject the trusted Session id on the wire. */
+  readonly sessionIdMetadataKey?: string
+  /** Actual provider wait budget in milliseconds, when owned by this bridge. */
+  readonly toolCallTimeoutMs?: number
+  /** Final-argument validators required before the provider callback can run. */
+  readonly appliedPolicies: Map<string, () => void>
+  /** Provider metadata contributed by trusted dispatch middleware; never model arguments. */
+  metadata: Record<string, JsonValue>
+  /** Provider arguments; middleware may replace these before wire dispatch. */
+  arguments: Record<string, unknown>
+}
+```

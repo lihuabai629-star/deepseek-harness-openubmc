@@ -1,0 +1,7 @@
+version: 1
+scenario: openubmc-native-authority
+profile: headless
+composition: openubmc-authority
+recording: authored
+header:
+  class: openubmc-authority

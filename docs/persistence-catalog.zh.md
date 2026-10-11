@@ -47,6 +47,7 @@
 | `event:llm/retry` | event | `525254db03b1d1e6b74cf55aced52817568331ac1f96c0818728910b6692e336` | [`{ type: "llm/retry" }`](#persistence-type-sha256-525254db03b1d1e6b74cf55aced52817568331ac1f96c0818728910b6692e336) |
 | `event:llm/retry-started` | event | `48e5c9861f16ac07e78cb7b5ae9dabdf7bb85c58baed5a51b4ad275050ea58e3` | [`{ type: "llm/retry-started" }`](#persistence-type-sha256-48e5c9861f16ac07e78cb7b5ae9dabdf7bb85c58baed5a51b4ad275050ea58e3) |
 | `event:model/selection` | event | `35203ba7ad5ef6f97d556b85df20ae98f04f09c65748cecdf8eefdb8b6405ffc` | [`{ type: "model/selection" }`](#persistence-type-sha256-35203ba7ad5ef6f97d556b85df20ae98f04f09c65748cecdf8eefdb8b6405ffc) |
+| `event:openubmc/inspection` | event | `b5c198b8330ec00a6febc83b94c3b93313125266da8d5a8596f008e25d33aa46` | [`{ type: "openubmc/inspection" }`](#persistence-type-sha256-b5c198b8330ec00a6febc83b94c3b93313125266da8d5a8596f008e25d33aa46) |
 | `event:permission/preset` | event | `5c45bf4c544a7211dcd8ba6ba7e5f1bc39b49e7a9df9d5cbdc8e87c22771b37b` | [`{ type: "permission/preset" }`](#persistence-type-sha256-5c45bf4c544a7211dcd8ba6ba7e5f1bc39b49e7a9df9d5cbdc8e87c22771b37b) |
 | `event:plan/mode` | event | `a7cf43ce7c2a4c038feed1885cd7a00d5c6ee2d90a7e0d56b46f78a3e1ca327f` | [`{ type: "plan/mode" }`](#persistence-type-sha256-a7cf43ce7c2a4c038feed1885cd7a00d5c6ee2d90a7e0d56b46f78a3e1ca327f) |
 | `event:request/context` | event | `37cbc9cf06d494cfe5c67f078af1605eacb8e4c2c853e9e26455b73de0ee7ccf` | [`{ type: "request/context" }`](#persistence-type-sha256-37cbc9cf06d494cfe5c67f078af1605eacb8e4c2c853e9e26455b73de0ee7ccf) |
@@ -665,6 +666,19 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 ```
 
 来源：[`packages/api/session-controller/src/types.ts:40`](../packages/api/session-controller/src/types.ts)
+
+### `openubmc/*`
+
+<a id="openubmcinspection--log-only"></a>
+
+#### `openubmc/inspection` — log-only
+
+```ts persistence-catalog
+/** Native Case/evidence query results outside the model transcript. */
+'openubmc/inspection': OpenUbmcInspection
+```
+
+来源：[`packages/experimental/openubmc-cases/src/types.ts:65`](../packages/experimental/openubmc-cases/src/types.ts)
 
 ### `permission/*`
 
@@ -2084,6 +2098,14 @@ SHA-256: `e8de0f457fed5b9ff94dc4950b59ef75fd8ba8af665cc7899485924a62653367`
 SHA-256: `d28765f87d6b6ab408e0b2f3e7e297791b004b806d8e302c49903ebae815feb2`
 
 `"one-shot"`
+
+<a id="persistence-type-sha256-e067409593e0cc96e5cd75dd66659c0c1195d8e4bcd3fe181a3cbcf1ec8faef9"></a>
+
+### `"openubmc/inspection"`
+
+SHA-256: `e067409593e0cc96e5cd75dd66659c0c1195d8e4bcd3fe181a3cbcf1ec8faef9`
+
+`"openubmc/inspection"`
 
 <a id="persistence-type-sha256-9d80129e13edfb6feb03ed327e6085c6ef60b97ad074244b2f5fd4667424a6a4"></a>
 
@@ -4159,6 +4181,24 @@ SHA-256: `5f758f3de5f00c18968a7c6d347083aac5c9ae13f6a79c78f6611b23c4973564`
 | `provider` | 必需 | `string` |
 | `version` | 必需 | `number` |
 
+<a id="persistence-type-sha256-578dc3d34b02f5cc9f291fa14398aff5cff7b32e12dc2e6555ef76663e2ada78"></a>
+
+<a id="persistence-type-openubmcinspection"></a>
+
+<a id="persistence-type-packagesexperimentalopenubmc-casessrctypestsopenubmcinspection"></a>
+
+### `OpenUbmcInspection`
+
+SHA-256: `578dc3d34b02f5cc9f291fa14398aff5cff7b32e12dc2e6555ef76663e2ada78`
+
+来源：[`packages/experimental/openubmc-cases/src/types.ts:56`](../packages/experimental/openubmc-cases/src/types.ts)
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `commandId` | 必需 | `string` |
+| `message` | 必需 | [`{ isError }`](#persistence-type-sha256-7e4faae7698d0320d1cdf8d5332447978b87c38a9cd8fcd20c09ad81ffe09e75) |
+| `meta` | 可选 | [`JsonValue`](#persistence-type-sha256-c592ce75aab73fcab19c1d7845684c72cf402b78d2e1f2833a58ecf9f3598ed6) |
+
 <a id="persistence-type-sha256-3bd652ebfa8726b3ce3937a4f1bd2759e02f86b3a08a20f9e41a8513656fbc5f"></a>
 
 <a id="persistence-type-optionalsessionseq"></a>
@@ -6119,6 +6159,18 @@ SHA-256: `1ccb56061942f5ccb0d30c9e4f2883b9d115ff906560029de637b61d3cde896d`
 | `stream` | 必需 | [`AssistantStreamRecord[]`](#persistence-type-sha256-84bbfdce7d2eab5b0c53e72ff7406db856c8bfd621b965b72fd86598ba493bf7) |
 | `turn` | 必需 | `number` |
 | `usage` | 可选 | [`TokenUsage`](#persistence-type-sha256-fec5442b9ee4122e10514d81d5a43648003fe8bfb7ee2ba50c0cdbdd383ed394) |
+
+<a id="persistence-type-sha256-7e4faae7698d0320d1cdf8d5332447978b87c38a9cd8fcd20c09ad81ffe09e75"></a>
+
+### `{ isError }`
+
+SHA-256: `7e4faae7698d0320d1cdf8d5332447978b87c38a9cd8fcd20c09ad81ffe09e75`
+
+来源：[`packages/experimental/openubmc-cases/src/types.ts:58`](../packages/experimental/openubmc-cases/src/types.ts)
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `isError` | 必需 | `boolean` |
 
 <a id="persistence-type-sha256-0a30c3be336cdd4f8f34e66543a3d46d611c43986edd9b3ce6cbb9b721d3b5d3"></a>
 
@@ -8087,6 +8139,22 @@ SHA-256: `35203ba7ad5ef6f97d556b85df20ae98f04f09c65748cecdf8eefdb8b6405ffc`
 | `seq` | 必需 | `number` |
 | `time` | 必需 | `number` |
 | `type` | 必需 | `"model/selection"` |
+
+<a id="persistence-type-sha256-b5c198b8330ec00a6febc83b94c3b93313125266da8d5a8596f008e25d33aa46"></a>
+
+<a id="persistence-type-eventopenubmcinspection"></a>
+
+### `{ type: "openubmc/inspection" }`
+
+SHA-256: `b5c198b8330ec00a6febc83b94c3b93313125266da8d5a8596f008e25d33aa46`
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `data` | 必需 | [`OpenUbmcInspection`](#persistence-type-sha256-578dc3d34b02f5cc9f291fa14398aff5cff7b32e12dc2e6555ef76663e2ada78) |
+| `ignorable` | 可选 | `true` |
+| `seq` | 必需 | `number` |
+| `time` | 必需 | `number` |
+| `type` | 必需 | `"openubmc/inspection"` |
 
 <a id="persistence-type-sha256-5c45bf4c544a7211dcd8ba6ba7e5f1bc39b49e7a9df9d5cbdc8e87c22771b37b"></a>
 

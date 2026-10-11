@@ -20,9 +20,40 @@ import { isImageAdmissionError } from '@deepseek-ai/dsh-attachment'
 import type { AttachmentStore, ImageAttachmentRef, ImageMediaType, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { ToolDefinition, ToolExecution, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
-import { assertSupportedJsonSchema } from '@deepseek-ai/dsh-tools'
+import { assertSupportedJsonSchema, ToolFailureError } from '@deepseek-ai/dsh-tools'
 import type { JsonSchemaNode } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+
+/** One provider dispatch with trusted source and caller identities. */
+export interface McpToolCall {
+  /** Configured namespace, independent of model tool names. */
+  readonly serverName: string
+  /** Upstream protocol name, independent of model arguments. */
+  readonly toolName: string
+  /** Exact invocation including its Agent and cancellation. */
+  readonly execution: ToolExecution
+  /** Configured key used to inject the trusted Session id on the wire. */
+  readonly sessionIdMetadataKey?: string
+  /** Actual provider wait budget in milliseconds, when owned by this bridge. */
+  readonly toolCallTimeoutMs?: number
+  /** Final-argument validators required before the provider callback can run. */
+  readonly appliedPolicies: Map<string, () => void>
+  /** Provider metadata contributed by trusted dispatch middleware; never model arguments. */
+  metadata: Record<string, JsonValue>
+  /** Provider arguments; middleware may replace these before wire dispatch. */
+  arguments: Record<string, unknown>
+}
+
+declare module '@deepseek-ai/cordis' {
+  interface Events {
+    /**
+     * Apply provider-specific policy immediately before an MCP tool callback.
+     * @param request - trusted source, execution and replaceable wire arguments.
+     * @mode waterfall
+     */
+    'mcp/tool-call'(request: McpToolCall, next: () => Promise<unknown>): Promise<unknown>
+  }
+}
 
 /** Resolved options relevant to tool bridging. */
 export interface ToolBridgeOptions {
@@ -32,8 +63,12 @@ export interface ToolBridgeOptions {
   toolCallTimeoutMs: number
   /** Trusted Session identity metadata; omission sends no identity. */
   sessionIdMetadataKey?: string
+  /** Exact middleware policy ids that must acknowledge every dispatch. */
+  requiredToolCallPolicies?: readonly string[]
   /** Append structured success data to model-visible text. */
   structuredContentInText?: boolean
+  /** Persist structured data with trusted MCP source identity in result metadata. */
+  structuredContentInMeta?: boolean
 }
 
 /** State for one sync generation: the current set of disposers keyed by public name. */
@@ -134,13 +169,18 @@ export async function syncTools(
     }
     definitions.set(publicName, createMcpToolDefinition(ctx, {
       name: publicName,
+      serverName: opts.serverName,
+      ...(opts.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: opts.sessionIdMetadataKey }),
+      ...(opts.requiredToolCallPolicies === undefined ? {} : { requiredToolCallPolicies: opts.requiredToolCallPolicies }),
       rawName: tool.name,
+      toolCallTimeoutMs: opts.toolCallTimeoutMs,
       description: tool.description ?? '',
       inputSchema: tool.inputSchema,
       outputSchema: tool.outputSchema,
       structuredContentInText: opts.structuredContentInText === true,
+      ...(opts.structuredContentInMeta === true ? { metadataServerName: opts.serverName } : {}),
       taskRequired: tool.execution?.taskSupport === 'required',
-      call: (args, execution) => {
+      call: (args, execution, metadata) => {
         const key = opts.sessionIdMetadataKey
         const session = execution.agent?.session
         if (key !== undefined && session === undefined) {
@@ -150,7 +190,7 @@ export async function syncTools(
           {
             name: tool.name,
             arguments: args,
-            ...(key !== undefined && session !== undefined ? { _meta: { [key]: session.id } } : {}),
+            ...(key !== undefined && session !== undefined ? { _meta: { ...metadata, [key]: session.id } } : {}),
           },
           { signal: execution.signal, timeout: opts.toolCallTimeoutMs, toolDefinition: tool },
         )
@@ -210,6 +250,14 @@ function supportedOutputSchema(candidate: unknown): JsonSchemaNode | undefined {
 
 /** One upstream MCP tool and the callback that obtains its raw protocol result. */
 export interface McpToolDefinitionOptions {
+  /** Trusted server identity enabling provider dispatch middleware. */
+  serverName?: string
+  /** Session metadata injection owned by the provider callback. */
+  sessionIdMetadataKey?: string
+  /** Actual provider wait budget in milliseconds; omitted for caller-owned deadlines. */
+  toolCallTimeoutMs?: number
+  /** Exact middleware policy ids that must acknowledge every dispatch. */
+  requiredToolCallPolicies?: readonly string[]
   /** ToolRuntime name presented to the model. */
   name: string
   /** Upstream name used in result diagnostics. */
@@ -224,13 +272,15 @@ export interface McpToolDefinitionOptions {
   taskRequired?: boolean
   /** Append structured success data to model-visible text; errors always retain it. */
   structuredContentInText?: boolean
+  /** Trusted server identity enabling durable MCP result metadata; omission disables it. */
+  metadataServerName?: string
   /**
    * Obtain one raw MCP result from the provider.
    * @param args - model arguments admitted by the ToolRuntime.
    * @param execution - exact ToolRuntime invocation, including its Agent and cancellation.
    * @returns the external result object, validated before content projection.
    */
-  call(args: Record<string, unknown>, execution: ToolExecution): Promise<unknown>
+  call(args: Record<string, unknown>, execution: ToolExecution, metadata: Readonly<Record<string, JsonValue>>): Promise<unknown>
 }
 
 /**
@@ -245,12 +295,20 @@ export function createMcpToolDefinition(
   options: McpToolDefinitionOptions,
 ): ToolDefinition {
   const { name, rawName, description, inputSchema } = options
+  if (options.serverName !== undefined && options.metadataServerName !== undefined && options.serverName !== options.metadataServerName) {
+    throw new Error('MCP dispatch and result metadata must use the same server identity.')
+  }
+  if (options.serverName === undefined && options.metadataServerName === undefined && options.requiredToolCallPolicies?.length) {
+    throw new Error('Required MCP policies need a trusted server identity.')
+  }
   const projections = new WeakMap<ToolExecution, PreparedProjection>()
   return {
     name,
     description,
     parameters: inputSchema,
-    output: createOutput(rawName, supportedOutputSchema(options.outputSchema), options.structuredContentInText === true),
+    output: createOutput(
+      rawName, supportedOutputSchema(options.outputSchema), options.structuredContentInText === true, options.metadataServerName,
+    ),
     execute: createExecutor(ctx, options, projections),
     projectContent(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>) {
       const projection = projections.get(exec)
@@ -265,7 +323,10 @@ export function createMcpToolDefinition(
 }
 
 /** Build the canonical result schema and existing Native text projection. */
-function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefined, includeStructured: boolean): ToolDefinition['output'] {
+function createOutput(
+  rawName: string, structuredSchema: JsonSchemaNode | undefined,
+  includeStructured: boolean, metadataServerName: string | undefined,
+): ToolDefinition['output'] {
   return {
     schema: {
       type: 'object',
@@ -276,11 +337,19 @@ function createOutput(rawName: string, structuredSchema: JsonSchemaNode | undefi
       required: structuredSchema === undefined ? ['content'] : ['content', 'structuredContent'],
       additionalProperties: false,
     },
+    ...(metadataServerName === undefined ? {} : {
+      presentationMeta: (_args: unknown, value: JsonValue) => mcpMetadata(metadataServerName, rawName, value as McpResult),
+    }),
     render(_args: unknown, value: JsonValue) {
       const result = value as McpResult
       return [{ type: 'text', text: extractText(result.content, rawName) + structuredText(result, includeStructured) }]
     },
   }
+}
+
+/** Preserve validated protocol data separately from model-visible prose. */
+function mcpMetadata(serverName: string, toolName: string, result: McpResult): JsonValue {
+  return { mcp: { serverName, toolName, ...result.structuredContent === undefined ? {} : { structuredContent: result.structuredContent } } }
 }
 
 /** Serialize structured data only when explicitly included in successful model context. */
@@ -307,27 +376,55 @@ function createExecutor(
     // string/number/null). Fallback to {} lets the MCP server produce a
     // specific "missing required param" error the model can learn from.
     const argsObj = (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>
-    const parsed = specTypeSchemas.CallToolResult['~standard'].validate(await options.call(argsObj, exec))
+    const serverName = options.serverName ?? options.metadataServerName
+    const request: McpToolCall | undefined = serverName === undefined ? undefined : {
+      serverName, toolName: rawName, execution: exec, arguments: argsObj, appliedPolicies: new Map(), metadata: {},
+      ...(options.sessionIdMetadataKey === undefined ? {} : { sessionIdMetadataKey: options.sessionIdMetadataKey }),
+      ...(options.toolCallTimeoutMs === undefined ? {} : { toolCallTimeoutMs: options.toolCallTimeoutMs }),
+    }
+    const dispatch: { status: 'unknown' | 'not-started' } = { status: 'not-started' }
+    let rawResult: unknown
+    try {
+      rawResult = request === undefined ? await options.call(argsObj, exec, {})
+        : await ctx.waterfall('mcp/tool-call', request, () => {
+          for (const policy of options.requiredToolCallPolicies ?? []) {
+            const validate = request.appliedPolicies.get(policy)
+            if (validate === undefined) throw new Error(`Required MCP tool-call policy is unavailable: ${policy}.`)
+            validate()
+          }
+          dispatch.status = 'unknown'
+          return options.call(request.arguments, exec, request.metadata)
+        })
+    } catch (error) {
+      if (options.metadataServerName === undefined) throw error
+      const message = error instanceof Error ? error.message : String(error)
+      throw new ToolFailureError(message, { mcp: {
+        serverName: options.metadataServerName, toolName: rawName, dispatchStatus: dispatch.status,
+      } })
+    }
+    const parsed = specTypeSchemas.CallToolResult['~standard'].validate(rawResult)
     if (parsed.issues !== undefined) {
-      throw new Error(`Tool "${rawName}" returned an invalid MCP result: ${parsed.issues.map(issue => issue.message).join('; ')}`)
+      const message = `Tool "${rawName}" returned an invalid MCP result: ${parsed.issues.map(issue => issue.message).join('; ')}`
+      if (options.metadataServerName === undefined) throw new Error(message)
+      throw new ToolFailureError(message, { mcp: { serverName: options.metadataServerName, toolName: rawName, dispatchStatus: 'unknown' } })
     }
     const result = parsed.value
 
     const content = result.content as unknown as JsonValue[]
     const text = extractText(content, rawName)
 
-    // MCP isError → throw so ToolRuntime produces an isError result for the model.
-    if (result.isError === true) {
-      throw new Error(result.structuredContent === undefined
-        ? text
-        : `${text}\n${JSON.stringify(result.structuredContent)}`)
-    }
-
     const value: McpResult = {
       content,
       ...result.structuredContent !== undefined
         ? { structuredContent: result.structuredContent as JsonValue }
         : {},
+    }
+    if (result.isError === true) {
+      const message = text + structuredText(value, true)
+      if (options.metadataServerName !== undefined) {
+        throw new ToolFailureError(message, mcpMetadata(options.metadataServerName, rawName, value))
+      }
+      throw new Error(message)
     }
     if (containsImage(content)) {
       const suffix = structuredText(value, options.structuredContentInText === true)

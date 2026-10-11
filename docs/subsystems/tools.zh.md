@@ -181,6 +181,20 @@ interface ToolRestriction {
 
 `ctx.tools.execute()` 接受由调用方拥有且包含必需 readonly `signal` 的 `ToolExecutionInput`，将其解析后的 JSON 参数一次性物化为流水线拥有的 `ToolExecution`，然后让调用依次经过 `tools/pre-execute`（可重排的 allow/deny/ask waterfall）→ 已注册的单调 guard → `tools/execute`（环绕分派包装层）→ `projectContent` → `tools/post-execute`（检查/替换结果）→ 可选且由定义拥有的 `finalizeContent` → `tools/result`（不可变的权威结果）。只有 `tools/execute` 视图可以替换必需的 signal。最终产出为 `ToolExecutionResult`。
 
+抛出 `ToolFailureError` 会在失败结果中保留 JSON `meta`，不会提供成功的规范值。结果策略可替换元数据；最终元数据在持久化前脱离原引用并冻结。
+
+```ts public-api
+/** A failed tool outcome whose JSON metadata remains available in the durable result. */
+declare class ToolFailureError extends Error {
+  /**
+   * Create a failure without a successful canonical value.
+   * @param message - model-visible failure summary.
+   * @param meta - JSON facts retained by result policies and Session persistence.
+   */
+  constructor(message: string, readonly meta: JsonValue);
+}
+```
+
 ```ts type-equiv
 /** Opaque call identity that permits correlation without exposing mutable execution state. */
 type ToolExecutionToken = symbol & { readonly [toolExecutionTokenBrand]: true }
