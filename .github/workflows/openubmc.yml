@@ -4,13 +4,14 @@ on:
   push:
     branches: [main, 'codex/openubmc-*']
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: openubmc-${{ github.ref }}
+  group: openubmc-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -54,7 +55,8 @@ jobs:
       - name: Check client types and documentation
         run: |
           pnpm run typecheck:contracts-ready
-          pnpm run doc-sync
+          pnpm run test:docs
+          pnpm run verify-repository-references
       - name: Check native Case, MCP, ownership and recovery behavior
         run: >-
           pnpm exec vitest run
