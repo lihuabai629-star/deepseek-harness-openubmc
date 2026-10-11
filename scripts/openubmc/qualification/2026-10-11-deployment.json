@@ -18,6 +18,17 @@
   "service_staging": {
     "profile": "independent managed Web profile",
     "source_web_shell_after_restart": { "homepage_status": 200, "page_errors": 0 },
+    "real_case_web_continuity": {
+      "same_session_and_case": true,
+      "initial_cards": 47,
+      "case_revision": 39,
+      "failed_build_phase_visible": true,
+      "native_case_refresh": true,
+      "refresh_revision_and_phase_match": true,
+      "browser_reload_cards": 48,
+      "page_errors": 0,
+      "model_inference": false
+    },
     "configuration_update_and_rollback": "healthy original generation restored",
     "native_cli_continuity": {
       "profile": "separate managed headless profile with a private state snapshot",
@@ -39,7 +50,6 @@
   "limitations": [
     "Managed generations restore configuration and Skills; executable checkouts are verified by digest and require separate software rollback.",
     "The service rehearsal uses the development checkout and private snapshot homes; it does not establish an immutable production software release.",
-    "The service rehearsal checks the Web shell and native CLI Case continuity. Real Case Web inspection is recorded separately in the real-target qualification; latest cloned compressed-session navigation was not qualified here.",
     "The old runtime uses its own home because it cannot read the required openubmc/inspection event.",
     "This record does not qualify a business Lua patch or compatible firmware upgrade and rollback artifacts."
   ]
