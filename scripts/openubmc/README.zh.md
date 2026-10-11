@@ -82,3 +82,5 @@ python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
 使用独立 systemd unit、私有 home 和本机回环端口验证源码部署。认证 URL 和服务日志须保持私有。修改 profile 生命周期前，先停止该实例。安装时选择的模板决定应用入口，update 保留该入口。使用另一个 headless profile 从 CLI 查看私有 Case 快照，不向 Web 入口传递 headless 参数。
 
 软件回退选择旧的可执行文件及其兼容 home。不认识必需 `openubmc/inspection` 事件的构建会拒绝新 Session 日志；保留候选 home 用于恢复，不用旧构建打开它。一致的状态快照使用 SQLite backup，并排除复制的进程锁。[部署记录](qualification/2026-10-11-deployment.json) 报告了托管 CI、独立服务重启、原生 Case 连续性、旧 Runtime 启动和源码 Runtime 恢复。正式服务不属于该演练。
+
+[正式部署记录](qualification/2026-10-11-production.json) 包含独立源码快照重建、文件和依赖解析链接校验、已安装的回环服务、原生 Case 刷新与重载、真实模型和 KB 调用，以及旧 Runtime 回退。软件回退使用保留的旧 Runtime 及其独立 home，并保留新版 Session 文件以便恢复。既有凭据、原 Web profile 和其他用户 MCP 条目继续可用。

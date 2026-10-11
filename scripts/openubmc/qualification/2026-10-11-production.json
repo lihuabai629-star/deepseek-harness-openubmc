@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-11",
+  "environment": "Linux/WSL with systemd",
+  "source_tree": "2e1d9700daca39460d133c41c1753d78adde2eb7",
+  "merged_tree_matches_release": true,
+  "pull_requests": {
+    "numbers": [
+      10,
+      11,
+      12
+    ],
+    "native_stack": 13,
+    "state": "merged"
+  },
+  "remote_ci": {
+    "url": "https://github.com/lihuabai629-star/deepseek-harness-openubmc/actions/runs/38129012284",
+    "conclusion": "success"
+  },
+  "software_release": {
+    "independent_source_and_dependency_snapshot": true,
+    "built_from_snapshot": true,
+    "files_verified": 100516,
+    "resolver_links_verified": 8622,
+    "external_resolver_links": 0,
+    "write_bits_removed": true,
+    "digest_manifest_sha256": "c0159c08f24fd59a504ae971c622c37676a6549948a489b726b7e73d5fa03ebd",
+    "public_build_commit_matches_source": true
+  },
+  "service": {
+    "switched": true,
+    "active": true,
+    "loopback_port": 3080,
+    "homepage_status": 200,
+    "old_unit_and_wrapper_retained": true,
+    "old_home_retained": true,
+    "user_web_profile_retained": true,
+    "other_user_mcp_entries_retained": 3,
+    "original_session_files_missing": 0,
+    "original_session_files_changed": 0,
+    "managed_profile": "healthy",
+    "application_profile": "openubmc",
+    "model_selection": "separate overlay using existing credential source"
+  },
+  "web": {
+    "same_session_and_case": true,
+    "native_case_refresh": true,
+    "case_revision": 39,
+    "failed_build_phase_visible": true,
+    "cards_after_reload": 63,
+    "page_errors": 0
+  },
+  "live_providers": {
+    "model_turn_completed": true,
+    "runtime_status_tool_result": "completed; isError=false",
+    "additional_model_calls": "read-only Case and evidence queries",
+    "kb_query_result": "isError=false; completed turn",
+    "kb_browser_page_errors": 0,
+    "device_operations_in_provider_smokes": false
+  },
+  "software_rollback": {
+    "old_runtime_http_status": 200,
+    "source_runtime_restored_http_status": 200,
+    "candidate_session_files_unchanged": true,
+    "old_format_home_separate": true,
+    "service_active": true
+  },
+  "limitations": [
+    "The deployed software requires its candidate home; the older runtime uses the retained old-format home.",
+    "Configuration rollback alone does not restore executable software.",
+    "Component tests and a compatible firmware upgrade/rollback pair remain separately qualified; this deployment record does not establish target-source equivalence."
+  ]
+}
