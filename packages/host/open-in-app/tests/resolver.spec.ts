@@ -17,6 +17,9 @@ import {
   type OpenInAppInternals, type OpenInAppLauncher, type OpenInAppResolvedLaunch,
 } from '../src/resolver.ts'
 
+// The Linux fixtures describe a native Linux host, independently of the runner's WSL kernel.
+vi.mock('node:os', async importOriginal => ({ ...await importOriginal<typeof import('node:os')>(), release: () => '6.1.0-fixture' }))
+
 const TIMEOUT_MS = 5_000
 
 const roots: string[] = []
