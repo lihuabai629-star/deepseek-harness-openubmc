@@ -70,7 +70,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
   }
 }
 
-/** Read-only native inspection, independent of the model transcript. */
+/** Native Runtime query or continuation result, independent of the model transcript. */
 export interface OpenUbmcInspection {
   commandId: CommandId
   message: { isError: boolean }
@@ -79,7 +79,7 @@ export interface OpenUbmcInspection {
 
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
-    /** Native Case/evidence query results outside the model transcript. */
+    /** Native Runtime query and continuation results outside the model transcript. */
     'openubmc/inspection': OpenUbmcInspection
   }
 }

@@ -41,7 +41,7 @@ it.skipIf(workflow === undefined)('runs native observe/start/Gate/continuation a
           runId = z.string().parse(turn.run_id)
           gate = z.record(z.string(), z.json()).parse(turn.gate)
           expect(turn).toMatchObject({ state: 'waiting_response', response_required: true, gate: { name: 'diagnosis.acceptance' } })
-          expect((await b.command('/run'))?.result).toMatchObject({ kind: 'success', text: expect.stringContaining(runId) })
+          expect((await b.command('/run'))?.result.text).toContain(runId)
         } else {
           const resumed = await b.execute('execute', { kind: 'resume', run_id: runId })
           expect(resumed.isError, JSON.stringify(resumed.content)).toBe(false)
@@ -56,13 +56,15 @@ it.skipIf(workflow === undefined)('runs native observe/start/Gate/continuation a
             gate_version: gate.gate_version, schema_digest: gate.schema_digest,
             response: { status: 'completed', summary: 'missing evidence', payload: {} } })
           expect(invalid.isError).toBe(true)
-          expect(meta.parse(invalid.meta).mcp.structuredContent).toMatchObject({
-            error: { code: expect.any(String) }, gaps: expect.any(Array),
-          })
-          const failed = await b.execute('execute', { kind: 'respond', run_id: runId, gate_id: gate.gate_id,
+          expect(z.object({ error: z.object({ code: z.string().min(1) }), gaps: z.array(z.json()) })
+            .safeParse(meta.parse(invalid.meta).mcp.structuredContent).success).toBe(true)
+          const failed = await b.command(`/target-action ${JSON.stringify({ kind: 'respond', run_id: runId, gate_id: gate.gate_id,
             gate_version: gate.gate_version, schema_digest: gate.schema_digest,
-            response: { status: 'failed', summary: 'offline source work remains', payload: {} } })
-          const turn = meta.parse(failed.meta).mcp.structuredContent
+            response: { status: 'failed', summary: 'offline source work remains', payload: {} } })}`)
+          expect(failed?.result.kind).toBe('success')
+          const inspection = b.session.snapshotEvents().findLast(event => event.type === 'openubmc/inspection')!
+          if (inspection.type !== 'openubmc/inspection') throw new Error('Native response missing')
+          const turn = meta.parse(inspection.data.meta).mcp.structuredContent
           expect(turn.run_id).toBe(runId)
           expect(turn.state).toBe('failed')
           expect(turn.outcome).toMatchObject({ status: 'failed' })

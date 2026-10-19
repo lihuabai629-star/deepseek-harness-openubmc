@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-19",
+  "interface": "openubmc.target-runtime.v1/agent-gateway-v1",
+  "workflow_revision": "e210b99ae286484cfd060d88150411d35fa86f6a",
+  "target": "user-supplied development BMC",
+  "execution": {
+    "path": "DSH profile, Host authority, MCP, real Python Runtime and device transports",
+    "driver": "scripted model adapter for exact qualification actions; configured live model for diagnosis acceptance",
+    "independent_home": true,
+    "execution_grant_revoked_after_qualification": true,
+    "credentials_and_raw_logs_published": false
+  },
+  "observation": {
+    "coverage": { "requested": 5, "available": 5, "not_checked": 0, "complete": true },
+    "available_capabilities": ["ssh", "mdbctl", "telnet", "dbus", "busctl"],
+    "systemd_failed_services": "permission_denied; no service-health conclusion",
+    "board": "Huawei BC83ETHA / SF221Q",
+    "capability_scope": "explicit combined observation only; unrequested capabilities remain unchecked"
+  },
+  "diagnosis": {
+    "run_id": "run-7932e7b4cb12d8391b0840aa1a43f668",
+    "status": "completed",
+    "gate": "diagnosis.acceptance",
+    "gate_response": "submitted by the live configured model",
+    "receipt_coverage": "2/2 complete",
+    "conclusion": "The queried MDB object identifier is absent; the independently identified board object is readable.",
+    "evidence_id": "c59ac20f2873ead2c9e270fb9f90ce00535340801561d22ea60957654278e8c7",
+    "terminal_resume_via_native_command_after_restart": true,
+    "hardware_or_link_health_established": false
+  },
+  "temporary_file": {
+    "apply_run_id": "run-1d8439ad482c2cd94158e19f0cda90cc",
+    "rollback_run_id": "run-001fc0c6a37ae5ad2c6914b64ca768f9",
+    "apply_status": "completed",
+    "rollback_status": "completed",
+    "integrity_and_metadata": "passed",
+    "rollback": "checksum-guarded removal of the newly created file",
+    "restart_scope": "none",
+    "business_file_replaced": false
+  },
+  "lost_acknowledgement": {
+    "run_id": "run-43363e56092dd8d7dbb0e1a39362f26c",
+    "fault": "stdio proxy withheld the completed real Runtime response; owned DSH process group was killed and reaped",
+    "new_start_after_restart": "denied before dispatch",
+    "recovery": "explicit target-reconcile command followed by exact original input with a new tool call id",
+    "recovered_same_run": true,
+    "mutation_journals_for_original_run": 1,
+    "journal_stage": "verified",
+    "epoch_before": 0,
+    "epoch_after": 1,
+    "rollback_run_id": "run-f29b9130c0bb56c12bc90ef818214295",
+    "rollback_status": "completed",
+    "temporary_file_removed": true,
+    "partial_inflight_device_mutation_simulated": false
+  },
+  "business_compatibility": {
+    "deployed_ncsi_comm": "LuaJIT bytecode",
+    "previous_qualification_collector_and_configuration": "not available through the requested file reads",
+    "discovery_run_id": "run-b1f02e4b3c56a7590009d11ff7438233",
+    "discovery_status": "running with incomplete diagnostic content",
+    "matching_business_patch_qualified": false,
+    "firmware_upload_or_activation_performed": false
+  }
+}

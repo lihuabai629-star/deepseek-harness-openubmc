@@ -1,52 +1,67 @@
 {
   "final_response": "SDK_INSPECTION_OK",
   "inspection_in_run_events": 0,
-  "inspection_notifications": 1,
-  "inspection": {
-    "commandId": "{{command:1}}",
-    "message": {
-      "isError": false
+  "inspection_notifications": 2,
+  "inspections": [
+    {
+      "commandId": "{{command:1}}",
+      "message": {
+        "isError": false
+      },
+      "meta": {
+        "mcp": {
+          "serverName": "openubmc-target-runtime",
+          "toolName": "observe",
+          "structuredContent": {
+            "schema": "openubmc.target-runtime.v1/agent-gateway-v1/observation-receipt",
+            "receipt_id": "observation-sdk",
+            "status": "complete",
+            "coverage": {
+              "requested": 1,
+              "available": 1,
+              "unavailable": 0,
+              "not_checked": 0,
+              "complete": true
+            },
+            "freshness": {
+              "mode": "live",
+              "max_age_seconds": 0,
+              "status": "live",
+              "observed_at": "2026-10-19T00:00:00Z"
+            },
+            "results": {
+              "ssh": {
+                "kind": "capability",
+                "values": [
+                  {
+                    "name": "ssh",
+                    "status": "available"
+                  }
+                ]
+              }
+            },
+            "gaps": [],
+            "evidence": [
+              {
+                "uri": "receipt://observation-sdk#ssh"
+              }
+            ]
+          }
+        }
+      }
     },
-    "meta": {
-      "mcp": {
-        "serverName": "openubmc-target-runtime",
-        "toolName": "observe",
-        "structuredContent": {
-          "schema": "openubmc.target-runtime.v1/agent-gateway-v1/observation-receipt",
-          "receipt_id": "observation-sdk",
-          "status": "complete",
-          "coverage": {
-            "requested": 1,
-            "available": 1,
-            "unavailable": 0,
-            "not_checked": 0,
-            "complete": true
-          },
-          "freshness": {
-            "mode": "live",
-            "max_age_seconds": 0,
-            "status": "live",
-            "observed_at": "2026-10-19T00:00:00Z"
-          },
-          "results": {
-            "ssh": {
-              "kind": "capability",
-              "values": [
-                {
-                  "name": "ssh",
-                  "status": "available"
-                }
-              ]
-            }
-          },
-          "gaps": [],
-          "evidence": [
-            {
-              "uri": "receipt://observation-sdk#ssh"
-            }
-          ]
+    {
+      "commandId": "{{command:2}}",
+      "message": {
+        "isError": true
+      },
+      "meta": {
+        "mcp": {
+          "serverName": "openubmc-target-runtime",
+          "toolName": "execute",
+          "dispatchStatus": "not-started"
         }
       }
     }
-  }
+  ]
 }

@@ -63,6 +63,12 @@ it.each(['source', 'built'] as const)('runs denial, human authorization and pers
     const granted = await readFile(logPath, 'utf8')
     expect(granted).toContain('\"name\":\"target-authorize\"')
     expect(granted).toContain('OWNED_EXECUTION_OK')
+    const native = await run(['--session-id', sessionId, '--json', '/target-action {"kind":"resume","run_id":"run-owned"}'])
+    expect(native.stdout).toContain('OWNED_EXECUTION_OK')
+    expect(native.stdout).not.toContain('turn_start')
+    const continued = await readFile(logPath, 'utf8')
+    expect(continued).toContain('"type":"openubmc/inspection"')
+    expect(continued).toContain('"toolName":"execute"')
   } finally {
     await rm(cwd, { recursive: true, force: true })
   }

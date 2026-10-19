@@ -25,8 +25,18 @@ export interface OpenUbmcRuntimeState {
   reconcileCallId: ToolCallId | null
 }
 
+/** Current-session execution controls derived from the durable authority state. */
+export interface OpenUbmcRuntimeView {
+  authorized: boolean
+  pending: number
+  uncertain: number
+}
+
 declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionStateMap {
     'openubmc/runtime': OpenUbmcRuntimeState
+  }
+  interface SessionProjectionMap {
+    'openubmc/runtime': OpenUbmcRuntimeView
   }
 }

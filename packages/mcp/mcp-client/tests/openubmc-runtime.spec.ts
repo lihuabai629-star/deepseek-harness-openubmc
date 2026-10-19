@@ -36,7 +36,8 @@ it.skipIf(workflow === undefined)('discovers the Python Runtime and preserves st
             })
             expect(result.isError).toBe(true)
             expect(JSON.stringify(result.content)).toContain('target')
-            expect(result.meta).toMatchObject({ mcp: { structuredContent: { status: 'failed', error: { code: expect.any(String) } } } })
+            expect(result.meta).toMatchObject({ mcp: { structuredContent: { status: 'failed' } } })
+            expect(result.meta).toHaveProperty('mcp.structuredContent.error.code')
           }
         } finally {
           await connection.dispose()

@@ -19,7 +19,7 @@ export type * from './types.ts'
 /** Cordis plugin name. */
 export const name = 'openubmc-runtime'
 /** Durable authority and native human commands. */
-export const inject = ['commands', 'sessionProjections']
+export const inject = ['commands', 'sessionProjections', 'tools']
 
 /** Caller wait budgets for the Agent gateway. */
 export interface Config {
@@ -52,7 +52,12 @@ const actionSchema = schema.discriminatedUnion('kind', [
     gate_version: schema.number().int().positive(), schema_digest: schema.string().min(1) }).loose(),
   schema.object({ kind: schema.literal('control'), run_id: schema.string().min(1), command: schema.enum(['reconcile', 'cancel']) }).loose(),
 ])
+const continuationSchema = actionSchema.refine(action => action.kind !== 'start', 'Native actions must continue an existing Run.')
 const runtimeOwned = ['case_id', 'command_id', 'authorization', 'workflow', 'epoch', 'task_id', 'operation_id']
+
+function nativeCallId(commandId: CommandId): ToolCallId {
+  return ToolCallId(`command:${commandId}`)
+}
 
 /** Namespace opaque model call ids by the trusted Session and bound their wire length. */
 function operationId(request: McpToolCall, callId: ToolCallId): string {
@@ -107,7 +112,7 @@ function authorize(request: McpToolCall, state: OpenUbmcRuntimeState, config: Co
     }).parse(action)
     const gate = jsonObject.safeParse(ownRun?.gate)
     if (!gate.success || binding.gate_id !== gate.data.gate_id || binding.gate_version !== gate.data.gate_version
-      || binding.schema_digest.replace(/^sha256:/, '') !== String(gate.data.schema_digest).replace(/^sha256:/, '')) {
+      || binding.schema_digest.replace(/^sha256:/, '') !== schema.string().parse(gate.data.schema_digest).replace(/^sha256:/, '')) {
       throw new Error('The response must bind the latest observed Gate id, version and schema digest.')
     }
   }
@@ -140,11 +145,28 @@ export function apply(ctx: Context, config: Config): void {
     reconcileCallId: schema.string().transform(ToolCallId).nullable(),
   })
   ctx.sessionProjections.register({
-    key: 'openubmc/runtime', stateVersion: 3, stateSchema,
+    key: 'openubmc/runtime', stateVersion: 4, stateSchema,
     init: (_header, inheritedEventCount) => ({ inheritedEventCount, operations: [], pendingGrants: {},
       runs: {}, pendingCalls: {}, uncertainCalls: {}, reconcileCallId: null }),
+    wire: {
+      viewSchema: schema.object({ authorized: schema.boolean(), pending: schema.number().int().nonnegative(),
+        uncertain: schema.number().int().nonnegative() }),
+      view: state => ({ authorized: state.operations.includes('execute'), pending: Object.keys(state.pendingCalls).length,
+        uncertain: Object.keys(state.uncertainCalls).length }),
+    },
     apply(state, event) {
       if (event.seq < state.inheritedEventCount) return state
+      if (event.type === 'command/run' && event.data.name === 'target-action') {
+        let input: unknown
+        try { input = JSON.parse(event.data.args ?? '') } catch (_error) {
+          // Malformed native input never enters the execution pipeline.
+          return state
+        }
+        const parsed = continuationSchema.safeParse(input)
+        if (!parsed.success) return state
+        const id = nativeCallId(event.data.commandId)
+        return { ...state, pendingCalls: { ...state.pendingCalls, [id]: { arguments: jsonObject.parse(parsed.data), operationId: id } } }
+      }
       if (event.type === 'tool/call' && event.data.name === publicToolName(config.serverName, 'execute')) {
         let input: unknown
         try { input = JSON.parse(event.data.arguments) } catch (_error) {
@@ -157,8 +179,9 @@ export function apply(ctx: Context, config: Config): void {
           arguments: parsed.data, operationId: state.reconcileCallId ?? event.data.callId,
         } } }
       }
-      if (event.type === 'tool/result') {
-        const id = event.data.message.toolCallId
+      if (event.type === 'tool/result' || event.type === 'openubmc/inspection') {
+        const id = event.type === 'tool/result' ? event.data.message.toolCallId : nativeCallId(event.data.commandId)
+        const errorCode = event.type === 'tool/result' ? event.data.error?.code : undefined
         const recorded = state.pendingCalls[id]
         if (recorded === undefined) return state
         const replayId = state.reconcileCallId
@@ -177,8 +200,8 @@ export function apply(ctx: Context, config: Config): void {
         const rejected = event.data.message.isError && failure.success
           && ['AgentGatewayError', 'AgentPreflightError', 'GatePreflightError', 'GateSchemaViolation',
             'GateConflict', 'ReferenceViolation', 'ScopeViolation', 'AgentBudgetError', 'CommandConflict'].includes(failure.data.error.code)
-        const uncertain = mcp?.dispatchStatus === 'unknown' || event.data.error?.code === TOOL_OUTCOME_UNKNOWN
-          || event.data.error?.code === TOOL_ABORTED || !turn.success && !rejected
+        const uncertain = mcp?.dispatchStatus === 'unknown' || errorCode === TOOL_OUTCOME_UNKNOWN
+          || errorCode === TOOL_ABORTED || !turn.success && !rejected
           || mcp === undefined || turn.success && pending.arguments.kind !== 'start' && pending.arguments.run_id !== turn.data.run_id
         if (uncertain) return { ...state, pendingCalls, reconcileCallId: null,
           uncertainCalls: { ...state.uncertainCalls, [pending.operationId]: pending } }
@@ -217,6 +240,19 @@ export function apply(ctx: Context, config: Config): void {
     },
   })
   ctx.commands.register({
+    definitionId: CommandDefinitionId('@deepseek-ai/dsh-experimental-openubmc-runtime/action'), name: 'target-action',
+    description: 'Submit an explicit continuation to an owned openUBMC Run', input: { hint: '<execute action JSON>' },
+    handler: async (invocation) => {
+      const action = continuationSchema.parse(JSON.parse(invocation.rawInput))
+      const result = await ctx.tools.execute({ name: publicToolName(config.serverName, 'execute'),
+        callId: nativeCallId(invocation.commandId), arguments: action, agent: invocation.agent, signal: invocation.signal })
+      const event = invocation.agent.session.append('openubmc/inspection', { commandId: invocation.commandId,
+        message: { isError: result.isError }, ...(result.meta === undefined ? {} : { meta: result.meta }) })
+      const text = result.content.filter(block => block.type === 'text').map(block => block.text).join('\n')
+      return result.isError ? { kind: 'error', text } : { kind: 'success', text, sourceEventSeq: event.seq }
+    },
+  })
+  ctx.commands.register({
     definitionId: CommandDefinitionId('@deepseek-ai/dsh-experimental-openubmc-runtime'), name: 'target-authorize',
     description: 'Authorize Agent execute for this Session', input: { hint: 'execute | revoke' },
     handler: (invocation) => {
@@ -249,9 +285,14 @@ export function apply(ctx: Context, config: Config): void {
       request.metadata = metadata
       request.metadata['openubmc/operationId'] = operationId(request, request.execution.callId)
       authorize(request, current, config)
+      if (request.toolName === 'execute' && request.arguments.kind === 'control' && request.arguments.command === 'reconcile'
+        && [...activeCalls.get(session.id) ?? []].some(id => id !== request.execution.callId)) {
+        throw new Error('An execute call is still running; wait for its settlement before reconciliation.')
+      }
     }
     check()
     request.appliedPolicies.set('openubmc-session-authority', check)
+    if (request.toolName === 'observe') return next()
     const active = activeCalls.get(session.id) ?? new Set<ToolCallId>()
     activeCalls.set(session.id, active)
     active.add(request.execution.callId)

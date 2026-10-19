@@ -7,3 +7,8 @@
 .section { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
 .label { color: var(--dsw-alias-label-secondary); font-size: 12px; font-weight: 500; }
 .values { margin: 0; padding-left: 18px; color: var(--dsw-alias-label-secondary); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.form { display: flex; flex-direction: column; gap: 8px; }
+.form label { display: flex; flex-direction: column; gap: 4px; font-size: var(--dsh-content-font-size-secondary, 13px); }
+.form select, .form textarea { color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-module-platform); border: 1px solid var(--dsw-alias-line-divider-module); border-radius: var(--dsw-radius-md); padding: 6px 8px; font: inherit; }
+.form textarea { resize: vertical; min-height: 60px; }

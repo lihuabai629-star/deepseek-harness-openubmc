@@ -20,7 +20,7 @@ declare module '@deepseek-ai/dsh-client-ui-chat/client' {
 const metadataSchema = z.object({ mcp: z.object({ serverName: z.string(), toolName: z.enum(['observe', 'execute']), structuredContent: z.record(z.string(), z.json()) }) })
 const gateway = 'openubmc.target-runtime.v1/agent-gateway-v1'
 function parse(event: ConversationMatch['event'], serverName: string): OpenUbmcAgentChatData | undefined {
-  if (event.type !== 'tool/result') return undefined
+  if (event.type !== 'tool/result' && event.type !== 'openubmc/inspection') return undefined
   const parsed = metadataSchema.safeParse(event.data.meta)
   if (!parsed.success || parsed.data.mcp.serverName !== serverName) return undefined
   const { toolName, structuredContent: document } = parsed.data.mcp

@@ -1,0 +1,11 @@
+- text: diagnosis.acceptance Phase result
+- combobox "Phase result":
+  - option "Completed" [selected]
+  - option "Failed"
+- text: Result summary
+- textbox "Result summary": Explicit diagnosis
+- text: root_cause
+- textbox "root_cause": Observed identifier mismatch
+- text: evidence_ids
+- textbox "evidence_ids": evidence-web
+- button "Submit phase result"

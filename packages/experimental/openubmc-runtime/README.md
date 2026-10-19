@@ -27,6 +27,8 @@ This optional Host plugin protects the Runtime Agent tools `observe` and `execut
 
 `/target-authorize execute` enables execution in the current Session; `/target-authorize revoke` removes it. Observe needs no execution grant. The command selects no target and bypasses no Runtime authorization or evidence requirement. Resume restores successful command grants. A fork inherits historical observations but neither grants nor Run write access.
 
+`/target-action <execute action JSON>` submits `respond`, `resume` or `control` to an existing Run through the same guarded tool executor. It cannot start a Run. Results retain structured metadata and failure status in `openubmc/inspection` events without model inference. An interrupted command without a result remains pending until reconciliation. The wire view derives execution availability from this same authority projection.
+
 Only a Turn returned to a recorded start call creates a Run binding. Continuation must use a bound Run. Responses bind the latest returned Gate id, version and schema digest; incident cancellation binds its Incident id. Runtime validates response contents and owns every state transition. The adapter never injects Case ids or synthesizes Gate acceptance.
 
 The Host hashes the trusted Session and original tool-call id into native `openubmc/operationId` metadata. The provider injects `taskId` independently of model input. The required policy rechecks authority and budgets after other middleware, immediately before dispatch. Disposal removes commands and the projection; protected dispatch then fails closed.

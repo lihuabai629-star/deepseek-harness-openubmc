@@ -84,6 +84,15 @@ interface OpenUbmcRuntimeState {
 ```
 
 ```ts type-equiv
+/** Current-session execution controls derived from the durable authority state. */
+interface OpenUbmcRuntimeView {
+  authorized: boolean
+  pending: number
+  uncertain: number
+}
+```
+
+```ts type-equiv
 /** Runtime-issued semantic Run identity. */
 type OpenUbmcRunId = Branded<'openubmc.run'>
 ```

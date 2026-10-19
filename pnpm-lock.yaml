@@ -4231,6 +4231,9 @@ importers:
       '@deepseek-ai/dsh-experimental-openubmc-cases':
         specifier: workspace:*
         version: link:../../experimental/openubmc-cases
+      '@deepseek-ai/dsh-experimental-openubmc-runtime':
+        specifier: workspace:*
+        version: link:../../experimental/openubmc-runtime
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:*
         version: link:../../host/webserver

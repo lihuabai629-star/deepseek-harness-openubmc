@@ -14,6 +14,8 @@ The Host binds Runs only from Turns returned to recorded start calls. Successful
 
 Read-only `/run` inspects durable observations. Execute continuation remains an explicit execution action. Existing Runs recover through Runtime reconciliation; an unacknowledged start permits one exact replay under its original operation identity. Legacy Case observations remain readable without enabling retired writers.
 
+Native `/target-action` continues an owned Run through the existing tool executor and records its result as `openubmc/inspection`. The same Session projection tracks unfinished model calls and native commands. Web controls derive availability from that projection, retain Runtime Gate bindings and require explicit submission. They never advance on render or reload. A live execute call prevents reconciliation until it settles.
+
 ## Alternatives considered
 
 **Session-derived Case ids.** They describe the retired interface and cannot represent multiple Runtime-issued Runs within a Session.

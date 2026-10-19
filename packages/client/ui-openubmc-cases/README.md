@@ -24,7 +24,7 @@ Configure `serverName` with the same trusted MCP namespace as the Host [Case pro
 
 Native Run cards retain Gate ids, versions and response schemas; Incident recovery details; Outcome, facts, gaps and progress. Observation receipt cards expose coverage, freshness, results and evidence. Complete JSON remains expandable. Historical Case cards retain their recorded fields without live read controls.
 
-Every card shows a recorded observation. A later result marks the earlier card as possibly stale; fork-inherited cards retain their historical label. The Client never invokes execute or treats resume as a refresh. Failed tool results remain failed. Invalid or foreign-source metadata uses generic tool presentation.
+Every card shows a recorded observation. A later result marks the earlier card as possibly stale; fork-inherited cards retain their historical label. Only the latest current-session Run card offers explicit authorization, continuation, cancellation and reconciliation through native Host commands. Gate forms retain the returned identity and submission binding, collect explicit response fields and leave complete schema validation to Runtime. Failed submissions retain the draft. Rendering, expanding or reloading a card never invokes execution. Failed results remain failed; invalid or foreign-source metadata uses generic tool presentation.
 
 ## Dev Note
 
@@ -32,7 +32,7 @@ The Client owns a Conversation definition, keyed renderers and locale dictionari
 
 ## Model Experience
 
-None, as this plugin presents persisted Case metadata without invoking execution commands.
+None, as explicit controls invoke native Host commands without a model request.
 
 #### KV Cache effect
 
@@ -40,4 +40,4 @@ This plugin does not change model requests or reusable prefixes.
 
 ## Known Limitations and Deferred Work
 
-- Cards render Runtime-provided phase, evidence and artifact JSON. They do not open host artifact paths or implement device controls. A stale label does not perform background polling. Recorded cards remain readable offline.
+- Cards render Runtime-provided phase, evidence and artifact JSON. They do not open host artifact paths or provide Run creation. A stale label does not perform background polling. Recorded cards remain readable offline.

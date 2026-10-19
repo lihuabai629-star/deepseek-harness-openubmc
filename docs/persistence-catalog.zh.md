@@ -674,7 +674,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 #### `openubmc/inspection` — log-only
 
 ```ts persistence-catalog
-/** Native Case/evidence query results outside the model transcript. */
+/** Native Runtime query and continuation results outside the model transcript. */
 'openubmc/inspection': OpenUbmcInspection
 ```
 

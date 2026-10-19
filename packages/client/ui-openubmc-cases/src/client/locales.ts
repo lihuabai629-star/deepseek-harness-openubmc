@@ -10,6 +10,10 @@ export const zh = {
   'phase': '阶段', 'evidence': '证据', 'artifacts': '工件', 'actions': '后续动作',
   'refresh': '刷新 Case', 'readEvidence': '读取证据 {value}',
   'unavailable': 'Case 读取命令不可用', 'none': '无', 'unknown': '未报告',
+  authorizeExecution: '授权本会话执行', revokeExecution: '撤销执行授权', resumeRun: '继续 Run', reconcileRun: '核实执行结果', cancelRun: '取消 Run',
+  responseStatus: '阶段结果', responseSummary: '结果说明', responseCompleted: '已完成', responseFailed: '失败', responseCancelled: '取消', responsePartial: '部分完成',
+  selectValue: '选择值', onePerLine: '每行一项', jsonValue: '输入 JSON 值', submitResponse: '提交阶段结果',
+  invalidPayload: '请检查字段中的 JSON 值', submitFailed: '提交失败，请查看会话中的操作结果', diagnosticReceipt: '诊断证据',
 } as const
 
 /** English card copy with the same keys. */
@@ -21,6 +25,10 @@ export const en: Record<keyof typeof zh, string> = {
   phase: 'Phase', evidence: 'Evidence', artifacts: 'Artifacts', actions: 'Next actions',
   refresh: 'Refresh Case', readEvidence: 'Read evidence {value}',
   unavailable: 'The Case inspection command is unavailable.', none: 'None', unknown: 'Unreported',
+  authorizeExecution: 'Authorize this Session', revokeExecution: 'Revoke execution', resumeRun: 'Continue Run', reconcileRun: 'Reconcile execution', cancelRun: 'Cancel Run',
+  responseStatus: 'Phase result', responseSummary: 'Result summary', responseCompleted: 'Completed', responseFailed: 'Failed', responseCancelled: 'Cancelled', responsePartial: 'Partial',
+  selectValue: 'Select a value', onePerLine: 'One item per line', jsonValue: 'Enter a JSON value', submitResponse: 'Submit phase result',
+  invalidPayload: 'Check the JSON values in the response fields.', submitFailed: 'Submission failed. Check the operation result in this conversation.', diagnosticReceipt: 'Diagnostic evidence',
 }
 
 /** Locale keys accepted by the Case renderer. */

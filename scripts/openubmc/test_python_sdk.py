@@ -49,10 +49,13 @@ class PythonSdkInspectionTests(unittest.TestCase):
             logs = list((home / 'sessions').rglob('session.v4.jsonl'))
             self.assertEqual(len(logs), 1)
             persisted = [json.loads(line) for line in logs[0].read_text().splitlines()]
-            native = next(event for event in persisted if event.get('type') == 'openubmc/inspection')
-            projection = {'final_response': result.final_response, 'inspection_in_run_events': len(inspections), 'inspection_notifications': len(notifications), 'inspection': native['data']}
-            self.assertEqual(len(notifications), 1)
-            projection['inspection']['commandId'] = '{{command:1}}'
+            native = [event for event in persisted if event.get('type') == 'openubmc/inspection']
+            projection = {'final_response': result.final_response, 'inspection_in_run_events': len(inspections), 'inspection_notifications': len(notifications), 'inspections': [event['data'] for event in native]}
+            self.assertEqual(len(notifications), 2)
+            self.assertEqual(native[1]['data']['meta']['mcp']['dispatchStatus'], 'not-started')
+            self.assertTrue(native[1]['data']['message']['isError'])
+            for index, inspection in enumerate(projection['inspections'], 1):
+                inspection['commandId'] = '{{command:' + str(index) + '}}'
             actual = json.dumps(projection, indent=2) + '\n'
             if os.environ.get('DSH_UPDATE_PYTHON_INSPECTION') == '1':
                 EXPECTED.mkdir(parents=True, exist_ok=True)

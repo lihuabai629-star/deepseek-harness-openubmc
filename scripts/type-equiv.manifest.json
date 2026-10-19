@@ -2399,6 +2399,11 @@
       "source": "packages/experimental/openubmc-runtime/src/types.ts"
     },
     {
+      "doc": "docs/subsystems/openubmc-cases.md",
+      "symbol": "OpenUbmcRuntimeView",
+      "source": "packages/experimental/openubmc-runtime/src/types.ts"
+    },
+    {
       "doc": "docs/subsystems/mcp.md",
       "symbol": "McpToolCall",
       "source": "packages/mcp/mcp-client/src/tools.ts"

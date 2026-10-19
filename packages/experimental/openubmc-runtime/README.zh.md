@@ -28,6 +28,8 @@ kind: "package-reference"
 
 `/target-authorize execute` 开启当前 Session 的执行权限；`/target-authorize revoke` 撤销权限。Observe 不需要执行授权。该命令不选择目标，也不跳过 Runtime 的授权和证据要求。Resume 恢复成功命令授予的权限；fork 继承历史观察，但不继承授权或 Run 写权限。
 
+`/target-action <execute action JSON>` 通过相同的受保护工具执行器向已有 Run 提交 `respond`、`resume` 或 `control`，不能启动新 Run。结果在 `openubmc/inspection` 事件中保留结构化元数据和失败状态，不触发模型推理。命令中断且没有结果时，在核对前保持待结算状态。传输视图从同一授权投影派生执行可用性。
+
 只有已记录的 start 调用返回 Turn 后，才建立 Run 绑定。续接必须使用已绑定的 Run。响应需绑定最新返回的 Gate 标识、版本和 schema 摘要；Incident 取消需绑定其标识。Runtime 验证响应内容并管理全部状态转换。适配器不注入 Case 标识，也不代为接受 Gate。
 
 宿主将可信 Session 与原工具调用标识哈希为原生 `openubmc/operationId` 元数据。提供方独立于模型输入注入 `taskId`。必需策略在其他中间件之后、实际发送之前再次校验权限和预算。卸载移除命令和投影，后续受保护调用会被拒绝。

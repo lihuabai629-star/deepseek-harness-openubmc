@@ -2,6 +2,62 @@
 import { expect, it, vi } from 'vitest'
 import { bench, response } from './harness.ts'
 
+it('submits native Gate responses through the same authority policy and retains failures across restart', async () => {
+  const b = await bench()
+  try {
+    const call = vi.fn<() => Promise<unknown>>(async () => response())
+    b.register('execute', call)
+    await b.command('/target-authorize execute')
+    await b.execute('execute', { kind: 'start' })
+    const action = { kind: 'respond', run_id: 'run-owned', gate_id: 'gate-owned', gate_version: 1,
+      schema_digest: 'sha256:abc', submission_id: 'submission-1', response: { status: 'failed', summary: 'evidence is incomplete', payload: {} } }
+    expect((await b.command(`/target-action ${JSON.stringify({ ...action, gate_version: 2 })}`))?.result.kind).toBe('error')
+    expect(call).toHaveBeenCalledTimes(1)
+    await expect(b.command('/target-action {"kind":"start"}')).rejects.toThrow('continue an existing Run')
+    expect(call).toHaveBeenCalledTimes(1)
+    call.mockImplementation(async () => ({ ...response(), isError: true,
+      structuredContent: { ...response().structuredContent, state: 'failed', outcome: { status: 'failed' } } }))
+    expect((await b.command(`/target-action ${JSON.stringify(action)}`))?.result.kind).toBe('error')
+    expect(call).toHaveBeenCalledTimes(2)
+    expect(b.ctx.sessionProjections.stateOf(b.session, 'openubmc/runtime')).toMatchObject({
+      runs: { 'run-owned': { state: 'failed', outcome: { status: 'failed' } } }, pendingCalls: {}, uncertainCalls: {},
+    })
+    const inspections = b.session.snapshotEvents().filter(event => event.type === 'openubmc/inspection')
+    expect(inspections).toHaveLength(2)
+    const restarted = await bench(b.session.snapshotEvents())
+    try {
+      expect(restarted.ctx.sessionProjections.stateOf(restarted.session, 'openubmc/runtime')).toMatchObject({
+        operations: ['execute'], runs: { 'run-owned': { state: 'failed' } }, pendingCalls: {}, uncertainCalls: {},
+      })
+    } finally { await restarted.ctx.fiber.dispose() }
+    await b.command('/target-authorize revoke')
+    expect((await b.command('/target-action {"kind":"resume","run_id":"run-owned"}'))?.result.kind).toBe('error')
+    expect(call).toHaveBeenCalledTimes(2)
+  } finally { await b.ctx.fiber.dispose() }
+})
+
+it('keeps an interrupted native continuation pending until reconciliation of its Run', async () => {
+  const b = await bench()
+  try {
+    b.register('execute', async () => response())
+    await b.command('/target-authorize execute')
+    await b.execute('execute', { kind: 'start' })
+    await b.command('/target-action {"kind":"resume","run_id":"run-owned"}')
+    const events = b.session.snapshotEvents()
+    const nativeResult = events.findIndex(event => event.type === 'openubmc/inspection')
+    const restarted = await bench(events.slice(0, nativeResult))
+    try {
+      const call = vi.fn(async () => response())
+      restarted.register('execute', call)
+      expect((await restarted.command('/target-action {"kind":"resume","run_id":"run-owned"}'))?.result.kind).toBe('error')
+      expect(call).not.toHaveBeenCalled()
+      expect((await restarted.command('/target-action {"kind":"control","command":"reconcile","run_id":"run-owned"}'))?.result.kind).toBe('success')
+      expect(call).toHaveBeenCalledTimes(1)
+      expect(restarted.ctx.sessionProjections.stateOf(restarted.session, 'openubmc/runtime')).toMatchObject({ pendingCalls: {}, uncertainCalls: {} })
+    } finally { await restarted.ctx.fiber.dispose() }
+  } finally { await b.ctx.fiber.dispose() }
+})
+
 it('requires the latest Gate binding and preserves structured failure details', async () => {
   const b = await bench()
   try {
@@ -65,7 +121,9 @@ it('replays an unacknowledged start with the same native identity and requires R
     const calls: string[] = []
     let lost = true
     b.register('execute', async (_args, _execution, metadata) => {
-      calls.push(String(metadata['openubmc/operationId']))
+      const operation = metadata['openubmc/operationId']
+      if (typeof operation !== 'string') throw new Error('Expected trusted operation metadata')
+      calls.push(operation)
       if (lost) throw new Error('offline transport lost')
       return response()
     })
@@ -86,4 +144,24 @@ it('replays an unacknowledged start with the same native identity and requires R
     expect((await b.execute('execute', { kind: 'resume', run_id: 'run-owned' })).isError).toBe(false)
     expect(b.ctx.sessionProjections.stateOf(b.session, 'openubmc/runtime')!.uncertainCalls).toEqual({})
   } finally { await b.ctx.fiber.dispose() }
+})
+
+it('refuses reconciliation while an execute callback is active, then settles without orphaned work', async () => {
+  const b = await bench()
+  let release!: () => void
+  let entered!: () => void
+  const blocked = new Promise<void>((resolve) => { release = resolve })
+  const dispatched = new Promise<void>((resolve) => { entered = resolve })
+  let pending: Promise<unknown> | undefined
+  try {
+    const call = vi.fn<() => Promise<unknown>>(async () => response())
+    b.register('execute', call)
+    await b.command('/target-authorize execute')
+    await b.execute('execute', { kind: 'start' })
+    call.mockImplementationOnce(async () => { entered(); await blocked; return response() })
+    pending = b.execute('execute', { kind: 'resume', run_id: 'run-owned' })
+    await dispatched
+    expect((await b.command('/target-action {"kind":"control","command":"reconcile","run_id":"run-owned"}'))?.result.kind).toBe('error')
+    expect(call).toHaveBeenCalledTimes(2)
+  } finally { release(); await pending; await b.ctx.fiber.dispose() }
 })

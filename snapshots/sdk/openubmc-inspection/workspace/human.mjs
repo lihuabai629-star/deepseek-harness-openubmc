@@ -10,5 +10,10 @@ export function apply(ctx) {
       invocation.agent.session.append('openubmc/inspection', { commandId: invocation.commandId, message: { isError: result.isError }, ...(result.meta === undefined ? {} : { meta: result.meta }) })
       return { kind: result.isError ? 'error' : 'success', text: 'Offline observation recorded.' }
     } }))
-  ctx.on('agent/created', async ({ agent }) => { await ctx.commands.execute(agent, '/offline-observe', [], new AbortController().signal) })
+  ctx.on('agent/created', async ({ agent }) => {
+    const signal = new AbortController().signal
+    await ctx.commands.execute(agent, '/offline-observe', [], signal)
+    const denied = await ctx.commands.execute(agent, '/target-action {"kind":"resume","run_id":"foreign-run"}', [], signal)
+    if (denied?.result.kind !== 'error') throw new Error('Native continuation must reject a foreign Run')
+  })
 }

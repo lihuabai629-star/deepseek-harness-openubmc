@@ -14,6 +14,8 @@ Status: implemented
 
 只读 `/run` 查看持久化观察。Execute 续接仍是显式执行动作。已有 Run 通过 Runtime 核对恢复；启动结果未确认时，只允许沿用原操作标识按原输入重放一次。历史 Case 观察仍可读取，不启用已退役的写接口。
 
+原生 `/target-action` 通过已有工具执行器续接当前 Session 拥有的 Run，并将结果记录为 `openubmc/inspection`。同一 Session 投影跟踪未完成的模型调用和原生命令。Web 控件从该投影派生可用性，保留 Runtime Gate 绑定并要求显式提交，不在渲染或重新加载时推进。当前仍在执行的调用结算前，不允许核对。
+
 ## 考虑过的替代方案
 
 **从 Session 派生 Case 标识。** 这种方式属于旧接口，无法表达同一 Session 中多个 Runtime 分配的 Run。
