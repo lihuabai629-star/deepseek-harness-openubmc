@@ -30,10 +30,62 @@ def checkout(root):
         path = workflow / entry
         path.parent.mkdir(parents=True)
         path.touch()
+    support = workflow / 'openubmc-target-runtime/openubmc_target_runtime'
+    support.mkdir(parents=True)
+    (support / '__init__.py').touch()
+    (support / 'credential_file.py').write_text('def credential_completeness(values):\n    return {"missing_keys": ["fixture"]}\n')
+    (support.parent / 'SKILL.md').write_text('Unselected Runtime Skill\n')
     return workflow
 
 
 class LifecycleTests(unittest.TestCase):
+    def test_managed_skill_imports_runtime_support_and_repairs_its_owned_copy(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            home = root / 'home'
+            workflow = checkout(root)
+            helper = workflow / 'testing/scripts/runtime_support.py'
+            helper.write_text(
+                'import json, sys\n'
+                'from pathlib import Path\n'
+                'sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "openubmc-target-runtime"))\n'
+                'from openubmc_target_runtime.credential_file import credential_completeness\n'
+                'print(json.dumps(credential_completeness({})))\n'
+            )
+            cache = workflow / 'openubmc-target-runtime/openubmc_target_runtime/__pycache__'
+            cache.mkdir()
+            (cache / 'derived.pyc').write_bytes(b'derived cache')
+            profile = home / 'profiles/openubmc'
+            profile.mkdir(parents=True)
+            user_patch = b'- id: user-model\n  config:\n    model: unchanged\n'
+            (profile / 'cordis.patch.yml').write_bytes(user_patch)
+            module.run('install', home, workflow)
+            active = (home / 'openubmc-managed/current').resolve()
+            support_name = 'skills/openubmc-target-runtime/openubmc_target_runtime/credential_file.py'
+            support = active / support_name
+            original = support.read_bytes()
+            self.assertFalse(support.is_symlink())
+            self.assertFalse(support.parent.joinpath('__pycache__').exists())
+            self.assertFalse(support.parent.parent.joinpath('SKILL.md').exists())
+            self.assertIn(support_name, json.loads((active / 'files.json').read_text()))
+            workflow.rename(root / 'hidden-workflow')
+            try:
+                result = subprocess.run(
+                    [sys.executable, '-I', '-B', str(active / 'skills/openubmc-dt-testing/scripts/runtime_support.py')],
+                    cwd=home, capture_output=True, text=True, timeout=10, check=True,
+                )
+            finally:
+                (root / 'hidden-workflow').rename(workflow)
+            self.assertEqual(json.loads(result.stdout), {'missing_keys': ['fixture']})
+            support.write_text('changed managed support\n')
+            with self.assertRaisesRegex(ValueError, 'Managed bundle content differs'):
+                module.run('check', home)
+            module.run('repair', home)
+            repaired = (home / 'openubmc-managed/current').resolve()
+            self.assertEqual((repaired / support_name).read_bytes(), original)
+            self.assertEqual((profile / 'cordis.patch.yml').read_bytes(), user_patch)
+            self.assertEqual(module.run('check', home)['status'], 'healthy')
+
     def test_web_cards_are_a_generation_choice_and_preserve_user_state(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)

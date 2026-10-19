@@ -74,7 +74,7 @@ python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
 
 `--template web` 使用 DSH 原生对话。在 install 或 update 时添加 `--case-ui` 可启用诊断卡片，使用 `update --no-case-ui` 可停用。启用卡片要求 Web profile。每代记录此选择，更新保留显式记录的选择。缺少该字段的旧配置代更新时采用原生对话默认值，修复和回滚则保留其原有卡片配置。
 
-每代配置复制 manifest 完整 Skill 集合及其脚本和参考文件，将支持文件的符号链接复制为自有文件，并把已知 Skill 路径改写到自有副本。更新时保留选定的 Node/Python 路径和凭据选择器，除非显式替换。缺失的自有条目可修复；外部替换的依赖值、文件或链接会在修改 profile 前被拒绝。每代记录解释器路径和凭据选择器，回滚恢复这些选择。激活在发布链接前记录所有权，并对 profile 写入失败执行补偿；修复可根据所有权记录重建整代丢失的配置。
+每代配置复制 manifest 完整 Skill 集合及其脚本和参考文件，将支持文件的符号链接复制为自有文件，并把已知 Skill 路径改写到自有副本。同时复制相邻 Skill 辅助脚本依赖的 Runtime Python 包，不额外注册 Skill。这些支持文件参与同代配置的完整性检查与修复。更新时保留选定的 Node/Python 路径和凭据选择器，除非显式替换。缺失的自有条目可修复；外部替换的依赖值、文件或链接会在修改 profile 前被拒绝。每代记录解释器路径和凭据选择器，回滚恢复这些选择。激活在发布链接前记录所有权，并对 profile 写入失败执行补偿；修复可根据所有权记录重建整代丢失的配置。
 
 修复在重建缺失内容前还会验证选定配置代的 workflow manifest 和 Skill 源文件摘要；源文件变化时须恢复相应 checkout，或显式更新。
 

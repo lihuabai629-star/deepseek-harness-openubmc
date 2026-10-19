@@ -142,6 +142,9 @@ def generation(home: Path, workflow: Path, template: str, node: str, python: str
                 if file.is_file():
                     skill_sources[str(mapping[name] / file.relative_to(skills / name))] = hashlib.sha256(file.read_bytes()).hexdigest()
         write_json(staging / "sources.json", skill_sources)
+        shutil.copytree(workflow / "openubmc-target-runtime/openubmc_target_runtime",
+                        skills / "openubmc-target-runtime/openubmc_target_runtime",
+                        symlinks=False, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         for body in skills.rglob("*.md"):
             text = body.read_text()
             for name, source in mapping.items():
