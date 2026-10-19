@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
-          ref: 2e56b5b6bac7b0e198886f14e4f7e47cd5c37467
+          ref: 0db95db3aaaedc032d515c1fcb00fee46a16b2ad
           path: .ci-runtime
           persist-credentials: false
       - name: Isolate pinned Runtime source
