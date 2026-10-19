@@ -13,8 +13,8 @@
         "block": {
           "type": "tool-call",
           "id": "runtime-call",
-          "name": "mcp__openubmc-target-runtime__debug_run",
-          "arguments": "{}"
+          "name": "mcp__openubmc-target-runtime__execute",
+          "arguments": "{\"kind\":\"start\"}"
         }
       },
       {
@@ -46,8 +46,8 @@
         "block": {
           "type": "tool-call",
           "id": "case-read",
-          "name": "mcp__openubmc-target-runtime__case_read",
-          "arguments": "{\"case_id\":\"case-7\"}"
+          "name": "mcp__openubmc-target-runtime__execute",
+          "arguments": "{\"kind\":\"resume\",\"run_id\":\"foreign-run\"}"
         }
       },
       {
@@ -78,7 +78,7 @@
         "index": 0,
         "block": {
           "type": "text",
-          "text": "No target operation was authorized; access to another Case was denied."
+          "text": "No target operation was authorized; access to another Run was denied."
         }
       },
       {

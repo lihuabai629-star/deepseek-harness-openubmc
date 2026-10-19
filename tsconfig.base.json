@@ -31,6 +31,7 @@
       "@deepseek-ai/dsh-experimental-openubmc-runtime/types": ["./packages/experimental/openubmc-runtime/src/types.ts"],
       "@deepseek-ai/dsh-experimental-openubmc-runtime": ["./packages/experimental/openubmc-runtime/src/index.ts"],
       "@deepseek-ai/dsh-experimental-openubmc-cases": ["./packages/experimental/openubmc-cases/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-openubmc-cases/agent": ["./packages/experimental/openubmc-cases/src/agent.ts"],
       "@deepseek-ai/dsh-experimental-openubmc-cases/types": ["./packages/experimental/openubmc-cases/src/types.ts"],
       "@deepseek-ai/dsh-client-product-analytics": ["./packages/client/product-analytics/src/index.ts"],
       "@deepseek-ai/dsh-client-product-analytics/types": ["./packages/client/product-analytics/src/events.ts"],

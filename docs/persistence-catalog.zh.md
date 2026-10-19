@@ -678,7 +678,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'openubmc/inspection': OpenUbmcInspection
 ```
 
-来源：[`packages/experimental/openubmc-cases/src/types.ts:65`](../packages/experimental/openubmc-cases/src/types.ts)
+来源：[`packages/experimental/openubmc-cases/src/types.ts:83`](../packages/experimental/openubmc-cases/src/types.ts)
 
 ### `permission/*`
 
@@ -4191,7 +4191,7 @@ SHA-256: `5f758f3de5f00c18968a7c6d347083aac5c9ae13f6a79c78f6611b23c4973564`
 
 SHA-256: `578dc3d34b02f5cc9f291fa14398aff5cff7b32e12dc2e6555ef76663e2ada78`
 
-来源：[`packages/experimental/openubmc-cases/src/types.ts:56`](../packages/experimental/openubmc-cases/src/types.ts)
+来源：[`packages/experimental/openubmc-cases/src/types.ts:74`](../packages/experimental/openubmc-cases/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -6166,7 +6166,7 @@ SHA-256: `1ccb56061942f5ccb0d30c9e4f2883b9d115ff906560029de637b61d3cde896d`
 
 SHA-256: `7e4faae7698d0320d1cdf8d5332447978b87c38a9cd8fcd20c09ad81ffe09e75`
 
-来源：[`packages/experimental/openubmc-cases/src/types.ts:58`](../packages/experimental/openubmc-cases/src/types.ts)
+来源：[`packages/experimental/openubmc-cases/src/types.ts:76`](../packages/experimental/openubmc-cases/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|

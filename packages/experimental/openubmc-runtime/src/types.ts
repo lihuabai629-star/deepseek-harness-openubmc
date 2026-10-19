@@ -1,29 +1,28 @@
-/** Durable command-derived execution authority for openUBMC. @module */
+/** Durable Session authority for the openUBMC Agent interface. @module */
 import type { CommandId } from '@deepseek-ai/dsh-commands'
 import type { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import type { McpToolCall } from '@deepseek-ai/dsh-mcp-client'
-import type { OpenUbmcCaseId } from '@deepseek-ai/dsh-experimental-openubmc-cases/types'
+import type { OpenUbmcRunId } from '@deepseek-ai/dsh-experimental-openubmc-cases/types'
 
-/** Rebuildable grants from this Session's successful human commands. */
+/** Original execute input and trusted operation identity for recovery. */
+export interface OpenUbmcPendingCall {
+  arguments: Record<string, JsonValue>
+  operationId: ToolCallId
+}
+
+/** Rebuildable current-session grants and Runtime-issued Run bindings. */
 export interface OpenUbmcRuntimeState {
   inheritedEventCount: SessionLogOffset
-  caseId: OpenUbmcCaseId
   operations: string[]
   pendingGrants: Partial<Record<CommandId, string>>
-  /** Recorded target calls without a durable result; excludes inherited calls. */
-  pendingCalls: Partial<Record<McpToolCall['execution']['callId'], { operation: string; arguments: Record<string, JsonValue> }>>
-  /** Original current-session calls available for explicitly authorized journal reconciliation. */
-  uncertainCalls: Partial<Record<ToolCallId, { operation: string; arguments: Record<string, JsonValue> }>>
-  /** Unknown mutation call identities confirmed by the latest full Case read. */
-  reconciliableCallIds: ToolCallId[]
-  /** One exact original call approved by the native human reconciliation command. */
+  /** Only Runs returned to this Session's recorded start calls confer write access. */
+  runs: Partial<Record<OpenUbmcRunId, Record<string, JsonValue>>>
+  /** Calls without a recorded settlement remain uncertain after restart. */
+  pendingCalls: Partial<Record<ToolCallId, OpenUbmcPendingCall>>
+  uncertainCalls: Partial<Record<ToolCallId, OpenUbmcPendingCall>>
+  /** Human permission for one exact replay of an unacknowledged start. */
   reconcileCallId: ToolCallId | null
-  /** Unknown outcomes require a full Case read and fresh human authority. */
-  recoveryRequired: boolean
-  /** Largest frozen workflow deadline from a full current-session Case read. */
-  workflowDeadlineSeconds: number | null
 }
 
 declare module '@deepseek-ai/dsh-session-projection/types' {

@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.0-rc.2/openubmc-runtime-recovery/guide.md
 /:
-  en: acfbea9828caa922
-  zh: 2b9d0f0902e0b300
-/openubmc-runtime-recovery:
-  en: 3a009dac061439ba
-  zh: 79e4f097173f6891
-/openubmc-runtime-recovery/change:
-  en: 59818d43e06ccf6f
-  zh: 92b2673b63827b4c
-/openubmc-runtime-recovery/migration:
-  en: 041717ac647ef1f7
-  zh: be1f9881c86c8ef2
+  en: 714b8b22c8ddaac9
+  zh: 8c6c908435208523
+/openubmc-agent-interface:
+  en: 8b34bf074a424cba
+  zh: 14ad4785012228ce
+/openubmc-agent-interface/change:
+  en: 37220ff41f9657f4
+  zh: 7aa2b8285f69599b
+/openubmc-agent-interface/migration:
+  en: e4ac70c1fb5d2ba9
+  zh: b4f4fd830121cfae

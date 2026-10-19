@@ -9,18 +9,22 @@ import type {} from '@deepseek-ai/dsh-mcp-client'
 export const name = 'recovery-human-fixture'
 export const inject = ['agents', 'commands', 'sessionProjections', 'sessionPersistence']
 declare module '@deepseek-ai/cordis' { interface Context { recoveryFixtureReady: boolean } }
-/** Simulate two explicit human grants separated by a persisted Case read. @param ctx - fixture composition. */
+/** Simulate explicit human permission to replay one unacknowledged start. @param ctx - fixture composition. */
 export async function apply(ctx: Context): Promise<void> {
   const handle = await ctx.sessionPersistence.create({ version: SESSION_FORMAT_VERSION, id: SessionId('openubmc-recovery-snapshot'), cwd: process.cwd(), createdAt: 1, isSeeded: false, delegationDepth: 0 })
   await handle.flush()
   await handle.close()
   ctx.provide('recoveryFixtureReady')
   ctx.set('recoveryFixtureReady', true)
-  ctx.on('agent/created', async ({ agent }) => { await ctx.commands.execute(agent, '/target-authorize upgrade_run', [], new AbortController().signal) })
-  ctx.on('mcp/tool-call', async (request, next) => {
-    if (request.execution.callId === 'recovered' && request.execution.agent !== undefined) {
-      await ctx.commands.execute(request.execution.agent, '/target-authorize upgrade_run', [], request.execution.signal)
+  ctx.on('agent/created', async ({ agent }) => { await ctx.commands.execute(agent, '/target-authorize execute', [], new AbortController().signal) })
+  ctx.on('tools/pre-execute', async (request, next) => {
+    if (request.callId === 'recovered' && request.agent !== undefined) {
+      await ctx.commands.execute(request.agent, '/target-reconcile lost', [], request.signal)
     }
     return next()
+  })
+  ctx.on('agent/turn-stopping', ({ agent }) => {
+    const state = ctx.sessionProjections.stateOf(agent.session, 'openubmc/runtime')
+    if (state === undefined || Object.keys(state.runs).length !== 1 || Object.keys(state.uncertainCalls).length > 0) throw new Error(`Native start recovery did not settle: ${JSON.stringify(state)}`)
   })
 }

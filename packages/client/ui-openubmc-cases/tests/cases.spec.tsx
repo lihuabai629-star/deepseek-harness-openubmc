@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { z } from 'zod'
 import type { ComponentProps } from 'react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, expect, it } from 'vitest'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import type {} from '@deepseek-ai/dsh-experimental-openubmc-cases/types'
 import { CommandId } from '@deepseek-ai/dsh-commands'
@@ -19,7 +19,7 @@ const data: OpenUbmcCaseChatData = { caseId: brandString<OpenUbmcCaseId>('case-1
 function props(overrides: Partial<ComponentProps<typeof OpenUbmcCasePanel>> = {}) {
   return { node: { key: 'case:1', id: '1', kind: 'openubmc-case', target: 'chat', anchorSeq: SessionSeq(3), location: { kind: 'session' }, visibility: 'visible', data },
     useProjection: () => undefined, t: makeTranslate(en),
-    refreshCase: vi.fn(async () => null), readEvidence: vi.fn(async () => null), ...overrides } as ComponentProps<typeof OpenUbmcCasePanel>
+    ...overrides } as ComponentProps<typeof OpenUbmcCasePanel>
 }
 it('displays distinct Case and failed operation state, phases, artifacts and bounded evidence actions', async () => {
   const p = props()
@@ -31,20 +31,7 @@ it('displays distinct Case and failed operation state, phases, artifacts and bou
   expect(screen.getByText('May be stale')).toBeTruthy()
   expect(screen.getByText(/build.artifact/)).toBeTruthy()
   expect(screen.getByText(/artifact_sha256/)).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Read evidence evidence-1' }))
-  await waitFor(() => { expect(p.readEvidence).toHaveBeenCalledWith('evidence-1') })
-  fireEvent.click(screen.getByRole('button', { name: 'Refresh Case' }))
-  await waitFor(() => { expect(p.refreshCase).toHaveBeenCalledOnce() })
-})
-it('keeps inherited observations read-only and renders command failures', async () => {
-  const p = props({ useProjection: () => ({ cases: [], failure: null, inheritedEventCount: 5 }) })
-  const rendered = render(<OpenUbmcCasePanel {...p} />)
-  fireEvent.click(screen.getByRole('button', { name: /openUBMC Case/ }))
-  expect(screen.getByText('Inherited observation')).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Refresh Case' }).hasAttribute('disabled')).toBe(true)
-  rendered.rerender(<OpenUbmcCasePanel {...props({ refreshCase: async () => 'Runtime unavailable' })} />)
-  fireEvent.click(screen.getByRole('button', { name: 'Refresh Case' }))
-  await waitFor(() => { expect(screen.getByRole('alert').textContent).toBe('Runtime unavailable') })
+  expect(screen.queryByRole('button', { name: 'Refresh Case' })).toBeNull()
 })
 it('accepts trusted nested envelopes and rejects mismatched identity, operation and malformed reports', () => {
   const definition = createCasesDefinition('runtime')
@@ -66,30 +53,9 @@ it('shows current successful observations, empty sections, bounded bodies and lo
     expect(screen.queryByText('May be stale')).toBeNull()
     expect(screen.getByText('Operation completed')).toBeTruthy()
     expect(screen.getByText('Evidence body')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Refresh Case' }).hasAttribute('disabled')).toBe(false)
+    expect(screen.queryByRole('button', { name: 'Refresh Case' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Read evidence/ })).toBeNull()
     cleanup()
-  }
-})
-
-it('disables concurrent inspection and contains rejected commands, including settlement after unmount', async () => {
-  for (const failure of [new Error('lost'), 'lost']) {
-    render(<OpenUbmcCasePanel {...props({ refreshCase: async () => { throw failure } })} />)
-    fireEvent.click(screen.getByRole('button', { name: /openUBMC Case/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh Case' }))
-    await waitFor(() => { expect(screen.getByRole('alert').textContent).toBe('lost') })
-    cleanup()
-  }
-  for (const reject of [false, true]) {
-    let settle: () => void = () => {}
-    const pending = new Promise<string | null>((resolve, fail) => { settle = reject ? () => { fail(new Error('late')) } : () => { resolve(null) } })
-    const view = render(<OpenUbmcCasePanel {...props({ refreshCase: () => pending })} />)
-    fireEvent.click(screen.getByRole('button', { name: /openUBMC Case/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh Case' }))
-    expect(screen.getByRole('button', { name: 'Refresh Case' }).hasAttribute('disabled')).toBe(true)
-    view.unmount()
-    settle()
-    await pending.catch(() => {})
   }
 })
 

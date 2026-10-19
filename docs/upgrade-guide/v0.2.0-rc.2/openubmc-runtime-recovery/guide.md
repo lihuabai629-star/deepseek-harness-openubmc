@@ -1,21 +1,19 @@
 ---
 kind: upgrade-guide
-description: "openUBMC Runtime profiles require explicit operation budgets and the trusted operation-identity launcher."
+description: openUBMC profiles use the native observe/execute Agent interface and Runtime-issued Run identities.
 ---
-
-# openUBMC Runtime recovery
+# openUBMC Agent interface
 
 English | [中文](guide.zh.md)
 
 ## Change
 
-Profiles loading `dsh-experimental-openubmc-runtime` require `operationDeadlineSeconds`, `completionGraceMs`, `workflowMaxSteps` and `evidenceReadLimitBytes`. Insufficient MCP wait budgets fail before dispatch. Unknown target outcomes clear grants and require Case inspection before another execution grant. Direct mutation reconciliation uses the original operation identity and exact arguments.
-
-Native Case/evidence commands persist the required `openubmc/inspection` event. Older builds that do not recognize it reject these logs. Existing logs remain readable by this build; the Session format version does not change. Model tool arguments cannot supply trusted operation metadata.
+The openUBMC adapter accepts only the Runtime Agent tools `observe` and `execute`. Legacy workflow tools and `/case-refresh` and `/evidence` are unavailable. `/case` retains recorded historical observations; `/run` reads recorded Turns and observation receipts without contacting a device. Run continuation uses `execute` and can perform device actions.
 
 ## Migration
 
-1. Set the Runtime plugin's four required budgets. For a 600-second domain deadline and one workflow step, use `completionGraceMs: 60000`, `workflowMaxSteps: 1`, `evidenceReadLimitBytes: 65536` and MCP `toolCallTimeoutMs: 660000`.
-2. Keep MCP `sessionIdMetadataKey: taskId` and `requiredToolCallPolicies: [openubmc-session-authority]`. Launch the existing Python entry through [runtime_stdio.py](../../../../scripts/openubmc/runtime_stdio.py) with `--entry <target_runtime_mcp.py>`; [profile initialization](../../../../scripts/openubmc/README.md) produces this configuration.
-3. Read `/case-refresh` after an interrupted target call. For an unknown direct mutation, use `/target-reconcile <original-call-id>` only after its journal facts appear in the Case. Workflow-derived unknown mutations remain blocked until Runtime settles them.
-4. Keep a build recognizing `openubmc/inspection` when reopening logs written by native reads. Confirm a native Case query survives a process restart and an unauthorized target call fails before dispatch.
+1. Use the current openUBMC workflow source with `OPENUBMC_TARGET_RUNTIME_INTERFACE_PROFILE: agent`. Create a separate Runtime state directory and DSH profile for this interface; retain the old deployment for historical Case inspection. This adapter does not convert legacy Case state into Runs.
+2. Replace the Runtime config's `workflowMaxSteps` and `evidenceReadLimitBytes` with `observationDeadlineSeconds: 180`. Set `operationDeadlineSeconds: 120`, `completionGraceMs: 10000` and MCP `toolCallTimeoutMs: 190000`. Keep `sessionIdMetadataKey: taskId`, structured result persistence and the required `openubmc-session-authority` policy.
+3. Use `/target-authorize execute` in the owning Session. Start Runs through `execute` and use their returned ids for continuation. Gate responses must match the latest returned Gate id, version and schema digest. Forks retain observations but need new Runs and fresh authority.
+4. For an interrupted existing Run use `execute` with `kind: control` and `command: reconcile`. For an unacknowledged start use `/target-reconcile <original-call-id>` and replay the exact original input once; the Host preserves its native operation identity. Never infer a rollback from cancellation.
+5. Confirm tools discovery exposes only `observe` and `execute`, and `/run` reports the resulting Turn after an offline start. See the [profile setup](../../../../scripts/openubmc/README.md).

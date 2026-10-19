@@ -21,7 +21,7 @@ python3 scripts/openubmc/init.py \
 export PATH=/opt/node-v24.19.0/bin:$PATH
 export DSH_HOME=/tmp/dsh-openubmc-dev
 corepack pnpm dsh --profile openubmc --dump-config
-corepack pnpm dsh --profile openubmc "Read the openUBMC runtime status."
+corepack pnpm dsh --profile openubmc "Inspect the openUBMC Agent tool schemas."
 ```
 
 Configure the model through DSH's existing credential settings or environment before the last command. `--template web` selects the Web bundle; launch with `corepack pnpm dsh --profile openubmc --no-open --port 0` to allocate a separate loopback port. Launch only through `dsh`; the initializer does not start a server or model request.
@@ -30,30 +30,30 @@ The initializer refuses an existing home. It creates `profiles/openubmc/cordis.p
 
 ## Offline startup check
 
-With the generated home selected, use the scripted model to require discovery from both MCP servers and call only `runtime_status`:
+With the generated home selected, use the scripted model to require discovery from both MCP servers and submit an empty `observe` query that Runtime must reject before device access:
 
 ```sh
 corepack pnpm dsh --profile openubmc \
-  --patch scripts/openubmc/offline.patch.yml "Read runtime status."
+  --patch scripts/openubmc/offline.patch.yml "Validate Agent preflight."
 ```
 
-A successful run prints `OPENUBMC_OFFLINE_OK` after receiving the structured completed status. This checks the source profile, MCP discovery and model-visible result projection without model credentials or device access; it does not test knowledge search or real-model decisions. Runtime and KB dependencies must already be installed in the workflow checkout.
+A successful run prints `OPENUBMC_OFFLINE_OK` after receiving a structured Agent preflight error. This checks the source profile, MCP discovery and model-visible result projection without model credentials or device access; it does not test knowledge search or real-model decisions. Runtime and KB dependencies must already be installed in the workflow checkout.
 
 The [openUBMC CI workflow](../../.github/workflows/openubmc.yml) runs on a GitHub-hosted Linux runner in this integration repository. It builds DSH, checks native MCP/Case/authority/recovery behavior against pinned Python Runtime source, replays recorded Session and SDK output, and verifies managed profiles and Web inspection. It uses no model, KB or device credentials and does not qualify live providers or firmware compatibility. Local Python SDK checks resolve the supported Node executable from `PATH`.
 
 ## Identity and recovery
 
-The MCP bridge injects the calling Session ID as `params._meta.taskId`. Resuming the same Session reuses that ID across Host and MCP restarts; a fork has a different ID. Calls without an Agent fail before dispatch. Model arguments cannot replace request metadata. Runtime owns task-to-Case associations, evidence and workflow state; DSH retains returned structured data both as text beside the summary and as durable metadata, including failures. The [Case plugin](../../packages/experimental/openubmc-cases/README.md) derives observations from that metadata. Use `/case` in a native command interface to view them; this query does not call Runtime or grant execution authority.
+The MCP bridge injects the calling Session ID as `params._meta.taskId`. Resuming the same Session reuses that ID across Host and MCP restarts; a fork has a different ID. Calls without an Agent fail before dispatch. Model arguments cannot replace request metadata. Runtime owns Run identities, workflow state and evidence. The MCP bridge retains complete structured results in text and durable metadata, including failures. The [observation plugin](../../packages/experimental/openubmc-cases/README.md) exposes read-only `/run` and historical `/case` queries; neither contacts a device or resumes execution.
 
-The profile gives Runtime calls 660 seconds, allowing the usual 600-second diagnostic deadline to finish. Adjust `toolCallTimeoutMs` for another domain deadline. Cancellation and timeout do not establish whether a device action stopped or rolled back. Read the Case and mutation records before retrying an uncertain action.
+The profile selects the native Agent interface and an independent `openubmc-agent-state` directory. It allows execute caller waits up to 120 seconds and observe waits up to 180 seconds, with a 190-second MCP budget. Runtime owns long-running continuations. Use the returned Run id and Gate bindings for subsequent execute actions; recover unknown effects through Runtime reconciliation. Cancellation does not establish rollback.
 
 ## Credentials and limitations
 
 Runtime uses this home's `credentials.env` selector, initially absent, rather than the production credentials file. Configure it explicitly before device access. KB retains its existing login/configuration mechanism; creating the profile does not establish a KB login. The MCP client's environment scrubbing still applies.
 
-The [Runtime adapter](../../packages/experimental/openubmc-runtime/README.md) enforces Session-derived Case ownership before dispatch. Device and workflow execution require current-session human grants through `/target-authorize`; resume retains them and fork excludes inherited grants. This protects the DSH bridge, not direct access to Python Runtime. Existing production configuration and systemd services are outside this initializer.
+The [Runtime adapter](../../packages/experimental/openubmc-runtime/README.md) binds Runtime-issued Runs to the starting Session before dispatch. Device and workflow execution require current-session human grants through `/target-authorize`; resume retains them and fork excludes inherited grants. This protects the DSH bridge, not direct access to Python Runtime. Existing production configuration and systemd services are outside this initializer.
 
-In a headless profile, authorize a specific operation in the same conversation with `corepack pnpm dsh --profile openubmc --session-id <id> "/target-authorize debug_run"`. In Web, enter the native command in that conversation's input; Web startup does not accept headless Session flags. Native commands run without model inference. Revoke with `/target-authorize revoke`.
+In a headless profile, authorize execute in the same conversation with `corepack pnpm dsh --profile openubmc --session-id <id> "/target-authorize execute"`. In Web, enter the native command in that conversation's input; Web startup does not accept headless Session flags. Native commands run without model inference. Revoke with `/target-authorize revoke`.
 ## Managed profile lifecycle
 
 The manager owns only `@local/dsh-openubmc`, its profile dependency and bundle-list entry, and its recorded links. User model settings, MCP configuration and `cordis.patch.yml` remain user-owned. All actions use the same profile writer lock as the DSH plugin manager; a live or unverified owner fails with its lock path; a verified exited PID is recovered using the native claim protocol. Use a separate home and stop its Host before lifecycle changes so each process observes one configuration generation.
@@ -69,13 +69,13 @@ python3 scripts/openubmc/manage.py repair --home /tmp/dsh-openubmc-managed
 python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
 ```
 
-`--template web` adds the optional native Case card. Each generation copies the full manifest Skill selection, scripts and references, dereferences support symlinks, and rewrites known Skill paths to owned copies. Update preserves the selected Node/Python paths and credential selector unless explicitly replaced. Missing owned entries are repairable; foreign dependency values, files or links fail before profile mutation. Each generation records its interpreter paths and credential selector. Rollback restores those selections. Activation journals ownership before publishing links and compensates a failed profile write; repair can reconstruct an entirely missing generation from the ownership record.
+`--template web` adds native Run, receipt and historical Case cards. Each generation copies the full manifest Skill selection, scripts and references, dereferences support symlinks, and rewrites known Skill paths to owned copies. Update preserves the selected Node/Python paths and credential selector unless explicitly replaced. Missing owned entries are repairable; foreign dependency values, files or links fail before profile mutation. Each generation records its interpreter paths and credential selector. Rollback restores those selections. Activation journals ownership before publishing links and compensates a failed profile write; repair can reconstruct an entirely missing generation from the ownership record.
 
 Repair also verifies the selected generation’s workflow manifest and Skill source digests before rebuilding missing content; if those sources changed, restore that checkout or explicitly update.
 
 Rollback restores profile/Skill configuration, not executable software. Runtime, KB and DSH code stay in their checkouts; stored digests pin adapter and Runtime/KB launch files, native package sources/artifacts and dependency locks. `check`, repair and rollback reject changed pinned files. Use update to select changed executable code, or restore the intended checkout before rollback. The check does not qualify a model endpoint, KB login or device connection. Uninstall retains sessions, Runtime state, credentials, user configuration and generations.
 
-The [provider qualification record](qualification/2026-10-11.json) reports live model and KB retrieval, durable Runtime phase/artifact observations, and continuation after process restart with an offline device backend. The separate [real-target record](qualification/2026-10-11-real-target.json) covers diagnosis, MDB identity, a temporary file Apply, DSH restart, and checksum-guarded rollback on an A860 A5. Neither record establishes business acceptance or firmware-upgrade compatibility; both omit credentials and raw device logs.
+The following records cover the legacy Runtime interface; they do not qualify the Agent interface. The [provider qualification record](qualification/2026-10-11.json) reports live model and KB retrieval, durable Runtime phase/artifact observations, and continuation after process restart with an offline device backend. The separate [real-target record](qualification/2026-10-11-real-target.json) covers diagnosis, MDB identity, a temporary file Apply, DSH restart, and checksum-guarded rollback on an A860 A5. Neither record establishes business acceptance or firmware-upgrade compatibility; both omit credentials and raw device logs.
 
 ## Service staging
 

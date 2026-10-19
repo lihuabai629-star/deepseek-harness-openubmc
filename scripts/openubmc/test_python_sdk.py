@@ -1,4 +1,4 @@
-"""Keyless Python SDK projection of native Case observations from a built dsh profile."""
+"""Keyless Python SDK projection of native Agent observations from a built dsh profile."""
 import json
 import os
 from pathlib import Path

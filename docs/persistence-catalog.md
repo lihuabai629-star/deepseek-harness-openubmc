@@ -676,7 +676,7 @@ Source: [`packages/api/session-controller/src/types.ts:40`](../packages/api/sess
 'openubmc/inspection': OpenUbmcInspection
 ```
 
-Source: [`packages/experimental/openubmc-cases/src/types.ts:65`](../packages/experimental/openubmc-cases/src/types.ts)
+Source: [`packages/experimental/openubmc-cases/src/types.ts:83`](../packages/experimental/openubmc-cases/src/types.ts)
 
 ### `permission/*`
 
@@ -4189,7 +4189,7 @@ Sources: [`packages/subagent/subagent/src/descriptor.ts:61`](../packages/subagen
 
 SHA-256: `578dc3d34b02f5cc9f291fa14398aff5cff7b32e12dc2e6555ef76663e2ada78`
 
-Sources: [`packages/experimental/openubmc-cases/src/types.ts:56`](../packages/experimental/openubmc-cases/src/types.ts)
+Sources: [`packages/experimental/openubmc-cases/src/types.ts:74`](../packages/experimental/openubmc-cases/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6164,7 +6164,7 @@ Sources: [`packages/core/session/src/types.ts:341`](../packages/core/session/src
 
 SHA-256: `7e4faae7698d0320d1cdf8d5332447978b87c38a9cd8fcd20c09ad81ffe09e75`
 
-Sources: [`packages/experimental/openubmc-cases/src/types.ts:58`](../packages/experimental/openubmc-cases/src/types.ts)
+Sources: [`packages/experimental/openubmc-cases/src/types.ts:76`](../packages/experimental/openubmc-cases/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|

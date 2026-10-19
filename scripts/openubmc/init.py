@@ -63,7 +63,7 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
         }, indent=2) + "\n")
         entries = [
             {"id": "openubmc-runtime", "name": runtime_package, "config": {"serverName": "openubmc-target-runtime",
-                "operationDeadlineSeconds": 600, "completionGraceMs": 60000, "workflowMaxSteps": 1, "evidenceReadLimitBytes": 65536}},
+                "operationDeadlineSeconds": 120, "observationDeadlineSeconds": 180, "completionGraceMs": 10000}},
             {"id": "openubmc-cases", "name": "@deepseek-ai/dsh-experimental-openubmc-cases",
              "config": {"serverName": "openubmc-target-runtime"}},
             {"id": "openubmc-target-runtime", "name": "@deepseek-ai/dsh-mcp-client", "config": {
@@ -71,8 +71,8 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
                 "args": [str(Path(__file__).with_name("runtime_stdio.py")), "--entry", str(runtime)], "cwd": str(workflow), "sessionIdMetadataKey": "taskId",
                 "structuredContentInText": True, "structuredContentInMeta": True,
                 "requiredToolCallPolicies": ["openubmc-session-authority"],
-                "toolCallTimeoutMs": 660000, "failOnStartupError": True,
-                "env": {"OPENUBMC_TARGET_RUNTIME_STATE_DIR": str(home / "openubmc-state"),
+                "toolCallTimeoutMs": 190000, "failOnStartupError": True,
+                "env": {"OPENUBMC_TARGET_RUNTIME_INTERFACE_PROFILE": "agent", "OPENUBMC_TARGET_RUNTIME_STATE_DIR": str(home / "openubmc-agent-state"),
                         "OPENUBMC_CREDENTIALS_FILE": str(home / "credentials.env")},
             }},
             {"id": "openubmc-kb", "name": "@deepseek-ai/dsh-mcp-client", "config": {

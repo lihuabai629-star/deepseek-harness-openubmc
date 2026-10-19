@@ -6,7 +6,8 @@ import { brandString } from '@deepseek-ai/dsh-brand'
 import { CommandDefinitionId } from '@deepseek-ai/dsh-commands'
 import { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
-import type { OpenUbmcCaseId, OpenUbmcCaseObservation, OpenUbmcCasesState, OpenUbmcCasesView } from './types.ts'
+import { runTurnSchema, observationReceiptSchema } from './agent.ts'
+import type { OpenUbmcAgentResultId, OpenUbmcCaseId, OpenUbmcCaseObservation, OpenUbmcCasesState, OpenUbmcCasesView } from './types.ts'
 export type * from './types.ts'
 
 /** Cordis plugin name. */
@@ -33,6 +34,9 @@ const observationSchema: schema.ZodType<OpenUbmcCaseObservation> = schema.object
 })
 const viewSchema: schema.ZodType<OpenUbmcCasesView> = schema.object({
   inheritedEventCount: schema.number().int().nonnegative().transform(SessionLogOffset).optional(),
+  agentResults: schema.array(schema.object({ id: schema.string().transform(value => brandString<OpenUbmcAgentResultId>(value)), kind: schema.enum(['run', 'observation']),
+    document: schema.record(schema.string(), schema.json()), isError: schema.boolean(), inherited: schema.boolean(),
+    observedAtSeq: schema.number().int().nonnegative().transform(SessionSeq) })).optional(),
   cases: schema.array(observationSchema), failure: schema.string().nullable(),
 })
 const metadataSchema = schema.object({ mcp: schema.object({
@@ -87,7 +91,7 @@ export function createCasesProjection(serverName: string): Omit<ProjectionDefini
     inheritedEventCount: schema.number().int().nonnegative().transform(SessionLogOffset), view: viewSchema,
   })
   return {
-    key: 'openubmc/cases', stateSchema, stateVersion: 1,
+    key: 'openubmc/cases', stateSchema, stateVersion: 2,
     init: (_header, inheritedEventCount) => ({ serverName, inheritedEventCount, view: { cases: [], failure: null } }),
     apply(state, event) {
       if (event.type !== 'tool/result' && event.type !== 'openubmc/inspection') return state
@@ -95,6 +99,18 @@ export function createCasesProjection(serverName: string): Omit<ProjectionDefini
       if (!metadata.success || metadata.data.mcp.serverName !== serverName) return state
       const structured = metadata.data.mcp.structuredContent
       if (structured === undefined) return state
+      const agent = metadata.data.mcp.toolName === 'execute' ? runTurnSchema.safeParse(structured)
+        : metadata.data.mcp.toolName === 'observe' ? observationReceiptSchema.safeParse(structured) : undefined
+      if (agent?.success) {
+        const kind = metadata.data.mcp.toolName === 'execute' ? 'run' : 'observation'
+        const id = kind === 'run' ? structured.run_id : structured.receipt_id
+        if (typeof id !== 'string') return state
+        return { ...state, view: { ...state.view, failure: null, agentResults: [
+          ...(state.view.agentResults ?? []).filter(item => item.id !== id),
+          { id: brandString<OpenUbmcAgentResultId>(id), kind, document: structured, isError: event.data.message.isError === true,
+            inherited: event.seq < state.inheritedEventCount, observedAtSeq: event.seq },
+        ] } }
+      }
       const envelope = Object.hasOwn(structured, 'agent_envelope') ? structured.agent_envelope : structured
       if (!discriminatorSchema.safeParse(envelope).success) return state
       const invalid = () => ({ ...state, view: { ...state.view, failure: `Invalid openUBMC Case metadata at event ${event.seq}.` } })
@@ -128,7 +144,8 @@ export function createCasesProjection(serverName: string): Omit<ProjectionDefini
           : { artifactRevisions: artifactRevisions ?? previous?.artifactRevisions }),
         nextActions: caseReport?.nextActions ?? (reportsRecovery ? value.next_actions : previous?.nextActions ?? []),
       }
-      return { ...state, view: { cases: [...state.view.cases.filter(c => c.caseId !== observation.caseId), observation], failure: null } }
+      return { ...state, view: { ...state.view,
+        cases: [...state.view.cases.filter(c => c.caseId !== observation.caseId), observation], failure: null } }
     },
     wire: { viewSchema, view: state => ({ ...state.view, inheritedEventCount: state.inheritedEventCount }) },
   }
@@ -141,6 +158,19 @@ export function createCasesProjection(serverName: string): Omit<ProjectionDefini
  */
 export function apply(ctx: Context, config: Config): void {
   ctx.sessionProjections.register(createCasesProjection(config.serverName))
+  ctx.commands.register({
+    definitionId: CommandDefinitionId('@deepseek-ai/dsh-experimental-openubmc-cases/run'), name: 'run',
+    description: 'View recorded openUBMC Runs and observation receipts', input: { hint: '[run-or-receipt-id]' },
+    handler: (invocation) => {
+      const state = ctx.sessionProjections.stateOf(invocation.agent.session, 'openubmc/cases')
+      if (state === undefined) throw new Error('openUBMC observation projection is not registered')
+      const query = invocation.rawInput.trim()
+      const results = (state.view.agentResults ?? []).filter(item => query === '' || item.id === query)
+      return { kind: query !== '' && results.length === 0 ? 'error' : 'success',
+        text: results.length === 0 ? 'No matching openUBMC Run or receipt has been observed.'
+          : results.map(item => `${item.inherited ? 'Inherited' : 'Session'} observation at event ${item.observedAtSeq}: ${JSON.stringify(item.document)}`).join('\n') }
+    },
+  })
   ctx.commands.register({
     definitionId: CommandDefinitionId('@deepseek-ai/dsh-experimental-openubmc-cases'), name: 'case',
     description: 'View observed openUBMC Cases', input: { hint: '[case-id]' },

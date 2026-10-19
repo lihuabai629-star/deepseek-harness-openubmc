@@ -1,0 +1,116 @@
+{
+  "date": "2026-10-19",
+  "interface": "openubmc.target-runtime.v1/agent-gateway-v1",
+  "workflow_revision": "e210b99ae286484cfd060d88150411d35fa86f6a",
+  "workflow_version": "2.1.7",
+  "active_tools": [
+    "observe",
+    "execute"
+  ],
+  "profile": {
+    "skills": 13,
+    "support_entries_verified": true,
+    "independent_agent_state": true,
+    "legacy_state_reused": false
+  },
+  "checks": {
+    "build": "passed",
+    "focused_vitest": {
+      "files": 11,
+      "passed": 32
+    },
+    "session_and_typescript_sdk_snapshots": {
+      "passed": 6
+    },
+    "python_lifecycle_and_sdk": {
+      "passed": 19
+    },
+    "web_built_composition_and_reload": {
+      "passed": 1
+    },
+    "doc_sync": {
+      "passed": 43
+    },
+    "hygiene": {
+      "initial_passed": 17,
+      "initial_failed": [
+        "vendor rescope: unstaged retired fixture deletion"
+      ],
+      "focused_rescope_after_staging_deletions": "passed"
+    },
+    "gui_extension": {
+      "passed": 9385,
+      "failed": 3,
+      "skipped": 1,
+      "worker_errors": 12,
+      "focused_followup": {
+        "passed": 44,
+        "failed": 1,
+        "remaining_failure": "Unchanged open-in-app resolver assumes no native path opening under WSL without a desktop session"
+      }
+    }
+  },
+  "native_protocol": {
+    "real_python_runtime": true,
+    "external_device_backend": "offline fixture",
+    "host_and_runtime_restart": true,
+    "multiple_runs_per_session": true,
+    "fork_write_denied": true,
+    "gate_binding_enforced": true,
+    "unacknowledged_start_same_run": true,
+    "malformed_execute_results_remain_uncertain": true,
+    "structured_failure_preserved": true,
+    "retired_grants_do_not_authorize_execute": true
+  },
+  "model_flow": {
+    "model": "gpt-6.1-sol via existing configured provider",
+    "tools": [
+      "mcp__openubmc-target-runtime__observe",
+      "mcp__openubmc-target-runtime__execute"
+    ],
+    "observation_status": "complete",
+    "run_state": "waiting_response",
+    "gate": "diagnosis.acceptance",
+    "device_backend": "offline fixture",
+    "run_id_present": true,
+    "structured_results_durable": true,
+    "additional_execute_actions": 0
+  },
+  "live_observation": {
+    "tools": [
+      "mcp__openubmc-target-runtime__observe"
+    ],
+    "status": "complete",
+    "capabilities": [
+      {
+        "name": "ssh",
+        "status": "available"
+      },
+      {
+        "name": "mdbctl",
+        "status": "available"
+      }
+    ],
+    "coverage": {
+      "requested": 2,
+      "available": 2,
+      "unavailable": 0,
+      "not_checked": 0,
+      "complete": true
+    },
+    "freshness": {
+      "mode": "live",
+      "max_age_seconds": 0,
+      "observed_at": "2026-10-19T10:01:25.329034+00:00",
+      "status": "live"
+    },
+    "structured_result_durable": true,
+    "execute_calls": 0,
+    "target": "user-supplied BMC"
+  },
+  "limits": {
+    "live_execute_qualified": false,
+    "firmware_upgrade_qualified": false,
+    "legacy_production_service_switched": false
+  }
+}

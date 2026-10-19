@@ -217,3 +217,20 @@ it('retains phase and artifact observations across sparse results and replaces e
   const empty = unit.apply(sparse, result(2, { ...report, phase_records: [], artifact_revisions: [] }, 'runtime', false, 'case_read'))
   expect(empty.view.cases[0]).toMatchObject({ phaseRecords: [], artifactRevisions: [] })
 })
+
+it('retains native Gate/Incident and receipt JSON beside historical Cases, with fork observations and no device query', () => {
+  const unit = cases.createCasesProjection('runtime')
+  const initial = unit.init(header('agent-view'), SessionLogOffset(2))
+  const turn = { schema: 'openubmc.target-runtime.v1/agent-gateway-v1/turn', run_id: 'run-1', state: 'incident',
+    gate: { gate_id: 'gate-1', gate_version: 2, schema_digest: 'sha256:abc', input_schema: {} },
+    incident: { incident_id: 'incident-1', allowed_commands: ['reconcile'], operator_action: 'inspect journal' }, outcome: null, facts: [], gaps: ['effect unknown'] }
+  const observed = unit.apply(initial, result(1, turn, 'runtime', true, 'execute'))
+  expect(observed.view.agentResults).toEqual([{ id: 'run-1', kind: 'run', document: turn, isError: true, inherited: true, observedAtSeq: 1 }])
+  const receipt = { schema: 'openubmc.target-runtime.v1/agent-gateway-v1/observation-receipt', receipt_id: 'receipt-1', status: 'incomplete', coverage: { not_checked: 1 }, gaps: ['transport unavailable'] }
+  const both = unit.apply(observed, result(2, receipt, 'runtime', false, 'observe'))
+  expect(both.view.agentResults).toHaveLength(2)
+  const withHistory = unit.apply(both, result(3, envelope))
+  expect(withHistory.view.agentResults).toEqual(both.view.agentResults)
+  expect(unit.apply(withHistory, result(4, { ...turn, state: 'running' }, 'foreign', false, 'execute'))).toBe(withHistory)
+  expect(unit.wire.viewSchema.parse(unit.wire.view(withHistory)).agentResults).toHaveLength(2)
+})

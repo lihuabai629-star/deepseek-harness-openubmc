@@ -42,6 +42,8 @@ interface OpenUbmcCasesView {
   /** Fork prefix provided with the wire view for historical observation labels. */
   inheritedEventCount?: SessionLogOffset | undefined
   cases: OpenUbmcCaseObservation[]
+  /** Last returned Turns and receipts, including failure and recovery details. */
+  agentResults?: OpenUbmcAgentObservation[] | undefined
   failure: string | null
 }
 ```
@@ -66,23 +68,47 @@ The checkpoint contains the configured metadata source and the exact inherited p
 The [Runtime adapter](../../packages/experimental/openubmc-runtime/README.md) derives current-session human grants from native command lifecycle events.
 
 ```ts type-equiv
-/** Rebuildable grants from this Session's successful human commands. */
+/** Rebuildable current-session grants and Runtime-issued Run bindings. */
 interface OpenUbmcRuntimeState {
   inheritedEventCount: SessionLogOffset
-  caseId: OpenUbmcCaseId
   operations: string[]
   pendingGrants: Partial<Record<CommandId, string>>
-  /** Recorded target calls without a durable result; excludes inherited calls. */
-  pendingCalls: Partial<Record<McpToolCall['execution']['callId'], { operation: string; arguments: Record<string, JsonValue> }>>
-  /** Original current-session calls available for explicitly authorized journal reconciliation. */
-  uncertainCalls: Partial<Record<ToolCallId, { operation: string; arguments: Record<string, JsonValue> }>>
-  /** Unknown mutation call identities confirmed by the latest full Case read. */
-  reconciliableCallIds: ToolCallId[]
-  /** One exact original call approved by the native human reconciliation command. */
+  /** Only Runs returned to this Session's recorded start calls confer write access. */
+  runs: Partial<Record<OpenUbmcRunId, Record<string, JsonValue>>>
+  /** Calls without a recorded settlement remain uncertain after restart. */
+  pendingCalls: Partial<Record<ToolCallId, OpenUbmcPendingCall>>
+  uncertainCalls: Partial<Record<ToolCallId, OpenUbmcPendingCall>>
+  /** Human permission for one exact replay of an unacknowledged start. */
   reconcileCallId: ToolCallId | null
-  /** Unknown outcomes require a full Case read and fresh human authority. */
-  recoveryRequired: boolean
-  /** Largest frozen workflow deadline from a full current-session Case read. */
-  workflowDeadlineSeconds: number | null
 }
+```
+
+```ts type-equiv
+/** Runtime-issued semantic Run identity. */
+type OpenUbmcRunId = Branded<'openubmc.run'>
+```
+
+```ts type-equiv
+/** Complete last returned Agent result; Runtime remains the state authority. */
+interface OpenUbmcAgentObservation {
+  id: OpenUbmcAgentResultId
+  kind: 'run' | 'observation'
+  document: Record<string, JsonValue>
+  isError: boolean
+  inherited: boolean
+  observedAtSeq: SessionSeq
+}
+```
+
+```ts type-equiv
+/** Original execute input and trusted operation identity for recovery. */
+interface OpenUbmcPendingCall {
+  arguments: Record<string, JsonValue>
+  operationId: ToolCallId
+}
+```
+
+```ts type-equiv
+/** Opaque identity of a returned Run or observation receipt. */
+type OpenUbmcAgentResultId = Branded<'openubmc.agent-result'>
 ```

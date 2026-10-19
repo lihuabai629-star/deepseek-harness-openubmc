@@ -10,65 +10,41 @@
     "meta": {
       "mcp": {
         "serverName": "openubmc-target-runtime",
-        "toolName": "case_read",
+        "toolName": "observe",
         "structuredContent": {
-          "schema": "openubmc.target-runtime.v1/context-runtime",
-          "case_id": "case-sdk-inspection",
-          "revision": 4,
-          "status": "active",
-          "operations": [],
-          "mutation_outcome_unknown_operations": {},
-          "workflow_inputs": {
-            "deadline": 10
+          "schema": "openubmc.target-runtime.v1/agent-gateway-v1/observation-receipt",
+          "receipt_id": "observation-sdk",
+          "status": "complete",
+          "coverage": {
+            "requested": 1,
+            "available": 1,
+            "unavailable": 0,
+            "not_checked": 0,
+            "complete": true
           },
-          "phase_records": [
-            {
-              "phase_type": "build.artifact",
-              "status": "completed"
-            }
-          ],
-          "evidence_refs": [
-            {
-              "evidence_id": "evidence-1",
-              "kind": "diagnostic"
-            }
-          ],
-          "next_actions": [
-            "inspect diagnostic"
-          ],
-          "agent_envelope": {
-            "schema": "openubmc.target-runtime.v1/agent-envelope",
-            "case_id": "case-sdk-inspection",
-            "revision": 4,
-            "status": "completed",
-            "operation": {
-              "name": "case_read",
-              "status": "completed"
-            },
-            "evidence_refs": [
-              {
-                "evidence_id": "evidence-1",
-                "kind": "diagnostic"
-              }
-            ],
-            "next_actions": [
-              "inspect diagnostic"
-            ],
-            "capsule": {
-              "schema": "openubmc.target-runtime.v1/context-runtime/capsule",
-              "case_id": "case-sdk-inspection",
-              "case_revision": 4,
-              "status": "active",
-              "artifact_revisions": [
+          "freshness": {
+            "mode": "live",
+            "max_age_seconds": 0,
+            "status": "live",
+            "observed_at": "2026-10-19T00:00:00Z"
+          },
+          "results": {
+            "ssh": {
+              "kind": "capability",
+              "values": [
                 {
-                  "artifact_sha256": "offline-digest"
+                  "name": "ssh",
+                  "status": "available"
                 }
-              ],
-              "next_actions": [
-                "inspect diagnostic"
               ]
             }
-          }
+          },
+          "gaps": [],
+          "evidence": [
+            {
+              "uri": "receipt://observation-sdk#ssh"
+            }
+          ]
         }
       }
     }

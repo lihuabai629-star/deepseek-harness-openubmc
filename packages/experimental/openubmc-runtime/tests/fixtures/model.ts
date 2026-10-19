@@ -17,7 +17,7 @@ class AuthorityModel extends LlmAdapter {
         yield { type: 'finish', reason: { kind: 'stop' } }
       } else {
         yield { type: 'block-start', index: 0, blockType: 'tool-call' }
-        yield { type: 'block-end', index: 0, block: { type: 'tool-call', id: ToolCallId('allowed-action'), name: 'mcp__openubmc-target-runtime__debug_run', arguments: '{}' } }
+        yield { type: 'block-end', index: 0, block: { type: 'tool-call', id: ToolCallId('allowed-action'), name: 'mcp__openubmc-target-runtime__execute', arguments: '{"kind":"start"}' } }
         yield { type: 'finish', reason: { kind: 'tool-calls' } }
       }
       return
@@ -37,8 +37,8 @@ class AuthorityModel extends LlmAdapter {
     yield { type: 'block-start', index: 0, blockType: 'tool-call' }
     yield { type: 'block-end', index: 0, block: {
       type: 'tool-call', id: ToolCallId(reading ? 'foreign-case' : 'target-action'),
-      name: `mcp__openubmc-target-runtime__${reading ? 'case_read' : 'debug_run'}`,
-      arguments: reading ? '{"case_id":"foreign-case"}' : '{}',
+      name: 'mcp__openubmc-target-runtime__execute',
+      arguments: reading ? '{"kind":"resume","run_id":"foreign-run"}' : '{"kind":"start"}',
     } }
     yield { type: 'finish', reason: { kind: 'tool-calls' } }
   }

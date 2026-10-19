@@ -3,41 +3,41 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/openubmc-runtime/README.md
 /:
-  en: d18adaae73e4b82d
-  zh: b49ee27a9749e5ba
+  en: a9f00f895902b4c1
+  zh: 7cd23e1e0f01bceb
 /deepseek-ai-dsh-experimental-openubmc-runtime:
   en: 18e43069fba2dd08
   zh: f27979a8944836d7
 /deepseek-ai-dsh-experimental-openubmc-runtime/summary:
-  en: 5dc4df0be5c80740
-  zh: 6f78193592744aa5
+  en: 4d70bdca3f912c24
+  zh: 80967aa3339c94f7
 /deepseek-ai-dsh-experimental-openubmc-runtime/table-of-contents:
-  en: 68720ee26dfe7325
-  zh: 49aac983ab0e0acf
+  en: 112999f6f4774c8d
+  zh: e6b86227b95ca929
 /deepseek-ai-dsh-experimental-openubmc-runtime/configuration-and-authority:
-  en: f6253be2ee7086c9
-  zh: 5bbeb964c9fe4db3
-/deepseek-ai-dsh-experimental-openubmc-runtime/native-inspection-and-mutation-reconciliation:
-  en: 69c3471726ff4a45
-  zh: 489ec17c3f858dba
+  en: f0fbefdae6c71db3
+  zh: 8a617a4e663e5f2e
+/deepseek-ai-dsh-experimental-openubmc-runtime/recovery-and-historical-queries:
+  en: 336f7531d662af4c
+  zh: 6155a656ed73536d
+/deepseek-ai-dsh-experimental-openubmc-runtime/dev-note:
+  en: c36b698a0f4375b7
+  zh: 2d54bec0ae47c8d2
 /deepseek-ai-dsh-experimental-openubmc-runtime/model-experience:
   en: 215e7ba838619b7b
-  zh: a311da3843709f90
+  zh: 215e7ba838619b7b
 /deepseek-ai-dsh-experimental-openubmc-runtime/model-experience/runtime-execution-results:
   en: 3054e9c5b8471356
   zh: db79d9f74c35ef2a
 /deepseek-ai-dsh-experimental-openubmc-runtime/model-experience/runtime-execution-results/what-the-model-sees:
-  en: f00b16ac29784e32
-  zh: 81cd7073207825e3
+  en: f02f97429cc5ca91
+  zh: ab54279e28ff94c7
 /deepseek-ai-dsh-experimental-openubmc-runtime/model-experience/runtime-execution-results/token-effect:
   en: 36e78a77a0e92c61
-  zh: 85081b1e8d822043
+  zh: ad737d44e9c9a13f
 /deepseek-ai-dsh-experimental-openubmc-runtime/model-experience/runtime-execution-results/kv-cache-effect:
   en: f082ce72995d8cca
-  zh: fe5466e993c4fba8
+  zh: 7c620df0f1b8e627
 /deepseek-ai-dsh-experimental-openubmc-runtime/known-limitations-and-deferred-work:
-  en: af0b286fe1dce356
-  zh: b34448737de6b3da
-/deepseek-ai-dsh-experimental-openubmc-runtime/known-limitations-and-deferred-work/dev-note:
-  en: 0a1253c6f7b5e8b9
-  zh: 9f56528562c7c914
+  en: 10cfa3f5caad0da6
+  zh: 250244ef60619386

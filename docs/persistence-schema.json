@@ -23244,7 +23244,7 @@
         "packages/experimental/openubmc-cases/src/types.ts#OpenUbmcInspection"
       ],
       "sources": [
-        "packages/experimental/openubmc-cases/src/types.ts:56"
+        "packages/experimental/openubmc-cases/src/types.ts:74"
       ]
     },
     {
@@ -23766,7 +23766,7 @@
       "digest": "7e4faae7698d0320d1cdf8d5332447978b87c38a9cd8fcd20c09ad81ffe09e75",
       "names": [],
       "sources": [
-        "packages/experimental/openubmc-cases/src/types.ts:58"
+        "packages/experimental/openubmc-cases/src/types.ts:76"
       ]
     },
     {

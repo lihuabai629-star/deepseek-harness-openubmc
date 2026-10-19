@@ -138,8 +138,8 @@
   en: 04e540dc0a4efdd9
   zh: 04e540dc0a4efdd9
 /session-persistence-event-catalog/events/openubmc/openubmc-inspection-log-only:
-  en: 66b532b8c355ef51
-  zh: c4677190714bb791
+  en: aed2ab3b24305d0f
+  zh: 65ab5e5bb714ec26
 /session-persistence-event-catalog/events/permission:
   en: 19917bc5438e60af
   zh: 19917bc5438e60af
@@ -1104,8 +1104,8 @@
   en: a3e6534eb9e7f4db
   zh: a74abe883a35050f
 /session-persistence-event-catalog/resolved-persistence-types/openubmcinspection:
-  en: ba337843275b1765
-  zh: 90d4cf50392a4b25
+  en: b644649eea91a6b5
+  zh: 3d01f03e96d9ea4c
 /session-persistence-event-catalog/resolved-persistence-types/optionalsessionseq:
   en: 7baa520fa984480e
   zh: 6f809a83a720416d
@@ -1470,8 +1470,8 @@
   en: c222dfd248d57918
   zh: 999260c7dbef5140
 /session-persistence-event-catalog/resolved-persistence-types/iserror:
-  en: a5237c179ce25f48
-  zh: 4b08cf1b0d834838
+  en: 0d9b702099b679cb
+  zh: c5a713c676908fb9
 /session-persistence-event-catalog/resolved-persistence-types/kind-aborted-reason:
   en: c7755cbd343d67ee
   zh: e00a7477cd664cb5

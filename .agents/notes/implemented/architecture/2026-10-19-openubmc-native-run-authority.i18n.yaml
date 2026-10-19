@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-10-19-openubmc-native-run-authority.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-19-openubmc-native-run-authority.md
+/agent-note-openubmc-native-run-authority:
+  en: cf734c8502f1f501
+  zh: 8d7507a224d2819d
+/agent-note-openubmc-native-run-authority/problem:
+  en: 0169b59dc10f5e19
+  zh: 672bb94df159b871
+/agent-note-openubmc-native-run-authority/decision:
+  en: f7d2daeb3347a65c
+  zh: d5e6736a20aa424a
+/agent-note-openubmc-native-run-authority/alternatives-considered:
+  en: 4b45ff65fc64dafc
+  zh: 7398433cabffaafa
+/agent-note-openubmc-native-run-authority/consequences:
+  en: 0c3328b2d1802b48
+  zh: 7e47857fb2b562fc

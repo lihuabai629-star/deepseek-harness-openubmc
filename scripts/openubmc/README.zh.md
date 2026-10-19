@@ -21,7 +21,7 @@ python3 scripts/openubmc/init.py \
 export PATH=/opt/node-v24.19.0/bin:$PATH
 export DSH_HOME=/tmp/dsh-openubmc-dev
 corepack pnpm dsh --profile openubmc --dump-config
-corepack pnpm dsh --profile openubmc "Read the openUBMC runtime status."
+corepack pnpm dsh --profile openubmc "Inspect the openUBMC Agent tool schemas."
 ```
 
 执行最后一条命令前，通过 DSH 现有凭据设置或环境配置模型。`--template web` 选择 Web bundle；使用 `corepack pnpm dsh --profile openubmc --no-open --port 0` 分配独立的本机回环端口。仅通过 `dsh` 启动；初始化脚本不会启动服务或请求模型。
@@ -30,30 +30,30 @@ corepack pnpm dsh --profile openubmc "Read the openUBMC runtime status."
 
 ## 离线启动检查
 
-选定生成的 home 后，使用脚本化模型检查两个 MCP 服务均已发现工具，并且只调用 `runtime_status`：
+选定生成的 home 后，使用脚本化模型检查两个 MCP 服务均已发现工具，并向 `observe` 提交缺少目标的查询，要求 Runtime 在访问设备前拒绝：
 
 ```sh
 corepack pnpm dsh --profile openubmc \
-  --patch scripts/openubmc/offline.patch.yml "Read runtime status."
+  --patch scripts/openubmc/offline.patch.yml "Validate Agent preflight."
 ```
 
-成功运行会在收到结构化完成状态后输出 `OPENUBMC_OFFLINE_OK`。该检查无需模型凭据或设备访问，验证源码配置、MCP 工具发现和模型可见结果投影；不验证知识检索或真实模型决策。工作流源码中必须已安装 Runtime 和 KB 依赖。
+成功运行会在收到结构化 Agent 预检错误后输出 `OPENUBMC_OFFLINE_OK`。该检查无需模型凭据或设备访问，验证源码配置、MCP 工具发现和模型可见结果投影；不验证知识检索或真实模型决策。工作流源码中必须已安装 Runtime 和 KB 依赖。
 
 [openUBMC CI 工作流](../../.github/workflows/openubmc.yml) 在本集成仓库的 GitHub 托管 Linux runner 上运行。它构建 DSH，使用固定版本的 Python Runtime 源码检查原生 MCP、Case、授权和恢复行为，重放已记录的 Session 与 SDK 输出，并验证托管 profile 和 Web 查看功能。它不使用模型、KB 或设备凭据，也不验证真实提供方或固件兼容性。本地 Python SDK 检查从 `PATH` 解析受支持的 Node 可执行文件。
 
 ## 身份与恢复
 
-MCP 桥将调用方 Session ID 注入 `params._meta.taskId`。恢复同一 Session 时，Host 和 MCP 重启后仍沿用该 ID；fork 使用不同 ID。没有 Agent 的调用会在分发前失败。模型参数无法替换请求元数据。Runtime 负责 task 与 Case 的关联、证据和工作流状态；DSH 将返回的结构化数据同时保留为摘要旁的文本和持久化元数据，包括失败结果。[Case 插件](../../packages/experimental/openubmc-cases/README.zh.md)从该元数据派生观察。在原生命令界面使用 `/case` 查看；此查询不调用 Runtime，也不授予执行权限。
+MCP 桥将调用方 Session ID 注入 `params._meta.taskId`。恢复同一 Session 时，Host 和 MCP 重启后仍沿用该 ID；fork 使用不同 ID。没有 Agent 的调用会在分发前失败。模型参数无法替换请求元数据。Runtime 负责 Run 标识、工作流状态和证据。MCP 桥将完整结构化结果保留在文本和持久化元数据中，包括失败结果。[观察插件](../../packages/experimental/openubmc-cases/README.zh.md) 提供只读 `/run` 和历史 `/case` 查询；它们不访问设备，也不推进执行。
 
-此配置给 Runtime 调用 660 秒，允许常规 600 秒诊断截止时间内的操作结束。使用其他领域截止时间时，调整 `toolCallTimeoutMs`。取消和超时不能证明设备操作已经停止或回滚。重试结果不确定的操作前，先读取 Case 和变更记录。
+此配置选择原生 Agent 接口和独立的 `openubmc-agent-state` 目录。execute 调用方最多等待 120 秒，observe 最多等待 180 秒，MCP 预算为 190 秒。长动作续接由 Runtime 管理。后续 execute 动作沿用返回的 Run 标识和 Gate 绑定，未知动作结果通过 Runtime 核对。取消不代表回退。
 
 ## 凭据与限制
 
 Runtime 使用此 home 中的 `credentials.env` 选择器，初始文件不存在，不使用生产凭据文件。访问设备前需显式配置。KB 保留现有登录和配置机制；创建配置不代表完成 KB 登录。MCP 客户端的环境变量清洗仍然生效。
 
-[Runtime 适配器](../../packages/experimental/openubmc-runtime/README.zh.md) 在发送前实施 Session 派生的 Case 归属检查。设备和工作流执行需要当前 Session 的用户通过 `/target-authorize` 授权；resume 保留授权，fork 排除继承授权。此机制保护 DSH 桥接，不保护对 Python Runtime 的直接访问。已有生产配置和 systemd 服务不属于初始化器的管理范围。
+[Runtime 适配器](../../packages/experimental/openubmc-runtime/README.zh.md) 在发送前将 Runtime 返回的 Run 绑定到启动它的 Session。设备和工作流执行需要当前 Session 的用户通过 `/target-authorize` 授权；resume 保留授权，fork 排除继承授权。此机制保护 DSH 桥接，不保护对 Python Runtime 的直接访问。已有生产配置和 systemd 服务不属于初始化器的管理范围。
 
-在 headless profile 中，使用 `corepack pnpm dsh --profile openubmc --session-id <id> "/target-authorize debug_run"` 为同一会话授权具体操作。在 Web 中，将原生命令输入该会话的输入框；Web 启动不接受 headless Session 参数。原生命令不调用模型。使用 `/target-authorize revoke` 撤销授权。
+在 headless profile 中，使用 `corepack pnpm dsh --profile openubmc --session-id <id> "/target-authorize execute"` 为同一会话授权 execute。在 Web 中，将原生命令输入该会话的输入框；Web 启动不接受 headless Session 参数。原生命令不调用模型。使用 `/target-authorize revoke` 撤销授权。
 ## 托管 profile 生命周期
 
 管理器只拥有 `@local/dsh-openubmc`、它在 profile 中的依赖和 bundle 列表条目，以及记录的链接。用户模型设置、MCP 配置及 `cordis.patch.yml` 仍由用户拥有。所有操作与 DSH 插件管理器使用相同的 profile 写锁；仍在运行或无法确认的持锁者会导致带锁路径的错误；已确认退出的 PID 按原生 claim 协议恢复。使用独立 home，并在生命周期操作前停止该 home 的 Host，使每个进程只观察一代配置。

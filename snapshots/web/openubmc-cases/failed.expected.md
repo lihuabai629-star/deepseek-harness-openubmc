@@ -1,15 +1,2 @@
-- button "openUBMC Case · case-7" [expanded]
-- text: "Operation failed Revision 2 Case status: Unreported Operation: mutation_outcome_unknown Current-session observation May be stale Phase"
-- list:
-  - listitem: None
-- text: Evidence
-- list:
-  - listitem: "{\"evidence_id\":\"evidence-1\"}"
-- text: Artifacts
-- list:
-  - listitem: None
-- text: Next actions
-- list:
-  - listitem: "\"case_read\""
-- button "Refresh Case"
-- button "Read evidence evidence-1"
+- button "openUBMC Run · run-web" [expanded]
+- text: "incident Current-session observation Recorded observation Response Gate { \"gate_id\": \"gate-web\", \"gate_version\": 2, \"schema_digest\": \"sha256:offline-schema\", \"input_schema\": { \"type\": \"object\", \"required\": [ \"summary\" ] }, \"owner\": \"openubmc-developer\", \"name\": \"developer.change\" } Recovery Incident { \"incident_id\": \"incident-web\", \"code\": \"effect_outcome_unknown\", \"effect_id\": \"effect-web\", \"allowed_commands\": [ \"reconcile\", \"cancel\" ], \"operator_action\": \"inspect journal\" } Facts [ { \"kind\": \"operation\", \"name\": \"debug_run\", \"status\": \"completed\", \"evidence_ids\": [ \"evidence-1\" ] } ] Gaps [ \"mutation outcome remains unknown\" ] Progress { \"completed\": 1, \"total\": 3 } Next action { \"kind\": \"control\", \"run_id\": \"run-web\", \"command\": \"reconcile\" } Complete receipt { \"schema\": \"openubmc.target-runtime.v1/agent-gateway-v1/turn\", \"run_id\": \"run-web\", \"state\": \"incident\", \"gate\": { \"gate_id\": \"gate-web\", \"gate_version\": 2, \"schema_digest\": \"sha256:offline-schema\", \"input_schema\": { \"type\": \"object\", \"required\": [ \"summary\" ] }, \"owner\": \"openubmc-developer\", \"name\": \"developer.change\" }, \"incident\": { \"incident_id\": \"incident-web\", \"code\": \"effect_outcome_unknown\", \"effect_id\": \"effect-web\", \"allowed_commands\": [ \"reconcile\", \"cancel\" ], \"operator_action\": \"inspect journal\" }, \"facts\": [ { \"kind\": \"operation\", \"name\": \"debug_run\", \"status\": \"completed\", \"evidence_ids\": [ \"evidence-1\" ] } ], \"gaps\": [ \"mutation outcome remains unknown\" ], \"outcome\": null, \"next\": \"reconcile the current Run\", \"next_action\": { \"kind\": \"control\", \"run_id\": \"run-web\", \"command\": \"reconcile\" }, \"progress\": { \"completed\": 1, \"total\": 3 } }"

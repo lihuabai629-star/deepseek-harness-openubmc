@@ -152,7 +152,7 @@ def generation(home: Path, workflow: Path, template: str, node: str, python: str
         patch = json.loads((draft / "profiles/openubmc/cordis.patch.yml").read_text())
         patch[0]["config"]["customSkillDirs"] = [str(target / "skills")]
         runtime = next(entry for entry in patch[1]["insert"] if entry["id"] == "openubmc-target-runtime")
-        runtime["config"]["env"] = {"OPENUBMC_TARGET_RUNTIME_STATE_DIR": str(home / "openubmc-state"), "OPENUBMC_CREDENTIALS_FILE": str(credentials)}
+        runtime["config"]["env"] = {"OPENUBMC_TARGET_RUNTIME_INTERFACE_PROFILE": "agent", "OPENUBMC_TARGET_RUNTIME_STATE_DIR": str(home / "openubmc-agent-state"), "OPENUBMC_CREDENTIALS_FILE": str(credentials)}
         write_json(staging / "config.json", {"template": template, "workflow": str(workflow), "node": node,
                                              "python": python, "credentials": str(credentials)})
         dependencies = json.loads((draft / "profiles/openubmc/package.json").read_text())["dependencies"]
@@ -393,7 +393,7 @@ def run(action: str, home: Path, workflow: Path | None = None, template="headles
             for path in [home / "profiles/openubmc/node_modules" / BUNDLE, managed / "current"]:
                 path.unlink(missing_ok=True)
             state_path.unlink()
-            return {"status": "uninstalled", "retained": ["sessions", "openubmc-state", "credentials", "user profile settings"]}
+            return {"status": "uninstalled", "retained": ["sessions", "openubmc-agent-state", "credentials", "user profile settings"]}
         raise ValueError(f"Unknown action: {action}")
 
 
