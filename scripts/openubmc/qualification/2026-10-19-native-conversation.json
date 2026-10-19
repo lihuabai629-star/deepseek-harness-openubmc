@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-19",
+  "workflow_revision": "e210b99ae286484cfd060d88150411d35fa86f6a",
+  "workflow_version": "2.1.7",
+  "interface": "openubmc.target-runtime.v1/agent-gateway-v1",
+  "real_model": {
+    "name": "gpt-6.1-sol",
+    "scripted_model": false,
+    "runtime": "real pinned Python Runtime",
+    "device_backend": "explicit offline fixture",
+    "native_skill_loaded": "openubmc-debug",
+    "reference_files_read": [
+      "agent-gateway.md",
+      "host-continuity.md"
+    ],
+    "native_goal_events": [
+      "create",
+      "complete"
+    ],
+    "additional_execution_grants": 0,
+    "tool_operations": [
+      "observe",
+      "execute:start",
+      "execute:respond"
+    ],
+    "initial_observation_schema_error_retained": true,
+    "observation_recovered": true,
+    "run_count": 1,
+    "gate": "diagnosis.acceptance",
+    "terminal_state": "failed",
+    "failure": "Required diagnostic evidence is incomplete; no root cause or successful acceptance was invented.",
+    "host_process_restart": true,
+    "same_session_reopened": true,
+    "additional_runs_after_restart": 0,
+    "additional_execute_after_restart": 0,
+    "completed_goal_restored": true
+  },
+  "qualification_limits": [
+    "Offline device capability values do not establish physical BMC connectivity or hardware health.",
+    "Goal completion records delivery of the bounded qualification result; Runtime diagnosis acceptance remains failed.",
+    "Model-guided work is not automatic device execution when a saved Session is opened."
+  ],
+  "checks": {
+    "model_process_exit_codes": [
+      0,
+      0
+    ],
+    "model_process_timeouts": false,
+    "session_and_typescript_sdk_snapshots": 7,
+    "python_lifecycle_and_sdk": 24,
+    "web_composition_tests": 2
+  }
+}

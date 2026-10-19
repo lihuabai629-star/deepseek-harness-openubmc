@@ -20,11 +20,11 @@ This optional Client plugin renders persisted Runtime results as Case cards in t
 
 ## Configuration and inspection
 
-Configure `serverName` with the same trusted MCP namespace as the Host [Case projection](../../experimental/openubmc-cases/README.md). The [openUBMC Web profile](../../../scripts/openubmc/README.md) composes the Host projection, Runtime authority and this plugin. The default Web profile does not load it.
+Configure `serverName` with the same trusted MCP namespace as the Host [Case projection](../../experimental/openubmc-cases/README.md). The [openUBMC Web profile](../../../scripts/openubmc/README.md) composes this plugin with `--case-ui`; its Host projection and Runtime authority also work without cards. The default Web profile does not load it.
 
 Native Run cards retain Gate ids, versions and response schemas; Incident recovery details; Outcome, facts, gaps and progress. Observation receipt cards expose coverage, freshness, results and evidence. Complete JSON remains expandable. Historical Case cards retain their recorded fields without live read controls.
 
-Every card shows a recorded observation. A later result marks the earlier card as possibly stale; fork-inherited cards retain their historical label. Only the latest current-session Run card offers explicit authorization, continuation, cancellation and reconciliation through native Host commands. Gate forms retain the returned identity and submission binding, collect explicit response fields and leave complete schema validation to Runtime. Failed submissions retain the draft. Rendering, expanding or reloading a card never invokes execution. Failed results remain failed; invalid or foreign-source metadata uses generic tool presentation.
+Every card shows a recorded observation. A later result marks the earlier card as possibly stale; fork-inherited cards retain their historical label. Only the latest current-session Run card offers explicit authorization, continuation, cancellation and reconciliation through native Host commands. Continuation controls follow the Host's permission for that Run; read-only diagnosis does not need a general execution grant. Session authorization and revocation remain separate controls. Gate forms retain the returned identity and submission binding, collect explicit response fields and leave complete schema validation to Runtime. Failed submissions retain the draft. Rendering, expanding or reloading a card never invokes execution. Failed results remain failed; invalid or foreign-source metadata uses generic tool presentation.
 
 ## Dev Note
 

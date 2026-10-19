@@ -10,25 +10,31 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
+def checkout(root):
+    workflow = root / "workflow"
+    workflow.mkdir()
+    (workflow / "workflow.json").write_text(json.dumps({
+        "skills": [{"name": "openubmc-dt-testing", "path": "testing"}],
+        "profiles": {"full": ["openubmc-dt-testing"]},
+    }))
+    skill = workflow / "testing"
+    skill.mkdir()
+    (skill / "SKILL.md").write_text("Run $HOME/.agents/skills/openubmc-dt-testing/scripts/check.py\n")
+    (skill / "scripts").mkdir()
+    (skill / "scripts/check.py").write_text("print('ok')\n")
+    for entry in ("openubmc-debug/scripts/target_runtime_mcp.py", "openubmc-kb-mcp/src/server.js"):
+        path = workflow / entry
+        path.parent.mkdir(parents=True)
+        path.touch()
+    return workflow
+
+
 class ProfileTests(unittest.TestCase):
     def test_manifest_mapping_and_existing_home(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            workflow = root / "workflow"
-            workflow.mkdir()
-            (workflow / "workflow.json").write_text(json.dumps({
-                "skills": [{"name": "openubmc-dt-testing", "path": "testing"}],
-                "profiles": {"full": ["openubmc-dt-testing"]},
-            }))
+            workflow = checkout(root)
             skill = workflow / "testing"
-            skill.mkdir()
-            (skill / "SKILL.md").write_text("Run $HOME/.agents/skills/openubmc-dt-testing/scripts/check.py\n")
-            (skill / "scripts").mkdir()
-            (skill / "scripts/check.py").write_text("print('ok')\n")
-            for entry in ("openubmc-debug/scripts/target_runtime_mcp.py", "openubmc-kb-mcp/src/server.js"):
-                path = workflow / entry
-                path.parent.mkdir(parents=True)
-                path.touch()
             home = root / "home"
             module.initialize(workflow, home, "headless", "node", "python3")
             case_module = home / "profiles/openubmc/node_modules/@deepseek-ai/dsh-experimental-openubmc-cases"
@@ -57,6 +63,33 @@ class ProfileTests(unittest.TestCase):
                 module.initialize(workflow, home, "web", "node", "python3")
             self.assertEqual(patch_path.read_bytes(), original)
             self.assertTrue((skill / "scripts/check.py").is_file())
+
+    def test_web_uses_native_conversation_unless_diagnostic_cards_are_selected(self):
+        for case_ui in (False, True):
+            with self.subTest(case_ui=case_ui), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                workflow = checkout(root)
+                home = root / "home"
+                module.initialize(workflow, home, "web", "node", "python3", case_ui=case_ui)
+                profile = home / "profiles/openubmc"
+                manifest = json.loads((profile / "package.json").read_text())
+                self.assertIn("@deepseek-ai/dsh-web-app", manifest["dsh"]["profile"]["bundles"])
+                cases = "@deepseek-ai/dsh-experimental-openubmc-cases"
+                ui = "@deepseek-ai/dsh-client-ui-openubmc-cases"
+                self.assertIn(cases, manifest["dependencies"])
+                self.assertEqual(ui in manifest["dependencies"], case_ui)
+                self.assertEqual((profile / "node_modules" / ui).is_symlink(), case_ui)
+                entries = json.loads((profile / "cordis.patch.yml").read_text())[1]["insert"]
+                self.assertIn("openubmc-cases", {entry["id"] for entry in entries})
+                self.assertEqual(any(entry["id"] == "openubmc-case-ui" for entry in entries), case_ui)
+
+    def test_diagnostic_cards_require_web_before_creating_a_home(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            with self.assertRaisesRegex(ValueError, "--case-ui requires --template web"):
+                module.initialize(checkout(root), home, "headless", "node", "python3", case_ui=True)
+            self.assertFalse(home.exists())
 
 
 if __name__ == "__main__":

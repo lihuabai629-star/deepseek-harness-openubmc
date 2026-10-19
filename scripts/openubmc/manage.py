@@ -119,7 +119,7 @@ def locked(home: Path):
             profile_lock.unlink()
 
 
-def generation(home: Path, workflow: Path, template: str, node: str, python: str, credentials: Path) -> Path:
+def generation(home: Path, workflow: Path, template: str, node: str, python: str, credentials: Path, *, case_ui: bool = False) -> Path:
     """Build and validate an immutable bundle before activation."""
     spec = importlib.util.spec_from_file_location("openubmc_initializer", ROOT / "scripts/openubmc/init.py")
     module = importlib.util.module_from_spec(spec)
@@ -130,7 +130,7 @@ def generation(home: Path, workflow: Path, template: str, node: str, python: str
     staging = Path(tempfile.mkdtemp(prefix=".staging-", dir=generations))
     draft = staging / "draft"
     try:
-        module.initialize(workflow, draft, template, node, python)
+        module.initialize(workflow, draft, template, node, python, case_ui=case_ui)
         skills = staging / "skills"
         skills.mkdir()
         source_manifest = json.loads((workflow / "workflow.json").read_text())
@@ -153,7 +153,7 @@ def generation(home: Path, workflow: Path, template: str, node: str, python: str
         patch[0]["config"]["customSkillDirs"] = [str(target / "skills")]
         runtime = next(entry for entry in patch[1]["insert"] if entry["id"] == "openubmc-target-runtime")
         runtime["config"]["env"] = {"OPENUBMC_TARGET_RUNTIME_INTERFACE_PROFILE": "agent", "OPENUBMC_TARGET_RUNTIME_STATE_DIR": str(home / "openubmc-agent-state"), "OPENUBMC_CREDENTIALS_FILE": str(credentials)}
-        write_json(staging / "config.json", {"template": template, "workflow": str(workflow), "node": node,
+        write_json(staging / "config.json", {"template": template, "caseUi": case_ui, "workflow": str(workflow), "node": node,
                                              "python": python, "credentials": str(credentials)})
         dependencies = json.loads((draft / "profiles/openubmc/package.json").read_text())["dependencies"]
         write_json(staging / "package.json", {"name": BUNDLE, "private": True, "type": "module", "dependencies": dependencies,
@@ -170,13 +170,13 @@ def generation(home: Path, workflow: Path, template: str, node: str, python: str
         # This manager versions configuration and Skills. External executable code remains pinned by digest.
         external = {}
         roots = [workflow / "openubmc-target-runtime", workflow / "openubmc-debug/scripts", workflow / "openubmc-kb-mcp/src",
-                 ROOT / "scripts/openubmc/runtime_stdio.py", *[ROOT / path / "src" for path in PACKAGES.values()],
-                 *[ROOT / path / "lib" for path in PACKAGES.values()]]
+                 ROOT / "scripts/openubmc/runtime_stdio.py", *[ROOT / PACKAGES[name] / "src" for name in dependencies],
+                 *[ROOT / PACKAGES[name] / "lib" for name in dependencies]]
         for source in roots:
             for file in ([source] if source.is_file() else source.rglob("*")):
                 if file.is_file() and "__pycache__" not in file.parts and file.suffix not in {".pyc", ".map"}:
                     external[str(file.absolute())] = hashlib.sha256(file.read_bytes()).hexdigest()
-        for source in [workflow / "openubmc-kb-mcp/package.json", workflow / "openubmc-kb-mcp/package-lock.json", ROOT / "pnpm-lock.yaml", *[ROOT / path / "package.json" for path in PACKAGES.values()]]:
+        for source in [workflow / "openubmc-kb-mcp/package.json", workflow / "openubmc-kb-mcp/package-lock.json", ROOT / "pnpm-lock.yaml", *[ROOT / PACKAGES[name] / "package.json" for name in dependencies]]:
             if source.is_file():
                 external[str(source)] = hashlib.sha256(source.read_bytes()).hexdigest()
         write_json(staging / "external.json", external)
@@ -254,6 +254,7 @@ def activate(home: Path, state, selected: Path) -> None:
     """Activate validated content while keeping the user's patch byte-for-byte."""
     validate_generation(selected)
     state.update(state["generations"][selected.name]["config"])
+    state["caseUi"] = state["generations"][selected.name]["config"].get("caseUi", state["template"] == "web")
     manifest_path, manifest = profile_manifest(home, state["template"])
     preflight(home, state, manifest)
     manifest.setdefault("dependencies", {})[BUNDLE] = f"link:{home / 'openubmc-managed/current'}"
@@ -305,13 +306,19 @@ def publish(home: Path, state, selected: Path):
                 bundle_link.unlink(missing_ok=True)
             write_json(manifest_path, manifest)
             journal.update({key: prior[key] for key in ("active", "history", "template", "workflow", "node", "python", "credentials")})
+            if "caseUi" in prior:
+                journal["caseUi"] = prior["caseUi"]
+            else:
+                journal.pop("caseUi", None)
             write_json(state_path, journal)
         raise
     return journal
 
 
-def run(action: str, home: Path, workflow: Path | None = None, template="headless", node=None, python=None, credentials: Path | None = None):
+def run(action: str, home: Path, workflow: Path | None = None, template="headless", node=None, python=None, credentials: Path | None = None, *, case_ui: bool | None = None):
     """Run one reversible lifecycle action over entries recorded as owned."""
+    if case_ui is not None and action not in {"install", "update"}:
+        raise ValueError("--case-ui and --no-case-ui require install or update")
     with locked(home) as managed:
         state_path = managed / "manifest.json"
         state = json.loads(state_path.read_text()) if state_path.exists() else None
@@ -325,20 +332,23 @@ def run(action: str, home: Path, workflow: Path | None = None, template="headles
             node = node or (state["node"] if state else "node")
             python = python or (state["python"] if state else "python3")
             if state is None:
+                case_ui = False if case_ui is None else case_ui
                 manifest_path, manifest = profile_manifest(home, template)
                 if BUNDLE in manifest.get("dependencies", {}) or BUNDLE in manifest.get("dsh", {}).get("profile", {}).get("bundles", []):
                     raise ValueError("Cannot adopt an openUBMC bundle without its ownership record")
                 if (home / "profiles/openubmc/node_modules" / BUNDLE).is_symlink() or (home / "profiles/openubmc/node_modules" / BUNDLE).exists():
                     raise ValueError("Cannot replace an unowned bundle link")
-                state = {"format": 1, "template": template, "workflow": str(workflow), "node": node, "python": python,
+                state = {"format": 1, "template": template, "caseUi": case_ui, "workflow": str(workflow), "node": node, "python": python,
                          "credentials": str(credentials or home / "credentials.env"), "history": [], "generations": {}, "active": None,
                          "createdProfile": not manifest_path.exists()}
             else:
                 template = state["template"]
+                if case_ui is None:
+                    case_ui = state["generations"][state["active"]]["config"].get("caseUi", False)
                 validate_links(managed / "generations" / state["active"], state["generations"][state["active"]]["links"], allow_missing=True)
             _, manifest = profile_manifest(home, template)
             preflight(home, state, manifest)
-            selected = generation(home, workflow, template, node, python, Path(credentials or state["credentials"]))
+            selected = generation(home, workflow, template, node, python, Path(credentials or state["credentials"]), case_ui=case_ui)
             publish(home, state, selected)
             return {"status": "installed", "generation": selected.name}
         if state is None:
@@ -369,7 +379,8 @@ def run(action: str, home: Path, workflow: Path | None = None, template="headles
                     if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest() != digest:
                         raise ValueError(f"Selected Skill source changed; restore the selected checkout or use update: {name}")
                 config = record["config"]
-                selected = generation(home, Path(config["workflow"]), config["template"], config["node"], config["python"], Path(config["credentials"]))
+                selected = generation(home, Path(config["workflow"]), config["template"], config["node"], config["python"], Path(config["credentials"]),
+                                      case_ui=config.get("caseUi", config["template"] == "web"))
                 if json.loads((selected / "sources.json").read_text()) != record["sources"]:
                     shutil.rmtree(selected)
                     raise ValueError("Selected Skill source set changed; restore the selected checkout or use update")
@@ -404,12 +415,15 @@ def main():
     parser.add_argument("--home", type=Path, required=True)
     parser.add_argument("--workflow", type=Path)
     parser.add_argument("--template", choices=["headless", "web"], default="headless")
+    parser.add_argument("--case-ui", action=argparse.BooleanOptionalAction, default=None,
+                        help="Enable or disable diagnostic cards on install/update of a Web profile")
     parser.add_argument("--node")
     parser.add_argument("--python")
     parser.add_argument("--credentials", type=Path)
     args = parser.parse_args()
     print(json.dumps(run(args.action, args.home.absolute(), args.workflow.resolve() if args.workflow else None,
-                         args.template, args.node, args.python, args.credentials.absolute() if args.credentials else None)))
+                         args.template, args.node, args.python, args.credentials.absolute() if args.credentials else None,
+                         case_ui=args.case_ui)))
 
 
 if __name__ == "__main__":

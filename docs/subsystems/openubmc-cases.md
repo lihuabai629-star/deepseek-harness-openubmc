@@ -65,13 +65,35 @@ The checkpoint contains the configured metadata source and the exact inherited p
 
 ## Runtime authority
 
-The [Runtime adapter](../../packages/experimental/openubmc-runtime/README.md) derives current-session human grants from native command lifecycle events.
+The [Runtime adapter](../../packages/experimental/openubmc-runtime/README.md) derives current-session human grants from native command lifecycle events and exact-start `openubmc/authorization` decisions.
+
+```ts type-equiv
+/** Target and operation range explicitly authorized by a human. */
+interface OpenUbmcExecutionScope {
+  targets: string[]
+  intent: string
+  deliveryStrategy: string | null
+  entryOperation: string | null
+}
+```
+
+```ts type-equiv
+/** Original start scope and the retained permission for that single Run. */
+interface OpenUbmcRunScope {
+  scope: OpenUbmcExecutionScope | null
+  granted: boolean
+}
+```
 
 ```ts type-equiv
 /** Rebuildable current-session grants and Runtime-issued Run bindings. */
 interface OpenUbmcRuntimeState {
   inheritedEventCount: SessionLogOffset
   operations: string[]
+  scopes: OpenUbmcExecutionScope[]
+  runScopes: Record<OpenUbmcRunId, OpenUbmcRunScope>
+  /** Exact starts approved through native user interaction; not general tool grants. */
+  approvedCalls: Partial<Record<ToolCallId, Record<string, JsonValue>>>
   pendingGrants: Partial<Record<CommandId, string>>
   /** Only Runs returned to this Session's recorded start calls confer write access. */
   runs: Partial<Record<OpenUbmcRunId, Record<string, JsonValue>>>
@@ -87,6 +109,8 @@ interface OpenUbmcRuntimeState {
 /** Current-session execution controls derived from the durable authority state. */
 interface OpenUbmcRuntimeView {
   authorized: boolean
+  /** Owned Runs that currently permit continuation, including read-only diagnosis. */
+  executableRunIds: OpenUbmcRunId[]
   pending: number
   uncertain: number
 }

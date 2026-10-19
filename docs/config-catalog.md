@@ -1070,8 +1070,8 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-experimental-openubmc-runtime`
 
-- `inject`: `commands` · `sessionProjections` · `tools`
-- `source`: [`packages/experimental/openubmc-runtime/src/index.ts:25`](../packages/experimental/openubmc-runtime/src/index.ts)
+- `inject`: `commands` · `sessionProjections` · `tools` · `systemPrompt`
+- `source`: [`packages/experimental/openubmc-runtime/src/index.ts:28`](../packages/experimental/openubmc-runtime/src/index.ts)
 
 ```ts config-catalog
 /** Caller wait budgets for the Agent gateway. */

@@ -1,0 +1,13 @@
+- id: skill-filesystem
+  config:
+    includeDefaultRoots: false
+    customSkillDirs: !!js "[process.cwd() + '/skills']"
+    watch: false
+- insert:
+    - id: openubmc-policy
+      name: '@deepseek-ai/dsh-experimental-openubmc-runtime'
+      config:
+        serverName: openubmc-target-runtime
+        operationDeadlineSeconds: 120
+        observationDeadlineSeconds: 180
+        completionGraceMs: 60000

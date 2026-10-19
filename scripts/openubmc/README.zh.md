@@ -24,9 +24,9 @@ corepack pnpm dsh --profile openubmc --dump-config
 corepack pnpm dsh --profile openubmc "Inspect the openUBMC Agent tool schemas."
 ```
 
-执行最后一条命令前，通过 DSH 现有凭据设置或环境配置模型。`--template web` 选择 Web bundle；使用 `corepack pnpm dsh --profile openubmc --no-open --port 0` 分配独立的本机回环端口。仅通过 `dsh` 启动；初始化脚本不会启动服务或请求模型。
+执行最后一条命令前，通过 DSH 现有凭据设置或环境配置模型。`--template web` 选择 Web bundle，使用 DSH 原生对话和工具历史；添加 `--case-ui` 可启用可选的 Run、回执和历史 Case 卡片。使用 `corepack pnpm dsh --profile openubmc --no-open --port 0` 分配独立的本机回环端口。仅通过 `dsh` 启动；初始化脚本不会启动服务或请求模型。
 
-初始化脚本拒绝已有 home。它创建 `profiles/openubmc/cordis.patch.yml`、私有 Runtime 状态目录位置，以及包含清单 full 配置全部技能的 Skill 根目录。Skill 名称遵循清单映射；支持文件通过符号链接指向源码。Skill 正文中已知的 home 相对脚本路径会替换为源码路径。正文或清单变化后，重新创建一个新 home。工作流和 DSH 源码目录必须保持可用；profile 链接此 DSH 源码中的原生 Case 包。
+初始化脚本拒绝已有 home。它创建 `profiles/openubmc/cordis.patch.yml`、私有 Runtime 状态目录位置，以及包含清单 full 配置全部技能的 Skill 根目录。Skill 名称遵循清单映射；支持文件通过符号链接指向源码。Skill 正文中已知的 home 相对脚本路径会替换为源码路径。正文或清单变化后，重新创建一个新 home。工作流和 DSH 源码目录必须保持可用；profile 链接此 DSH 源码中的 Runtime 和观察包。未启用可选卡片时，仍可使用会话记录、`/run` 和 `/case`。
 
 ## 离线启动检查
 
@@ -47,13 +47,16 @@ MCP 桥将调用方 Session ID 注入 `params._meta.taskId`。恢复同一 Sessi
 
 此配置选择原生 Agent 接口和独立的 `openubmc-agent-state` 目录。execute 调用方最多等待 120 秒，observe 最多等待 180 秒，MCP 预算为 190 秒。长动作续接由 Runtime 管理。后续 execute 动作沿用返回的 Run 标识和 Gate 绑定，未知动作结果通过 Runtime 核对。取消不代表回退。
 
+Agent 加载当前阶段的 Skill，完成工作，并向返回的 Gate 提交真实证据。证据 Gate 本身不要求用户批准。明确要求持续工作的任务使用 DSH 原生 Goal 工具；Session 重启后，需要用户要求继续并重新激活 Goal。打开对话或查看历史不会发送设备动作。
+
 ## 凭据与限制
 
 Runtime 使用此 home 中的 `credentials.env` 选择器，初始文件不存在，不使用生产凭据文件。访问设备前需显式配置。KB 保留现有登录和配置机制；创建配置不代表完成 KB 登录。MCP 客户端的环境变量清洗仍然生效。
 
-[Runtime 适配器](../../packages/experimental/openubmc-runtime/README.zh.md) 在发送前将 Runtime 返回的 Run 绑定到启动它的 Session。设备和工作流执行需要当前 Session 的用户通过 `/target-authorize` 授权；resume 保留授权，fork 排除继承授权。此机制保护 DSH 桥接，不保护对 Python Runtime 的直接访问。已有生产配置和 systemd 服务不属于初始化器的管理范围。
+[Runtime 适配器](../../packages/experimental/openubmc-runtime/README.zh.md) 在发送前将 Runtime 返回的 Run 绑定到启动它的 Session。默认的只读诊断无需执行授权。有效的 start 超出现有权限时，通过 DSH 原生提问服务请求授权；批准只允许该次原输入启动及其返回 Run 的后续阶段。Resume 保留已记录的权限；fork 继承观察，但不继承授权或 Run 写权限。已有生产配置和 systemd 服务不属于初始化器的管理范围。
 
-在 headless profile 中，使用 `corepack pnpm dsh --profile openubmc --session-id <id> "/target-authorize execute"` 为同一会话授权 execute。在 Web 中，将原生命令输入该会话的输入框；Web 启动不接受 headless Session 参数。原生命令不调用模型。使用 `/target-authorize revoke` 撤销授权。通过 `/target-action <execute action JSON>` 显式续接当前 Session 拥有的 Run；该命令拒绝 `start`。Web Run 卡片在当前 Session 最新结果上提供相同命令及由 schema 派生的 Gate 响应字段。已有 Run 使用 `control` 核对；启动回包丢失时，先执行 `/target-reconcile <original-call-id>`，再按原输入重放。
+需要直接授予范围权限时，在所属对话中输入 `/target-authorize execute <target> <intent> [source-only|live-patch|build-upgrade]`。在 headless profile 中，通过 `corepack pnpm dsh --profile openubmc --session-id <id> "<command>"` 传入命令；Web 在对话输入框中接受命令。原生命令不调用模型。使用 `/target-authorize revoke` 撤销授权。适配器参考页说明更广的授权及高级 `/target-action` 续接方式。已有 Run 使用 `control` 核对；启动回包丢失时，先执行 `/target-reconcile <original-call-id>`，再按原输入重放。
+
 ## 托管 profile 生命周期
 
 管理器只拥有 `@local/dsh-openubmc`、它在 profile 中的依赖和 bundle 列表条目，以及记录的链接。用户模型设置、MCP 配置及 `cordis.patch.yml` 仍由用户拥有。所有操作与 DSH 插件管理器使用相同的 profile 写锁；仍在运行或无法确认的持锁者会导致带锁路径的错误；已确认退出的 PID 按原生 claim 协议恢复。使用独立 home，并在生命周期操作前停止该 home 的 Host，使每个进程只观察一代配置。
@@ -69,15 +72,21 @@ python3 scripts/openubmc/manage.py repair --home /tmp/dsh-openubmc-managed
 python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
 ```
 
-`--template web` 添加可选的原生 Case 卡片。每代配置复制 manifest 完整 Skill 集合及其脚本和参考文件，将支持文件的符号链接复制为自有文件，并把已知 Skill 路径改写到自有副本。更新时保留选定的 Node/Python 路径和凭据选择器，除非显式替换。缺失的自有条目可修复；外部替换的依赖值、文件或链接会在修改 profile 前被拒绝。每代记录解释器路径和凭据选择器，回滚恢复这些选择。激活在发布链接前记录所有权，并对 profile 写入失败执行补偿；修复可根据所有权记录重建整代丢失的配置。
+`--template web` 使用 DSH 原生对话。在 install 或 update 时添加 `--case-ui` 可启用诊断卡片，使用 `update --no-case-ui` 可停用。启用卡片要求 Web profile。每代记录此选择，更新保留显式记录的选择。缺少该字段的旧配置代更新时采用原生对话默认值，修复和回滚则保留其原有卡片配置。
+
+每代配置复制 manifest 完整 Skill 集合及其脚本和参考文件，将支持文件的符号链接复制为自有文件，并把已知 Skill 路径改写到自有副本。更新时保留选定的 Node/Python 路径和凭据选择器，除非显式替换。缺失的自有条目可修复；外部替换的依赖值、文件或链接会在修改 profile 前被拒绝。每代记录解释器路径和凭据选择器，回滚恢复这些选择。激活在发布链接前记录所有权，并对 profile 写入失败执行补偿；修复可根据所有权记录重建整代丢失的配置。
 
 修复在重建缺失内容前还会验证选定配置代的 workflow manifest 和 Skill 源文件摘要；源文件变化时须恢复相应 checkout，或显式更新。
 
 回滚恢复 profile/Skill 配置，不恢复可执行软件。Runtime、KB 和 DSH 代码仍保留在各自 checkout 中；摘要固定适配器和 Runtime/KB 启动文件、原生包源码与构建产物，以及依赖锁文件。`check`、修复和回滚会拒绝已变化的固定文件。使用 update 选择变化后的执行代码，或先恢复预期 checkout 再回滚。此检查不验证模型端点、KB 登录或设备连接。卸载保留会话、Runtime 状态、凭据、用户配置和各代配置。
 
-[提供方资格验证记录](qualification/2026-10-11.json) 包含真实模型与 KB 检索、持久化 Runtime 阶段和工件观察，以及离线设备后端的进程重启续接结果。独立的[真实目标记录](qualification/2026-10-11-real-target.json) 覆盖 A860 A5 上的诊断、MDB 身份核对、临时文件 Apply、DSH 重启和校验和保护回退。两份记录均不代表业务验收或固件升级兼容性，也不包含凭据和原始设备日志。
+以下记录覆盖旧 Runtime 接口，不代表 Agent 接口已通过验证。[提供方资格验证记录](qualification/2026-10-11.json) 包含真实模型与 KB 检索、持久化 Runtime 阶段和工件观察，以及离线设备后端的进程重启续接结果。独立的[真实目标记录](qualification/2026-10-11-real-target.json) 覆盖 A860 A5 上的诊断、MDB 身份核对、临时文件 Apply、DSH 重启和校验和保护回退。两份记录均不代表业务验收或固件升级兼容性，也不包含凭据和原始设备日志。
 
-[原生目标验收记录](qualification/2026-10-19-target39.json)覆盖真实 Agent 诊断、临时文件 Apply/Rollback，以及设备写入完成但宿主回包丢失后的恢复。记录确认重启后仍使用同一 Run，且只有一份变更日志。业务字节码兼容性与固件激活尚未通过验收。
+[原生目标验收记录](qualification/2026-10-19-target39.json)覆盖真实 Agent 诊断、临时文件 Apply/Rollback，以及设备写入完成但宿主回包丢失后的恢复。记录确认重启后仍使用同一 Run，且只有一份变更日志。该记录不验证业务字节码兼容性或固件激活。
+
+[原生对话记录](qualification/2026-10-19-native-conversation.json)覆盖真实模型通过 Skill 和 Goal 使用真实 Python Runtime 及离线设备后端。它保留同一 Run 并如实记录证据 Gate 失败；重新打开同一 Session 不会发送新的 execute 动作。该记录不验证物理 BMC 的诊断。
+
+[原生业务验证记录](qualification/2026-10-20-business.json)覆盖源码与字节码匹配、两次 Apply 和已观察到的 NC-SI 诊断执行。操作员通过受校验保护的补偿恢复原备份；Runtime 核对与 DSH 原生 resume 确认既有回退 Run 和 Effect 已完成。该记录保留既有 NC-SI 错误和四个端口断开状态，不验证全自动业务回退或固件激活。
 
 ## 服务预部署
 
@@ -85,7 +94,7 @@ python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
 
 使用独立 systemd unit、私有 home 和本机回环端口验证源码部署。认证 URL 和服务日志须保持私有。修改 profile 生命周期前，先停止该实例。安装时选择的模板决定应用入口，update 保留该入口。使用另一个 headless profile 从 CLI 查看私有 Case 快照，不向 Web 入口传递 headless 参数。
 
-软件回退选择旧的可执行文件及其兼容 home。不认识必需 `openubmc/inspection` 事件的构建会拒绝新 Session 日志；保留候选 home 用于恢复，不用旧构建打开它。一致的状态快照使用 SQLite backup，并排除复制的进程锁。[部署记录](qualification/2026-10-11-deployment.json) 报告了托管 CI、独立服务重启、原生 Case 连续性、旧 Runtime 启动和源码 Runtime 恢复。正式服务不属于该演练。
+软件回退选择旧的可执行文件及其兼容 home。不认识必需 `openubmc/authorization` 或 `openubmc/inspection` 事件的构建会拒绝新 Session 日志；保留候选 home 用于恢复，不用旧构建打开它。一致的状态快照使用 SQLite backup，并排除复制的进程锁。[部署记录](qualification/2026-10-11-deployment.json) 报告了托管 CI、独立服务重启、原生 Case 连续性、旧 Runtime 启动和源码 Runtime 恢复。正式服务不属于该演练。
 
 [正式部署记录](qualification/2026-10-11-production.json) 包含独立源码快照重建、文件和依赖解析链接校验、已安装的回环服务、原生 Case 刷新与重载、真实模型和 KB 调用，以及旧 Runtime 回退。软件回退使用保留的旧 Runtime 及其独立 home，并保留新版 Session 文件以便恢复。既有凭据、原 Web profile 和其他用户 MCP 条目继续可用。
 

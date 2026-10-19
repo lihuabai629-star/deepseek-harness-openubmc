@@ -1,0 +1,9 @@
+version: 1
+scenario: openubmc-native-workflow
+profile: headless
+composition: openubmc-native-workflow
+recording: authored
+header:
+  class: openubmc-native-workflow
+  pin: true
+  toolSchemasSource: text-turn

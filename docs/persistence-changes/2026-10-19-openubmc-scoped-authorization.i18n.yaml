@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-10-19-openubmc-scoped-authorization.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-10-19-openubmc-scoped-authorization.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-10-19-openubmc-scoped-authorization:
+  en: 3bc8876fc355f59b
+  zh: ab8ae7d4c60db157
+/2026-10-19-openubmc-scoped-authorization/summary:
+  en: 0f7e08f8d9e027d6
+  zh: d4d7b92c1e0f07e6
+/2026-10-19-openubmc-scoped-authorization/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-10-19-openubmc-scoped-authorization/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-10-19-openubmc-scoped-authorization/compatibility:
+  en: 1cba9d9349e3a231
+  zh: 1e2e12eccd2d9cfb
+/2026-10-19-openubmc-scoped-authorization/verification:
+  en: 3305dcc6d7030278
+  zh: 1be1f641816b54f1
+/2026-10-19-openubmc-scoped-authorization/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

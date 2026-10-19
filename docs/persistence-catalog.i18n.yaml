@@ -9,8 +9,8 @@
   en: e7c80d1de4d328b4
   zh: d9f368c27fd9f998
 /session-persistence-event-catalog/persistence-type-fingerprints:
-  en: a25eb4ce262a5209
-  zh: eb6fef96f069ff02
+  en: 5f1933ac18283e0e
+  zh: 11711e935b12e656
 /session-persistence-event-catalog/event-envelope:
   en: 7ebb1a2e0dd1f916
   zh: 8946f415dda5c1b8
@@ -135,8 +135,11 @@
   en: ea963e9ec025c667
   zh: f6eea77d22442cd8
 /session-persistence-event-catalog/events/openubmc:
-  en: 04e540dc0a4efdd9
-  zh: 04e540dc0a4efdd9
+  en: 99398d316f74ad00
+  zh: 99398d316f74ad00
+/session-persistence-event-catalog/events/openubmc/openubmc-authorization-log-only:
+  en: f32ae93188f7f690
+  zh: ea546bf05734c901
 /session-persistence-event-catalog/events/openubmc/openubmc-inspection-log-only:
   en: aed2ab3b24305d0f
   zh: 65ab5e5bb714ec26
@@ -594,8 +597,11 @@
   en: 00df59bcc5c6edbb
   zh: 00df59bcc5c6edbb
 /session-persistence-event-catalog/resolved-persistence-types/one-shot:
-  en: 4201ce3fb83882d6
-  zh: 4201ce3fb83882d6
+  en: aa3945cf03ab5d61
+  zh: aa3945cf03ab5d61
+/session-persistence-event-catalog/resolved-persistence-types/openubmc-authorization:
+  en: ed333c42ba6e4aab
+  zh: ed333c42ba6e4aab
 /session-persistence-event-catalog/resolved-persistence-types/openubmc-inspection:
   en: 369ce317f00e43f6
   zh: 369ce317f00e43f6
@@ -1353,8 +1359,11 @@
   en: 6178321110ceb69d
   zh: 0a9d94cab9d57487
 /session-persistence-event-catalog/resolved-persistence-types/args-commandid-name-source:
-  en: a117573a5d58cb3c
-  zh: d5ad59e17a3a815d
+  en: e415df9711c9b861
+  zh: bde12625fd8000f9
+/session-persistence-event-catalog/resolved-persistence-types/arguments-callid:
+  en: 18adcd261f8daa96
+  zh: f75b5ff37c17c2cb
 /session-persistence-event-catalog/resolved-persistence-types/arguments-callid-name-step:
   en: bbb8322870e4695e
   zh: dc90a029bf156604
@@ -1944,8 +1953,11 @@
   en: c0ad371b1f636530
   zh: 6b79634088e8d9da
 /session-persistence-event-catalog/resolved-persistence-types/type-model-selection:
-  en: 4f9b1f51c393b172
-  zh: 3eee1cc25aba48a3
+  en: 008025718c0e0e21
+  zh: 8b8e6d1085b65905
+/session-persistence-event-catalog/resolved-persistence-types/type-openubmc-authorization:
+  en: 721c3d25f202d6e5
+  zh: 5617d56e822a057e
 /session-persistence-event-catalog/resolved-persistence-types/type-openubmc-inspection:
   en: 754bdba31997b754
   zh: a2bc22eea15f2862

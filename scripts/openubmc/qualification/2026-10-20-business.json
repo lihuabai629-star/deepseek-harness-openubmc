@@ -1,0 +1,221 @@
+{
+  "date": "2026-10-20",
+  "interface": "openubmc.target-runtime.v1/agent-gateway-v1",
+  "target": "User-supplied development BMC; independently identified Huawei BC83ETHA / SF221Q",
+  "runtime": {
+    "apply_revision": "e210b99ae286484cfd060d88150411d35fa86f6a",
+    "restoration_revision": "c82aa5ec92993bf35f27f57e58a4825f3e211d79",
+    "rollback_fix_pr": "https://github.com/lihuabai629-star/openubmc-agent-workflow/pull/315"
+  },
+  "execution": {
+    "native_path": "DSH source profile, Host authority, MCP, real Python Runtime and target transports",
+    "driver": "Scripted model adapter selecting explicit qualification actions and submitting scoped diagnosis records",
+    "isolated_home": true,
+    "execution_grant_revoked": true,
+    "credentials_private_configuration_and_raw_logs_published": false,
+    "operator_recovery_used": true,
+    "fully_automatic_business_rollback_qualified": false
+  },
+  "source": {
+    "component": "network_adapter",
+    "component_version": "1.80.92",
+    "source_revision": "d88f7acd9363d2b0de476e8cb8895e06556e0f6f",
+    "source_file": "src/lualib/ncsi/ncsi_comm.lua",
+    "deployed_format": "Custom openUBMC LuaJIT bytecode",
+    "deployed_byte_count": 15733,
+    "deployed_original_sha256": "bc47f0ca3aeab69cfec2d335ce015d1e63109a76b3a7ae026a6cc3af0a3a5e4e",
+    "exact_historical_source_compiles_to_original_bytes": true,
+    "matching_compiler_versions": [
+      "LuaJIT 2.1.1756211046",
+      "LuaJIT 2.1.1723681758"
+    ],
+    "compile_chunk_name": "@./opt/bmc/apps/network_adapter/lualib/ncsi/ncsi_comm.lua",
+    "official_component_or_product_build_performed": false,
+    "existing_source_workspace_modified": false
+  },
+  "target_baseline": {
+    "openubmc_version": "25.06",
+    "sdk_version": "5.12.00.01",
+    "build": "001",
+    "network_adapter_count": 1,
+    "selected_port_count": 4,
+    "port_link_states": [
+      "Disconnected",
+      "Disconnected",
+      "Disconnected",
+      "Disconnected"
+    ],
+    "port_firmware_fields": [
+      "",
+      "",
+      "",
+      ""
+    ],
+    "preexisting_ncsi_command_and_basic_init_errors": true
+  },
+  "applies": [
+    {
+      "run_id": "run-7f87c2d21cb89609cfb3b2c7a0336c61",
+      "status": "completed",
+      "journal_stage": "verified",
+      "after_sha256": "9bee1cca0b6ad8d44243bfcf1627f7b262ff64f69c927d9e1175b5e2a110d0de",
+      "change": "Additional diagnostic in ncsi_init; this entry was not reached during the bounded log verification",
+      "original_backup_retained": true,
+      "metadata": {
+        "mode": "440",
+        "uid": 104,
+        "gid": 104
+      },
+      "restart_scope": "skynet",
+      "root_mount_restored": true
+    },
+    {
+      "run_id": "run-03789242d7208f06cc3f2eff2c4b2e9c",
+      "status": "completed",
+      "journal_stage": "verified",
+      "after_sha256": "49781bf850ff2b2f9d81de818633f26f78b37cc9082f7f4a82724699481608cd",
+      "change": "Existing basic-init notice includes configured port count; no network control behavior changed",
+      "caller_wait_returned_running": true,
+      "same_run_resume_completed": true,
+      "duplicate_apply_performed": false,
+      "metadata": {
+        "mode": "440",
+        "uid": 104,
+        "gid": 104
+      },
+      "restart_scope": "skynet",
+      "root_mount_restored": true
+    }
+  ],
+  "business_log_verification": {
+    "run_id": "run-57864d983cf03b5232460849f281de85",
+    "status": "completed",
+    "gate": "diagnosis.acceptance",
+    "evidence_id": "f02c049cdd216b87ee8f36242f76f20f848fae021a2e5fa5d0b1ecffb57d0f0a",
+    "receipt_coverage": {
+      "requested": 7,
+      "evaluable": 7,
+      "complete": true
+    },
+    "raw_log_entries_complete": true,
+    "actual_configured_port_notice_observed": true,
+    "configured_ports": 4,
+    "latest_framework_startup": {
+      "total_components": 53,
+      "normal_components": 53
+    },
+    "actual_adapter_and_four_ports_readable": true,
+    "hardware_repair_established": false
+  },
+  "original_restoration": {
+    "run_id": "run-953c926beba73ebe1f033b86b01c111c",
+    "effect_id": "op-run-e9542419cca19399f5c16144",
+    "status": "completed",
+    "incident": null,
+    "journal_stage": "verified",
+    "effects_started_history_retained": true,
+    "restored_sha256": "bc47f0ca3aeab69cfec2d335ce015d1e63109a76b3a7ae026a6cc3af0a3a5e4e",
+    "freshly_verified_metadata": {
+      "mode": "440",
+      "uid": 104,
+      "gid": 104
+    },
+    "original_backup_retained": true,
+    "original_root_mount_restored": "ro,relatime",
+    "restart_scope": "skynet",
+    "native_dsh_terminal_resume_confirmed": true,
+    "new_rollback_effect_created": false,
+    "initial_failure": {
+      "code": "mutation_outcome_unknown",
+      "canonical_error": "Live Patch operation is too long for bounded Telnet execution",
+      "old_encoded_body_bytes": 707,
+      "body_limit_bytes": 700,
+      "restore_command_dispatched": false,
+      "root_mount_had_already_cycled": true,
+      "root_mount_restored_before_recovery": true
+    },
+    "domain_fix": {
+      "encoded_body_preflight_before_remount_and_effects": true,
+      "checksum_metadata_and_symlink_guards_retained": true,
+      "focused_backend_tests_passed": 45,
+      "test_credentials": "Explicit fictional credential records in a private temporary configuration"
+    },
+    "compensation": {
+      "path": "Private operator helper bound to the original Run, Effect, target identity, candidate checksum, original backup checksum and exact metadata",
+      "native_dsh_mutation": false,
+      "bounded_payload_copy_then_checksum_guarded_atomic_rename": true,
+      "command_body_bytes": [
+        463,
+        523
+      ],
+      "current_recovery_restart_boundary_recorded": true,
+      "historical_effect_flags_rewritten": false,
+      "audit_private": true
+    },
+    "reconciliation": {
+      "path": "Existing Runtime EffectRunner RECOVER, then existing control/reconcile and DSH native resume",
+      "device_mutation_commands_admitted_during_observation": false,
+      "fresh_checksum_and_metadata_read": true,
+      "target_epoch_after": 1,
+      "cached_incident_required_operator_attachment": true,
+      "long_read_commands_wrapped_with_existing_codec_by_private_observer": true
+    }
+  },
+  "fresh_restoration_verification": {
+    "run_id": "run-59c45c8ba101838ada4b9917deb8c418",
+    "status": "completed",
+    "evidence_id": "dcd8254c467a17e353863c8a5b89f13036da6e5f211d6045a438fb742f2f2e1a",
+    "gate": "diagnosis.acceptance",
+    "receipt_coverage": {
+      "requested": 7,
+      "evaluable": 7,
+      "complete": true
+    },
+    "new_framework_startup": {
+      "target_local_time": "2026-10-20 00:24:31.368555",
+      "total_components": 53,
+      "normal_components": 53
+    },
+    "post_restoration_original_basic_init_records": 5,
+    "last_original_basic_init_target_local_time": "2026-10-20 00:31:04.732547",
+    "temporary_diagnostic_absent_from_post_restoration_basic_init_notices": true,
+    "raw_native_log_entries_complete": true,
+    "full_native_evidence_blob_examined_after_model_projection_shortened_mdb_and_log_previews": true,
+    "actual_adapter_and_all_four_ports_readable": true,
+    "port_link_states": [
+      "Disconnected",
+      "Disconnected",
+      "Disconnected",
+      "Disconnected"
+    ],
+    "port_firmware_fields": [
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "retained_failures": [
+    {
+      "run_id": "run-ccab9f77106a1dfea5d24ff229c8430c",
+      "status": "failed",
+      "reason": "The first added diagnostic followed the pre-existing long NC-SI retry path and was not observed; diagnosis.acceptance was closed as failed."
+    },
+    {
+      "run_id": "run-b1f02e4b3c56a7590009d11ff7438233",
+      "status": "running with incomplete read-only content",
+      "reason": "Two requested historical-target files are absent on this independently identified target; no mutation or diagnosis acceptance was performed for this discovery."
+    },
+    {
+      "operation": "Repeated explicit native reconcile after compensation",
+      "result": "Cached unchanged Incident was replayed before another domain inspection",
+      "recovery": "Trusted operator attached read-only RECOVER to the existing EffectRunner; the same Run subsequently completed."
+    }
+  ],
+  "limitations": [
+    "The live exercise validates bytecode compatibility, actual diagnostic execution, restoration and fresh target reads. It does not establish NIC health or repair the pre-existing initialization failures.",
+    "The controlled private compensation and operator recovery are recorded explicitly; an end-to-end automatic repeat-reconcile path is not qualified by this record.",
+    "Supplementary source compilation, file/metadata/mount checks and private operator recovery are distinct from the DSH-native Apply, diagnostic and terminal-resume calls.",
+    "No full component/product build, HPM upload, activation or firmware rollback was performed."
+  ]
+}

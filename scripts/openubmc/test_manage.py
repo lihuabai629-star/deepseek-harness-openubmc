@@ -1,4 +1,5 @@
 """Owned lifecycle actions preserve user settings and survive interrupted activation."""
+import hashlib
 import importlib.util
 import json
 import os
@@ -33,6 +34,91 @@ def checkout(root):
 
 
 class LifecycleTests(unittest.TestCase):
+    def test_web_cards_are_a_generation_choice_and_preserve_user_state(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            home = root / 'home'
+            workflow = checkout(root)
+            profile = home / 'profiles/openubmc'
+            profile.mkdir(parents=True)
+            user_patch = b'- id: user-model\n  config:\n    model: unchanged\n'
+            (profile / 'cordis.patch.yml').write_bytes(user_patch)
+            retained = home / 'sessions/retained.jsonl'
+            retained.parent.mkdir()
+            retained.write_text('retained session\n')
+            ui = '@deepseek-ai/dsh-client-ui-openubmc-cases'
+            def selected():
+                active = (home / 'openubmc-managed/current').resolve()
+                dependencies = json.loads((active / 'package.json').read_text())['dependencies']
+                links = json.loads((active / 'links.json').read_text())
+                external = json.loads((active / 'external.json').read_text())
+                entries = json.loads((active / 'cordis.yml').read_text())[1]['insert']
+                enabled = json.loads((active / 'config.json').read_text())['caseUi']
+                self.assertEqual(ui in dependencies, enabled)
+                self.assertEqual(ui in links, enabled)
+                self.assertEqual(any(entry['id'] == 'openubmc-case-ui' for entry in entries), enabled)
+                self.assertEqual(any('/packages/client/ui-openubmc-cases/' in path for path in external), enabled)
+                self.assertIn('@deepseek-ai/dsh-experimental-openubmc-cases', dependencies)
+                self.assertEqual((profile / 'cordis.patch.yml').read_bytes(), user_patch)
+                self.assertEqual(module.run('check', home)['status'], 'healthy')
+                return enabled
+            module.run('install', home, workflow, template='web')
+            self.assertFalse(selected())
+            enabled = module.run('update', home, case_ui=True)
+            self.assertTrue(selected())
+            module.run('update', home)
+            self.assertTrue(selected())
+            module.run('update', home, case_ui=False)
+            self.assertFalse(selected())
+            module.run('rollback', home)
+            self.assertTrue(selected())
+            state = json.loads((home / 'openubmc-managed/manifest.json').read_text())
+            self.assertTrue(state['caseUi'])
+            self.assertIn(enabled['generation'], state['generations'])
+            module.run('uninstall', home)
+            self.assertEqual(retained.read_text(), 'retained session\n')
+            self.assertEqual((profile / 'cordis.patch.yml').read_bytes(), user_patch)
+
+    def test_legacy_web_generations_update_without_cards_and_repair_their_original_choice(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            home = root / 'home'
+            workflow = checkout(root)
+            first = module.run('install', home, workflow, template='web', case_ui=True)
+            active = (home / 'openubmc-managed/current').resolve()
+            state_path = home / 'openubmc-managed/manifest.json'
+            state = json.loads(state_path.read_text())
+            config = json.loads((active / 'config.json').read_text())
+            config.pop('caseUi')
+            module.write_json(active / 'config.json', config)
+            files = json.loads((active / 'files.json').read_text())
+            files['config.json'] = hashlib.sha256((active / 'config.json').read_bytes()).hexdigest()
+            module.write_json(active / 'files.json', files)
+            state.pop('caseUi')
+            state['generations'][first['generation']]['config'] = config
+            module.write_json(state_path, state)
+            original = (active / 'config.json').read_bytes()
+            self.assertEqual(module.run('check', home)['status'], 'healthy')
+            module.run('update', home)
+            updated = (home / 'openubmc-managed/current').resolve()
+            self.assertFalse(json.loads((updated / 'config.json').read_text())['caseUi'])
+            self.assertEqual(module.run('rollback', home)['generation'], first['generation'])
+            self.assertEqual((active / 'config.json').read_bytes(), original)
+            self.assertTrue(json.loads(state_path.read_text())['caseUi'])
+            (active / 'skills/openubmc-dt-testing/SKILL.md').unlink()
+            module.run('repair', home)
+            repaired = (home / 'openubmc-managed/current').resolve()
+            self.assertTrue(json.loads((repaired / 'config.json').read_text())['caseUi'])
+            dependencies = json.loads((repaired / 'package.json').read_text())['dependencies']
+            self.assertIn('@deepseek-ai/dsh-client-ui-openubmc-cases', dependencies)
+            self.assertEqual(module.run('check', home)['status'], 'healthy')
+
+    def test_card_selection_cannot_be_silently_ignored_by_other_lifecycle_actions(self):
+        with tempfile.TemporaryDirectory() as raw:
+            for action in ('check', 'repair', 'rollback', 'uninstall'):
+                with self.subTest(action=action), self.assertRaisesRegex(ValueError, 'require install or update'):
+                    module.run(action, Path(raw) / 'home', case_ui=False)
+
     def test_rollback_repair_restores_generation_interpreters_and_selector(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -132,7 +218,7 @@ class LifecycleTests(unittest.TestCase):
                 root = Path(raw)
                 home = root / 'home'
                 workflow = checkout(root)
-                first = module.run('install', home, workflow, credentials=root / 'first.env')
+                first = module.run('install', home, workflow, template='web', credentials=root / 'first.env', case_ui=True)
                 if action == 'repair':
                     (home / 'openubmc-managed/current/skills/openubmc-dt-testing/SKILL.md').unlink()
                 original_write = module.write_json
@@ -147,11 +233,12 @@ class LifecycleTests(unittest.TestCase):
                     original_write(path, value)
                 with patch.object(module, 'write_json', side_effect=fail_profile_once):
                     with self.assertRaisesRegex(OSError, 'interrupted'):
-                        module.run(action, home, credentials=root / 'second.env')
+                        module.run(action, home, credentials=root / 'second.env', **({'case_ui': False} if action == 'update' else {}))
                 self.assertEqual(profile_path.read_bytes(), before)
                 state = json.loads((home / 'openubmc-managed/manifest.json').read_text())
                 self.assertEqual(state['active'], first['generation'])
                 self.assertEqual(state['credentials'], str(root / 'first.env'))
+                self.assertTrue(state['caseUi'])
                 self.assertEqual(state['history'], [first['generation']])
                 self.assertEqual(len(state['generations']), 2)
                 self.assertEqual((home / 'openubmc-managed/current').readlink().name, first['generation'])

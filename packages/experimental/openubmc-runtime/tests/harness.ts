@@ -12,8 +12,12 @@ import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
 import * as runtime from '../src/index.ts'
 
 export const config = { serverName: 'runtime', operationDeadlineSeconds: 10, observationDeadlineSeconds: 20, completionGraceMs: 1000 }
-/** Build an isolated Session fixture. @param seed - Recorded events for restart. @returns owned context and public drivers. */
-export async function bench(seed: readonly SessionEvent[] = []) {
+/** Build an isolated Session fixture.
+ * @param seed - Recorded events for restart.
+ * @param limits - Current caller wait limits.
+ * @returns owned context and public drivers.
+ */
+export async function bench(seed: readonly SessionEvent[] = [], limits = config) {
   const ctx = new Context()
   try {
     await ctx.plugin(Sessions)
@@ -21,7 +25,7 @@ export async function bench(seed: readonly SessionEvent[] = []) {
     await ctx.plugin(Commands)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(Tools)
-    const fiber = await ctx.plugin(runtime, config)
+    const fiber = await ctx.plugin(runtime, limits)
     const session = ctx.sessions.create(SessionId('agent-owner'), { seed: [...seed] })
     const agent: Agent = { id: session.id, session, ctx, options: {}, inbox: createInboxStub(), status: 'idle',
       send() {}, followup() {}, steer() {}, inject() {}, cancel() {}, whenIdle: async () => {},

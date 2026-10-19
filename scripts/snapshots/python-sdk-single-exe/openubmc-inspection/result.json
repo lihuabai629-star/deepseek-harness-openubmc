@@ -63,5 +63,19 @@
         }
       }
     }
+  ],
+  "authorization_in_run_events": 1,
+  "authorization_notifications": 1,
+  "authorizations": [
+    {
+      "callId": "{{tool-call:1}}",
+      "arguments": {
+        "kind": "start",
+        "target": "192.0.2.10",
+        "intent": "diagnose-and-fix",
+        "delivery_strategy": "source-only",
+        "deadline": 10
+      }
+    }
   ]
 }

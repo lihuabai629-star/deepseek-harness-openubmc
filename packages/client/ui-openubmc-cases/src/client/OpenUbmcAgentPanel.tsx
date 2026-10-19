@@ -1,5 +1,7 @@
 /** Native Run and observation receipt presentation. @module */
 import { useState } from 'react'
+import { brandString } from '@deepseek-ai/dsh-brand'
+import type { OpenUbmcRunId } from '@deepseek-ai/dsh-experimental-openubmc-cases/types'
 import { Button, DisclosureRow, IconChevronRightOutlineRegular, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
@@ -30,7 +32,8 @@ export function OpenUbmcAgentPanel({ node, useProjection, submitCommand, t }: Pi
   const current = data.kind === 'run' && latest?.observedAtSeq === node.anchorSeq && !inherited && !stale
   const gate = responseGate(data.document.gate)
   const terminal = ['completed', 'failed', 'cancelled'].includes(data.status)
-  const ready = current && authority?.authorized === true && authority.pending === 0 && authority.uncertain === 0 && !busy
+  const executable = data.kind === 'run' && authority?.executableRunIds.includes(brandString<OpenUbmcRunId>(data.id)) === true
+  const ready = current && executable && authority.pending === 0 && authority.uncertain === 0 && !busy
   const send = async (line: string): Promise<void> => {
     setBusy(true)
     setError(null)
@@ -63,7 +66,7 @@ export function OpenUbmcAgentPanel({ node, useProjection, submitCommand, t }: Pi
           {t(authority.authorized ? 'revokeExecution' : 'authorizeExecution')}
         </Button>
         {(authority.pending > 0 || authority.uncertain > 0 || reconcileIncident && !terminal) ? <Button
-          disabled={busy || !authority.authorized}
+          disabled={busy || !executable}
           onClick={() => { void action({ kind: 'control', command: 'reconcile', run_id: data.id }) }}>{t('reconcileRun')}</Button> : null}
         {resume === null || terminal ? null : <Button disabled={!ready} onClick={() => { void action(resume) }}>{t('resumeRun')}</Button>}
         {terminal || gate === null && cancelIncident === null ? null : <Button disabled={!ready} onClick={() => {

@@ -11,10 +11,28 @@ export interface OpenUbmcPendingCall {
   operationId: ToolCallId
 }
 
+/** Target and operation range explicitly authorized by a human. */
+export interface OpenUbmcExecutionScope {
+  targets: string[]
+  intent: string
+  deliveryStrategy: string | null
+  entryOperation: string | null
+}
+
+/** Original start scope and the retained permission for that single Run. */
+export interface OpenUbmcRunScope {
+  scope: OpenUbmcExecutionScope | null
+  granted: boolean
+}
+
 /** Rebuildable current-session grants and Runtime-issued Run bindings. */
 export interface OpenUbmcRuntimeState {
   inheritedEventCount: SessionLogOffset
   operations: string[]
+  scopes: OpenUbmcExecutionScope[]
+  runScopes: Record<OpenUbmcRunId, OpenUbmcRunScope>
+  /** Exact starts approved through native user interaction; not general tool grants. */
+  approvedCalls: Partial<Record<ToolCallId, Record<string, JsonValue>>>
   pendingGrants: Partial<Record<CommandId, string>>
   /** Only Runs returned to this Session's recorded start calls confer write access. */
   runs: Partial<Record<OpenUbmcRunId, Record<string, JsonValue>>>
@@ -25,9 +43,18 @@ export interface OpenUbmcRuntimeState {
   reconcileCallId: ToolCallId | null
 }
 
+declare module '@deepseek-ai/dsh-session/types' {
+  interface SessionEventMap {
+    /** Human authorization for one exact start, including its bound continuation. */
+    'openubmc/authorization': { callId: ToolCallId; arguments: Record<string, JsonValue> }
+  }
+}
+
 /** Current-session execution controls derived from the durable authority state. */
 export interface OpenUbmcRuntimeView {
   authorized: boolean
+  /** Owned Runs that currently permit continuation, including read-only diagnosis. */
+  executableRunIds: OpenUbmcRunId[]
   pending: number
   uncertain: number
 }

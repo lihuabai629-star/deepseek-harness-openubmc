@@ -10688,6 +10688,114 @@
       }
     },
     {
+      "key": "event:openubmc/authorization",
+      "kind": "event",
+      "event": "openubmc/authorization",
+      "surface": false,
+      "digest": "55ed7784f0210713e093a3f5d4baacb60b8a48cf5c7fbdb92604e6c587a481cf",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 9,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 10,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "arguments",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "callId",
+                "type": 3,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [],
+            "indices": [
+              {
+                "key": 3,
+                "value": 4
+              }
+            ]
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "union",
+            "types": [
+              2,
+              3,
+              5,
+              6,
+              7,
+              8
+            ]
+          },
+          {
+            "kind": "array",
+            "element": 4
+          },
+          {
+            "kind": "primitive",
+            "type": "boolean"
+          },
+          {
+            "kind": "primitive",
+            "type": "null"
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "openubmc/authorization"
+          }
+        ]
+      }
+    },
+    {
       "key": "event:openubmc/inspection",
       "kind": "event",
       "event": "openubmc/inspection",
@@ -22473,6 +22581,13 @@
       "sources": []
     },
     {
+      "digest": "22947b583e9ecf9a5378b638252afce75427f43979e989a9aae95a2ee67747af",
+      "names": [],
+      "sources": [
+        "packages/experimental/openubmc-runtime/src/types.ts:49"
+      ]
+    },
+    {
       "digest": "234142ee4f996f38cc9fa3b8b3e3de29b03c9aefe5ebf6c224eddd564505aa85",
       "names": [],
       "sources": []
@@ -23208,6 +23323,11 @@
     },
     {
       "digest": "557e148d30b79ee48645850832b30c717d7c3b64641deb5d6133b8b4e91ee0b8",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "55ed7784f0210713e093a3f5d4baacb60b8a48cf5c7fbdb92604e6c587a481cf",
       "names": [],
       "sources": []
     },
@@ -25318,6 +25438,11 @@
     },
     {
       "digest": "ef4f00923b9edbae15c7ef05320280bf61147ca17146cf59690359bfd5e5da45",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "efb5ca40b8692dce35de8517f2e659ec24714645b733c2bee495d15a9fcfef3a",
       "names": [],
       "sources": []
     },

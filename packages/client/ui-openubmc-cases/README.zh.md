@@ -21,11 +21,11 @@ kind: "package-reference"
 <a id="configuration-and-inspection"></a>
 ## 配置与读取
 
-将 `serverName` 配置为与 Host [Case 投影](../../experimental/openubmc-cases/README.zh.md) 相同的可信 MCP 命名空间。[openUBMC Web profile](../../../scripts/openubmc/README.zh.md) 组合 Host 投影、Runtime 授权和此插件。默认 Web profile 不加载它。
+将 `serverName` 配置为与 Host [Case 投影](../../experimental/openubmc-cases/README.zh.md) 相同的可信 MCP 命名空间。[openUBMC Web profile](../../../scripts/openubmc/README.zh.md) 在指定 `--case-ui` 时组合此插件；其 Host 投影和 Runtime 授权也支持不启用卡片的使用方式。默认 Web profile 不加载它。
 
 原生 Run 卡片保留 Gate 标识、版本和响应 schema，Incident 恢复详情，以及 Outcome、事实、缺口和进度。观察回执卡片展示覆盖范围、时效、结果与证据，可展开完整 JSON。历史 Case 卡片保留记录字段，不再提供实时读取控件。
 
-所有卡片都是已记录的观察。后续结果将更早的卡片标为可能过期；fork 继承的卡片保留历史标记。只有当前 Session 最新的 Run 卡片通过原生 Host 命令提供显式授权、续接、取消和核对。Gate 表单保留返回的标识和提交绑定，收集显式响应字段，完整 schema 校验由 Runtime 执行。提交失败时保留草稿。渲染、展开或重新加载卡片不会触发执行。失败结果仍显示为失败；无效或其他来源的元数据使用通用工具展示。
+所有卡片都是已记录的观察。后续结果将更早的卡片标为可能过期；fork 继承的卡片保留历史标记。只有当前 Session 最新的 Run 卡片通过原生 Host 命令提供显式授权、续接、取消和核对。续接控件遵循 Host 对当前 Run 的权限判断；只读诊断不需要通用执行授权。Session 授权和撤销仍使用独立控件。Gate 表单保留返回的标识和提交绑定，收集显式响应字段，完整 schema 校验由 Runtime 执行。提交失败时保留草稿。渲染、展开或重新加载卡片不会触发执行。失败结果仍显示为失败；无效或其他来源的元数据使用通用工具展示。
 
 <a id="dev-note"></a>
 ## 开发备注

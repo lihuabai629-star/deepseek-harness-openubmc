@@ -8,8 +8,8 @@ class AuthorityModel extends LlmAdapter {
   }
   async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     const last = options.messages.at(-1)
-    const allowed = [...options.messages].reverse().find(message => message.role === 'user')
-    if (JSON.stringify(allowed?.content).includes('allowed')) {
+    const allowed = options.messages.some(message => message.role === 'user' && JSON.stringify(message.content).includes('allowed'))
+    if (allowed) {
       if (last?.role === 'tool') {
         if (last.isError || !JSON.stringify(last.content).includes('OWNED_EXECUTION_OK')) throw new Error('Authorized execution did not reach the owned provider.')
         yield { type: 'block-start', index: 0, blockType: 'text' }
@@ -25,7 +25,7 @@ class AuthorityModel extends LlmAdapter {
     const resumed = last?.role === 'user' && JSON.stringify(last.content).includes('resume')
     const tools = options.messages.filter(message => message.role === 'tool')
     if (resumed || tools.length === 2) {
-      if (!JSON.stringify(tools[0]).includes('current-session human grant') || !JSON.stringify(tools[1]).includes('does not belong')) {
+      if (!JSON.stringify(tools[0]).includes('human authorization for this scope') || !JSON.stringify(tools[1]).includes('does not belong')) {
         throw new Error('The composed Runtime did not deny unauthorized execution and foreign Case access.')
       }
       yield { type: 'block-start', index: 0, blockType: 'text' }

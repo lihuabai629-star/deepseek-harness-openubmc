@@ -2,6 +2,10 @@
 export const inject = ['agents', 'commands', 'tools']
 /** Record an offline native observation before inference. @param ctx - fixture composition. */
 export function apply(ctx) {
+  ctx.on('user-questions/request', async (request, next) => {
+    if (request.questions.length !== 1 || request.questions[0].id !== 'openubmc-execution') return next()
+    return { answers: [{ id: 'openubmc-execution', selected: ['Authorize this Run'] }] }
+  })
   ctx.effect(() => ctx.commands.register({ definitionId: 'offline-observe-fixture', name: 'offline-observe', description: 'Read the offline observation fixture',
     handler: async invocation => {
       const result = await ctx.tools.execute({ name: 'mcp__openubmc-target-runtime__observe', callId: 'sdk-observe', agent: invocation.agent, signal: invocation.signal,

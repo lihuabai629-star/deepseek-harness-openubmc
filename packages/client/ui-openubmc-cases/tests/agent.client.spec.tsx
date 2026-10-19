@@ -3,9 +3,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { ComponentProps } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { brandString } from '@deepseek-ai/dsh-brand'
-import type { OpenUbmcAgentResultId } from '@deepseek-ai/dsh-experimental-openubmc-cases/types'
+import type { OpenUbmcAgentResultId, OpenUbmcRunId } from '@deepseek-ai/dsh-experimental-openubmc-cases/types'
 import { ToolCallId, createToolResultMessage } from '@deepseek-ai/dsh-llm'
 import { SessionSeq } from '@deepseek-ai/dsh-session'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { createAgentDefinition, type OpenUbmcAgentChatData } from '../src/client/agent-definition.ts'
 import { OpenUbmcAgentPanel } from '../src/client/OpenUbmcAgentPanel.tsx'
@@ -13,7 +14,7 @@ import { en } from '../src/client/locales.ts'
 
 afterEach(cleanup)
 
-it('submits explicit Gate fields with their returned binding and hides controls on inherited or stale cards', async () => {
+it('submits a diagnostic Gate without a Session grant and hides controls on inherited or stale cards', async () => {
   const submitCommand = vi.fn(async (_line: string) => {})
   const data: OpenUbmcAgentChatData = { id: brandString<OpenUbmcAgentResultId>('run-1'), kind: 'run', status: 'waiting_response', isError: false, document: {
     gate: { gate_id: 'gate-1', gate_version: 3, schema_digest: 'sha256:abc', submission_id: 'submit-1', name: 'diagnosis.acceptance', input_schema: {
@@ -23,13 +24,14 @@ it('submits explicit Gate fields with their returned binding and hides controls 
     } }, next_action: null,
   } }
   const props = { node: { key: 'run:1', id: '1', kind: 'openubmc-agent', target: 'chat', anchorSeq: SessionSeq(3), location: { kind: 'session' }, visibility: 'visible', data },
-    useProjection: (key: string) => key === 'openubmc/runtime' ? { authorized: true, pending: 0, uncertain: 0 }
+    useProjection: (key: string) => key === 'openubmc/runtime' ? { authorized: false, executableRunIds: [brandString<OpenUbmcRunId>('run-1')], pending: 0, uncertain: 0 }
       : { agentResults: [{ id: data.id, observedAtSeq: SessionSeq(3) }], inheritedEventCount: 0 },
     submitCommand, t: makeTranslate(en),
   } as ComponentProps<typeof OpenUbmcAgentPanel>
   const view = render(<OpenUbmcAgentPanel {...props} />)
   fireEvent.click(screen.getByRole('button', { name: /openUBMC Run/ }))
   expect(submitCommand).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: 'Cancel Run' }).hasAttribute('disabled')).toBe(false)
   fireEvent.change(screen.getByLabelText('Result summary'), { target: { value: 'The object identifier is absent' } })
   fireEvent.change(screen.getByLabelText('root_cause'), { target: { value: 'Wrong object name' } })
   fireEvent.change(screen.getByLabelText('evidence_ids'), { target: { value: 'evidence-1\nevidence-2' } })
@@ -41,7 +43,7 @@ it('submits explicit Gate fields with their returned binding and hides controls 
   })
   for (const observation of [{ inheritedEventCount: 4, observedAtSeq: 3 }, { inheritedEventCount: 0, observedAtSeq: 4 }]) {
     view.rerender(<OpenUbmcAgentPanel {...props} useProjection={((key: string) => key === 'openubmc/runtime'
-      ? { authorized: true, pending: 0, uncertain: 0 }
+      ? { authorized: false, executableRunIds: [brandString<OpenUbmcRunId>('run-1')], pending: 0, uncertain: 0 }
       : { inheritedEventCount: observation.inheritedEventCount, agentResults: [{ id: data.id, observedAtSeq: observation.observedAtSeq }],
       })} />)
     expect(screen.queryByRole('button', { name: 'Submit phase result' })).toBeNull()
@@ -54,7 +56,7 @@ it('offers reconciliation without replaying effects and requires a separate Sess
   const data: OpenUbmcAgentChatData = { id: brandString<OpenUbmcAgentResultId>('run-incident'), kind: 'run', status: 'incident', isError: true,
     document: { incident: { incident_id: 'incident-1', allowed_commands: ['reconcile', 'cancel'] } } }
   const props = { node: { key: 'incident:1', id: '1', kind: 'openubmc-agent', target: 'chat', anchorSeq: SessionSeq(3), location: { kind: 'session' }, visibility: 'visible', data },
-    useProjection: (key: string) => key === 'openubmc/runtime' ? { authorized: false, pending: 0, uncertain: 1 }
+    useProjection: (key: string) => key === 'openubmc/runtime' ? { authorized: false, executableRunIds: [], pending: 0, uncertain: 1 }
       : { agentResults: [{ id: data.id, observedAtSeq: SessionSeq(3) }], inheritedEventCount: 0 },
     submitCommand, t: makeTranslate(en),
   } as ComponentProps<typeof OpenUbmcAgentPanel>
@@ -64,11 +66,48 @@ it('offers reconciliation without replaying effects and requires a separate Sess
   fireEvent.click(screen.getByRole('button', { name: 'Authorize this Session' }))
   await waitFor(() => { expect(submitCommand).toHaveBeenCalledWith('/target-authorize execute') })
   view.rerender(<OpenUbmcAgentPanel {...props} useProjection={((key: string) => key === 'openubmc/runtime'
-    ? { authorized: true, pending: 1, uncertain: 0 }
+    ? { authorized: true, executableRunIds: [brandString<OpenUbmcRunId>('run-incident')], pending: 1, uncertain: 0 }
     : { agentResults: [{ id: data.id, observedAtSeq: SessionSeq(3) }], inheritedEventCount: 0 })} />)
   fireEvent.click(screen.getByRole('button', { name: 'Reconcile execution' }))
   await waitFor(() => { expect(submitCommand).toHaveBeenCalledWith('/target-action {"kind":"control","command":"reconcile","run_id":"run-incident"}') })
 })
+
+const continuationCases: { status: string; document: Record<string, JsonValue>; actions: string[] }[] = [
+  { status: 'waiting_response', document: { gate: {
+    gate_id: 'diagnosis-gate', gate_version: 1, schema_digest: 'digest', name: 'diagnosis.acceptance',
+    input_schema: { properties: { status: { enum: ['completed', 'failed', 'cancelled'] }, payload: { properties: {} } } },
+  } }, actions: ['Submit phase result', 'Cancel Run'] },
+  { status: 'running', document: { next_action: { kind: 'resume', run_id: 'run-current' } }, actions: ['Continue Run'] },
+  { status: 'incident', document: { incident: { incident_id: 'incident-1', allowed_commands: ['reconcile', 'cancel'] } },
+    actions: ['Reconcile execution', 'Cancel Run'] },
+]
+
+it.each(continuationCases)('uses this Run permission for $status controls independently of other grants', ({ status, document, actions }) => {
+  const submitCommand = vi.fn(async (_line: string) => {})
+  const data: OpenUbmcAgentChatData = { id: brandString<OpenUbmcAgentResultId>('run-current'), kind: 'run', status, isError: false, document }
+  const props = { node: { key: 'run:current', id: '1', kind: 'openubmc-agent', target: 'chat', anchorSeq: SessionSeq(3), location: { kind: 'session' }, visibility: 'visible', data },
+    useProjection: (key: string) => key === 'openubmc/runtime'
+      ? { authorized: true, executableRunIds: [brandString<OpenUbmcRunId>('run-other')], pending: 0, uncertain: 0 }
+      : { agentResults: [{ id: data.id, observedAtSeq: SessionSeq(3) }], inheritedEventCount: 0 },
+    submitCommand, t: makeTranslate(en),
+  } as ComponentProps<typeof OpenUbmcAgentPanel>
+  const view = render(<OpenUbmcAgentPanel {...props} />)
+  fireEvent.click(screen.getByRole('button', { name: /openUBMC Run/ }))
+  expect(screen.getByRole('button', { name: 'Revoke execution' })).toBeTruthy()
+  for (const name of actions) {
+    const button = screen.getByRole('button', { name })
+    expect(button.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(button)
+  }
+  expect(submitCommand).not.toHaveBeenCalled()
+  view.rerender(<OpenUbmcAgentPanel {...props} useProjection={((key: string) => key === 'openubmc/runtime'
+    ? { authorized: false, executableRunIds: [brandString<OpenUbmcRunId>('run-current')], pending: 0, uncertain: 0 }
+    : { agentResults: [{ id: data.id, observedAtSeq: SessionSeq(3) }], inheritedEventCount: 0 })} />)
+  expect(screen.getByRole('button', { name: 'Authorize this Session' })).toBeTruthy()
+  for (const name of actions) expect(screen.getByRole('button', { name }).hasAttribute('disabled')).toBe(false)
+  expect(submitCommand).not.toHaveBeenCalled()
+})
+
 it('shows Gate version/schema, Incident recovery and Outcome while retaining the full failed Turn', () => {
   const data: OpenUbmcAgentChatData = { id: brandString<OpenUbmcAgentResultId>('run-1'), kind: 'run', status: 'incident', isError: true, document: {
     gate: { gate_id: 'gate-1', gate_version: 2, schema_digest: 'sha256:abc', input_schema: { type: 'object' } },

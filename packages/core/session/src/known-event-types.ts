@@ -45,6 +45,7 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'llm/retry',
   'llm/retry-started',
   'model/selection',
+  'openubmc/authorization',
   'openubmc/inspection',
   'permission/preset',
   'plan/mode',

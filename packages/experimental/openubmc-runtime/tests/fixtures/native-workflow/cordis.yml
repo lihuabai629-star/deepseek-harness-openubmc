@@ -1,0 +1,42 @@
+- id: session-persistence-jsonl
+  config:
+    root: !!js dshHomePath('sessions')
+    compression: none
+- id: llm-deepseek
+  disabled: true
+- id: session-title-llm
+  disabled: true
+- id: skill-filesystem
+  config:
+    includeDefaultRoots: false
+    customSkillDirs: !!js "[process.env.DSH_OPENUBMC_WORKFLOW]"
+    watch: false
+- insert:
+    - id: native-workflow-model
+      name: './model.ts'
+    - id: openubmc-policy
+      name: '@deepseek-ai/dsh-experimental-openubmc-runtime'
+      config:
+        serverName: openubmc-target-runtime
+        operationDeadlineSeconds: 10
+        completionGraceMs: 1000
+        observationDeadlineSeconds: 20
+    - id: openubmc-runtime
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        transport: stdio
+        serverName: openubmc-target-runtime
+        command: python3
+        args: !!js "[process.env.DSH_NATIVE_RUNTIME_WRAPPER, '--entry', process.env.DSH_NATIVE_RUNTIME_BACKEND]"
+        cwd: !!js process.env.DSH_OPENUBMC_WORKFLOW
+        env:
+          DSH_OPENUBMC_WORKFLOW: !!js process.env.DSH_OPENUBMC_WORKFLOW
+          DSH_RECOVERY_STATE: !!js process.env.DSH_RECOVERY_STATE
+        toolCallTimeoutMs: 21000
+        sessionIdMetadataKey: taskId
+        requiredToolCallPolicies: [openubmc-session-authority]
+        structuredContentInText: true
+        structuredContentInMeta: true
+        failOnStartupError: true
+        reconnect:
+          enabled: false

@@ -65,13 +65,35 @@ interface OpenUbmcCasesState {
 
 ## Runtime authority
 
-[Runtime 适配器](../../packages/experimental/openubmc-runtime/README.zh.md) 根据原生命令生命周期事件派生当前 Session 的用户授权。
+[Runtime 适配器](../../packages/experimental/openubmc-runtime/README.zh.md) 根据原生命令生命周期事件及单次启动的 `openubmc/authorization` 决策派生当前 Session 的用户授权。
+
+```ts type-equiv
+/** Target and operation range explicitly authorized by a human. */
+interface OpenUbmcExecutionScope {
+  targets: string[]
+  intent: string
+  deliveryStrategy: string | null
+  entryOperation: string | null
+}
+```
+
+```ts type-equiv
+/** Original start scope and the retained permission for that single Run. */
+interface OpenUbmcRunScope {
+  scope: OpenUbmcExecutionScope | null
+  granted: boolean
+}
+```
 
 ```ts type-equiv
 /** Rebuildable current-session grants and Runtime-issued Run bindings. */
 interface OpenUbmcRuntimeState {
   inheritedEventCount: SessionLogOffset
   operations: string[]
+  scopes: OpenUbmcExecutionScope[]
+  runScopes: Record<OpenUbmcRunId, OpenUbmcRunScope>
+  /** Exact starts approved through native user interaction; not general tool grants. */
+  approvedCalls: Partial<Record<ToolCallId, Record<string, JsonValue>>>
   pendingGrants: Partial<Record<CommandId, string>>
   /** Only Runs returned to this Session's recorded start calls confer write access. */
   runs: Partial<Record<OpenUbmcRunId, Record<string, JsonValue>>>
@@ -87,6 +109,8 @@ interface OpenUbmcRuntimeState {
 /** Current-session execution controls derived from the durable authority state. */
 interface OpenUbmcRuntimeView {
   authorized: boolean
+  /** Owned Runs that currently permit continuation, including read-only diagnosis. */
+  executableRunIds: OpenUbmcRunId[]
   pending: number
   uncertain: number
 }

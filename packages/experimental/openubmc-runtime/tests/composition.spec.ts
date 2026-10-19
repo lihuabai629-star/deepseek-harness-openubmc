@@ -49,7 +49,7 @@ it.each(['source', 'built'] as const)('runs denial, human authorization and pers
     const log = await readFile(logPath, 'utf8')
     const header = JSON.parse(log.split('\n')[0]!) as SessionHeader
     const sessionId = header.id
-    expect(log).toContain('current-session human grant')
+    expect(log).toContain('human authorization for this scope')
     expect(log).toContain('does not belong')
     expect((await run(['--session-id', sessionId, 'resume'])).stdout).toContain('AUTHORITY_RESUMED_OK')
     const after = await readFile(logPath, 'utf8')
