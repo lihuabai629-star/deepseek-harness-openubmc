@@ -1,0 +1,11 @@
+# Python 3.12, Linux x86_64: offline Runtime and SDK qualification.
+annotated-types==0.8.0 \
+    --hash=sha256:f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0
+pydantic==2.12.5 \
+    --hash=sha256:e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d
+pydantic-core==2.41.5 \
+    --hash=sha256:eceb81a8d74f9267ef4081e246ffd6d129da5d87e37a77c9bde550cb04870c1c
+typing-extensions==4.16.0 \
+    --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8
+typing-inspection==0.4.4 \
+    --hash=sha256:65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147

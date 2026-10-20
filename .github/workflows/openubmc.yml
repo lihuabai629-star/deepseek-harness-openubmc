@@ -2,17 +2,25 @@ name: openUBMC integration
 
 on:
   push:
-    branches: [main, 'codex/openubmc-*']
-  pull_request:
     branches: [main]
+  pull_request:
   workflow_dispatch:
+    inputs:
+      full_qualification:
+        description: Run Web inspection and all official Host compatibility checks
+        type: boolean
+        default: false
+      release_tag:
+        description: Existing draft release tag receiving the qualified plugin (empty skips upload)
+        type: string
+        default: ''
 
 permissions:
   contents: read
 
 concurrency:
-  group: openubmc-${{ github.event.pull_request.head.ref || github.ref_name }}
-  cancel-in-progress: true
+  group: openubmc-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
   integration:
@@ -24,10 +32,10 @@ jobs:
       DSH_SNAPSHOT: replay
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
           ref: aed2f4e98c243d927f0f35adb55f775dff514e81
@@ -37,19 +45,19 @@ jobs:
         run: |
           mv .ci-runtime "$RUNNER_TEMP/openubmc-workflow"
           echo "DSH_OPENUBMC_WORKFLOW=$RUNNER_TEMP/openubmc-workflow" >> "$GITHUB_ENV"
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           dest: ${{ runner.temp }}/setup-pnpm-${{ github.run_id }}-${{ github.run_attempt }}
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
       - name: Install locked dependencies
         run: |
           pnpm install --frozen-lockfile
-          python3 -m pip install 'pydantic>=2.12,<3'
+          python3 -m pip install --only-binary=:all: --require-hashes --requirement scripts/openubmc/requirements-ci.lock
       - name: Build supported applications
         run: pnpm run build
       - name: Package and install the portable plugin
@@ -79,20 +87,22 @@ jobs:
           pnpm run test:snapshot scripts/session-snapshot-corpus.corpus.ts
           pnpm run test:snapshot snapshots/session/headless.snapshot.ts snapshots/sdk/sdk.snapshot.ts -t openubmc
       - name: Install browser
+        if: github.event_name == 'workflow_dispatch' && (inputs.full_qualification || inputs.release_tag != '')
         run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install --with-deps chromium
       - name: Check native Web inspection and reload
+        if: github.event_name == 'workflow_dispatch' && (inputs.full_qualification || inputs.release_tag != '')
         run: pnpm run test:web:built apps/web/tests/openubmc-cases.e2e.ts
-      - name: Save installable openUBMC plugin
-        uses: actions/upload-artifact@v6
-        with:
-          name: dsh-openubmc-plugin
-          path: |
-            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.2.0.tgz
-            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.2.0.tgz.sha256
-          if-no-files-found: error
+      - name: Summarize plugin checksums
+        run: |
+          printf 'Source commit: `%s`\n\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz" >> "$GITHUB_STEP_SUMMARY"
 
   compatibility:
-    if: github.repository == 'lihuabai629-star/deepseek-harness-openubmc'
+    needs: integration
+    if: >-
+      github.repository == 'lihuabai629-star/deepseek-harness-openubmc'
+      && github.event_name == 'workflow_dispatch'
+      && (inputs.full_qualification || inputs.release_tag != '')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -102,30 +112,33 @@ jobs:
     env:
       DSH_TELEMETRY_DISABLED: '1'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
           ref: aed2f4e98c243d927f0f35adb55f775dff514e81
           path: .ci-runtime
           persist-credentials: false
-      - uses: pnpm/action-setup@v4
+      - name: Isolate pinned Runtime source
+        run: mv .ci-runtime "$RUNNER_TEMP/openubmc-workflow"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           dest: ${{ runner.temp }}/setup-pnpm-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.dsh-version }}
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
       - name: Install locked build dependencies and official Host
         env:
           DSH_COMPAT_VERSION: ${{ matrix.dsh-version }}
+        # zizmor: ignore[adhoc-packages] -- Exact official Host versions are compatibility subjects; install scripts are disabled.
         run: |
           pnpm install --frozen-lockfile
-          python3 -m pip install 'pydantic>=2.12,<3'
+          python3 -m pip install --only-binary=:all: --require-hashes --requirement scripts/openubmc/requirements-ci.lock
           mkdir -p "$RUNNER_TEMP/official-host"
           python3 - <<'PYCODE'
           import json, os
@@ -138,8 +151,59 @@ jobs:
         env:
           DSH_COMPAT_VERSION: ${{ matrix.dsh-version }}
         run: |
-          mv .ci-runtime "$RUNNER_TEMP/openubmc-workflow"
           pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.2.0
           pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.2.1
           python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.1.tgz" --dsh "$RUNNER_TEMP/official-host/node_modules/@deepseek-ai/dsh/lib/bin.js" --expected-host-version "$DSH_COMPAT_VERSION"
           python3 scripts/openubmc/verify_web.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz" --dsh "$RUNNER_TEMP/official-host/node_modules/@deepseek-ai/dsh/lib/bin.js" --node "$(command -v node)"
+
+  candidate-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    needs: [integration, compatibility]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DSH_TELEMETRY_DISABLED: '1'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify draft release identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          test "$(git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: lihuabai629-star/openubmc-agent-workflow
+          ref: aed2f4e98c243d927f0f35adb55f775dff514e81
+          path: .ci-runtime
+          persist-credentials: false
+      - name: Isolate pinned Runtime source
+        run: mv .ci-runtime "$RUNNER_TEMP/openubmc-workflow"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Build and package the qualified source
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.2.0
+          cd "$RUNNER_TEMP/openubmc-plugins"
+          sha256sum --check dsh-openubmc-0.2.0.tgz.sha256
+      - name: Attach plugin to the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz" \
+            "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz.sha256"

@@ -54,7 +54,9 @@ corepack pnpm dsh --profile openubmc \
 
 成功运行会在收到结构化 Agent 预检错误后输出 `OPENUBMC_OFFLINE_OK`。该检查无需模型凭据或设备访问，验证源码配置、MCP 工具发现和模型可见结果投影；不验证知识检索或真实模型决策。工作流源码中必须已安装 Runtime 和 KB 依赖。
 
-[openUBMC CI 工作流](../../.github/workflows/openubmc.yml) 在本集成仓库的 GitHub 托管 Linux runner 上运行。它构建 DSH，使用固定版本的 Python Runtime 源码检查原生 MCP、Case、授权和恢复行为，重放已记录的 Session 与 SDK 输出，并验证托管 profile 和 Web 查看功能。它不使用模型、KB 或设备凭据，也不验证真实提供方或固件兼容性。本地 Python SDK 检查从 `PATH` 解析受支持的 Node 可执行文件。
+[openUBMC CI 工作流](../../.github/workflows/openubmc.yml) 在 GitHub 托管 Linux runner 上检查拉取请求和 `main` 推送。它构建 DSH，使用固定版本的 Python Runtime 源码检查原生 MCP、Case、授权和恢复行为，重放已记录的 Session 与 SDK 输出，并验证托管 profile 和便携插件生命周期。常规检查在 Actions 摘要中记录包校验和，不上传工件。本地 Python SDK 检查从 `PATH` 解析受支持的 Node 可执行文件；CI 使用本指南旁带哈希校验的 Python 依赖锁文件。
+
+手动触发时，`full_qualification` 还运行 Web 查看和官方 Host 兼容性矩阵。非空的 `release_tag` 要求这些完整验证通过，并将插件和校验和附到已有的草稿 Release，其标签必须指向受测提交。工作流不会发布 Release。常规检查通过不代表 Web 或完整 Host 矩阵已通过验证。这些检查不使用模型、KB 或设备凭据，也不验证真实提供方或固件兼容性。
 
 ## 身份与恢复
 

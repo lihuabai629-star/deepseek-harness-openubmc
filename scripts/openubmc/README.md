@@ -54,7 +54,9 @@ corepack pnpm dsh --profile openubmc \
 
 A successful run prints `OPENUBMC_OFFLINE_OK` after receiving a structured Agent preflight error. This checks the source profile, MCP discovery and model-visible result projection without model credentials or device access; it does not test knowledge search or real-model decisions. Runtime and KB dependencies must already be installed in the workflow checkout.
 
-The [openUBMC CI workflow](../../.github/workflows/openubmc.yml) runs on a GitHub-hosted Linux runner in this integration repository. It builds DSH, checks native MCP/Case/authority/recovery behavior against pinned Python Runtime source, replays recorded Session and SDK output, and verifies managed profiles and Web inspection. It uses no model, KB or device credentials and does not qualify live providers or firmware compatibility. Local Python SDK checks resolve the supported Node executable from `PATH`.
+The [openUBMC CI workflow](../../.github/workflows/openubmc.yml) checks pull requests and `main` pushes on GitHub-hosted Linux. It builds DSH, checks native MCP/Case/authority/recovery behavior against pinned Python Runtime source, replays recorded Session and SDK output, and verifies managed profiles and portable plugin lifecycle. Ordinary checks record package checksums in the Actions summary without uploading artifacts. Local Python SDK checks resolve the supported Node executable from `PATH`; CI uses the hashed Python dependency lock beside this guide.
+
+Manual dispatch with `full_qualification` also runs Web inspection and the official Host compatibility matrix. A nonempty `release_tag` requires that qualification and attaches the plugin and checksum to an existing draft Release whose tag resolves to the tested commit. It does not publish the Release. A routine pass does not establish Web or full Host-matrix qualification. These checks use no model, KB or device credentials and do not qualify live providers or firmware compatibility.
 
 ## Identity and recovery
 
