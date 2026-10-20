@@ -9,6 +9,21 @@ kind: "tutorial"
 
 此配置将 DSH 连接到现有 `openubmc-agent-workflow` 源码中的 Python Target Runtime 和 Node 知识库 MCP。需要 Linux/WSL、Python 3、工作流的 Python 依赖、KB 已安装的 Node 依赖，以及 DSH 仓库支持的 Node 和 pnpm 版本。
 
+## 分发可安装插件
+
+[插件安装说明](distribution/README.zh.md)介绍通过 `dsh plugin` 安装的方法，使用者不需要源码 checkout。从干净的工作流 checkout 构建归档；载荷仅包含 Git 跟踪的 Skill 资源、Runtime 和 KB 源码。软件包包含预构建适配器，没有安装脚本。元数据记录所需 Host 版本和工作流修订。
+
+```sh
+corepack pnpm exec tsx scripts/openubmc/pack.ts \
+  --workflow /absolute/path/openubmc-agent-workflow \
+  --out /absolute/path/artifacts --version 0.1.0
+python3 scripts/openubmc/verify_plugin.py \
+  --archive /absolute/path/artifacts/dsh-openubmc-0.1.0.tgz \
+  --dsh /absolute/path/dsh/apps/cli/lib/bin.js
+```
+
+验证器使用源码目录之外的临时 home，在无密钥预检后移除插件。通过 `--update-archive` 传入另一插件版本，还可验证更新与恢复。它不连接设备或模型端点。已有托管 profile 继续使用下文的独立生命周期；不要在同一 profile 中同时启用两种集成。
+
 ## 创建和启动
 
 在 DSH 仓库中运行，指定一个尚不存在的 home 路径：

@@ -9,6 +9,21 @@ English | [中文](README.zh.md)
 
 This profile connects DSH to the Python Target Runtime and Node knowledge MCP in an existing `openubmc-agent-workflow` checkout. It requires Linux/WSL, Python 3, the workflow's Python dependencies, the KB's installed Node dependencies, and the DSH repository's supported Node and pnpm versions.
 
+## Distribute an installable plugin
+
+The [packaged plugin instructions](distribution/README.md) describe installation through `dsh plugin` without source checkouts. Build the archive from a clean workflow checkout; only tracked Skill resources, Runtime and KB source enter the payload. The package contains prebuilt adapters and has no install scripts. Its metadata records the required Host version and workflow revision.
+
+```sh
+corepack pnpm exec tsx scripts/openubmc/pack.ts \
+  --workflow /absolute/path/openubmc-agent-workflow \
+  --out /absolute/path/artifacts --version 0.1.0
+python3 scripts/openubmc/verify_plugin.py \
+  --archive /absolute/path/artifacts/dsh-openubmc-0.1.0.tgz \
+  --dsh /absolute/path/dsh/apps/cli/lib/bin.js
+```
+
+The verifier uses a temporary home outside the checkout and removes the plugin after the keyless preflight. Pass `--update-archive` with a different plugin version to exercise update and restoration too. It never contacts a device or model endpoint. Existing managed profiles retain their separate lifecycle below; do not activate both integrations in one profile.
+
 ## Create and launch
 
 Run from the DSH repository with a new home path:

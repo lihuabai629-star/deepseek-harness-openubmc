@@ -52,6 +52,12 @@ jobs:
           python3 -m pip install 'pydantic>=2.12,<3'
       - name: Build supported applications
         run: pnpm run build
+      - name: Package and install the portable plugin
+        run: |
+          pnpm exec vitest run scripts/openubmc/pack.spec.ts
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.1.0
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.1.1
+          python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.1.0.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.1.1.tgz" --dsh apps/cli/lib/bin.js
       - name: Check client types and documentation
         run: |
           pnpm run typecheck:contracts-ready
@@ -78,3 +84,11 @@ jobs:
         run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install --with-deps chromium
       - name: Check native Web inspection and reload
         run: pnpm run test:web:built apps/web/tests/openubmc-cases.e2e.ts
+      - name: Save installable openUBMC plugin
+        uses: actions/upload-artifact@v6
+        with:
+          name: dsh-openubmc-plugin
+          path: |
+            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.1.0.tgz
+            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.1.0.tgz.sha256
+          if-no-files-found: error
