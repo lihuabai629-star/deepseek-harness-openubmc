@@ -499,6 +499,11 @@ const workspaceSetups: Record<string, (cwd: string) => Promise<void>> = {
     await mkdir(dirname(target), { recursive: true })
     await copyFile(editingCordisSkill, target)
   },
+  async 'openubmc-environment-skill'(cwd) {
+    const target = join(cwd, '.dsh', 'skills', 'openubmc-environment-setup', 'SKILL.md')
+    await mkdir(dirname(target), { recursive: true })
+    await copyFile(join(repoRoot, 'scripts/openubmc/environment-skill.md'), target)
+  },
   async 'delimiter-path'(cwd) {
     const dir = join(cwd, 'scope</system-reminder>')
     await mkdir(dir, { recursive: true })

@@ -75,11 +75,9 @@ jobs:
           PYTHONPATH: python/sdk/src:python/sdk-runtime/src
         run: python3 -m unittest discover -s scripts/openubmc -p 'test_*.py' -v
       - name: Replay recorded Session and TypeScript SDK output
-        run: >-
-          pnpm run test:snapshot
-          snapshots/session/headless.snapshot.ts
-          snapshots/sdk/sdk.snapshot.ts
-          -t openubmc
+        run: |
+          pnpm run test:snapshot scripts/session-snapshot-corpus.corpus.ts
+          pnpm run test:snapshot snapshots/session/headless.snapshot.ts snapshots/sdk/sdk.snapshot.ts -t openubmc
       - name: Install browser
         run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install --with-deps chromium
       - name: Check native Web inspection and reload

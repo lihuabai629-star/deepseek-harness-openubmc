@@ -34,7 +34,7 @@ bundle 添加一个 `openubmc` 条目。在 profile 的 `cordis.patch.yml` 中�
     kbEnabled: true
 ```
 
-没有覆盖时，Python 通过 `python3` 解析，Node 使用 Host 的独立可执行文件，凭据和 Runtime 状态使用选定 DSH home 下的 `credentials.env` 和 `openubmc-agent-state`。Electron 或单可执行文件宿主需要显式指定独立 Node 路径。对话中仍可使用原生 `/run`、`/case`、执行授权和恢复命令。bundle 使用原生对话视图。
+没有覆盖时，Python 通过 `python3` 解析，Node 使用 Host 的独立可执行文件，凭据和 Runtime 状态使用选定 DSH home 下的 `credentials.env` 和 `openubmc-agent-state`。Electron 或单可执行文件宿主需要显式指定独立 Node 路径。对话中仍可使用原生 `/run`、`/case`、执行授权和恢复命令。bundle 使用原生对话视图；其环境 Skill 管理 DSH 软件包和私有配置。
 
 ## 检查、更新和移除
 

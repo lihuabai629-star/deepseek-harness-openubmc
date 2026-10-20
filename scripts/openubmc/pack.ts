@@ -75,6 +75,7 @@ export async function packPlugin(options: PackOptions) {
     const payload = join(staging, 'payload')
     const source = await stageWorkflow(resolve(options.workflow), join(payload, 'workflow'))
     await writeFile(join(payload, 'skills.json'), JSON.stringify({ skills: source.skills }, null, 2) + '\n')
+    await copyFile(join(root, 'scripts/openubmc/environment-skill.md'), join(payload, 'environment-skill.md'))
     await copyFile(join(root, 'scripts/openubmc/runtime_stdio.py'), join(payload, 'runtime_stdio.py'))
     const version = z.object({ version: z.string() }).parse(JSON.parse(await readFile(join(root, 'apps/cli/package.json'), 'utf8'))).version
     const bundles = await build({ config: false, entry: { index: join(root, 'scripts/openubmc/plugin-entry.ts'),

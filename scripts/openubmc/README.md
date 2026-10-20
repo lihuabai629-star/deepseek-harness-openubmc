@@ -22,7 +22,7 @@ python3 scripts/openubmc/verify_plugin.py \
   --dsh /absolute/path/dsh/apps/cli/lib/bin.js
 ```
 
-The verifier uses a temporary home outside the checkout and removes the plugin after the keyless preflight. Pass `--update-archive` with a different plugin version to exercise update and restoration too. It never contacts a device or model endpoint. Existing managed profiles retain their separate lifecycle below; do not activate both integrations in one profile.
+The verifier uses a temporary home outside the checkout and removes the plugin after the keyless preflight. Pass `--update-archive` with a different plugin version to exercise update and restoration too. It never contacts a device or model endpoint. The [environment Skill snapshot](../../snapshots/session/openubmc-environment-skill/snapshot.yml) records the DSH-specific setup instructions delivered to the model. Existing managed profiles retain their separate lifecycle below; do not activate both integrations in one profile.
 
 ## Create and launch
 

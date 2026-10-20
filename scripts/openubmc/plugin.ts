@@ -53,7 +53,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const manifest = payloadSchema.parse(JSON.parse(await readFile(join(payload, 'skills.json'), 'utf8')))
   const candidates: SkillCandidate[] = await Promise.all(manifest.skills.map(async (skill) => {
     const directory = join(workflow, skill.path)
-    const path = join(directory, 'SKILL.md')
+    const path = skill.name === 'openubmc-environment-setup' ? join(payload, 'environment-skill.md') : join(directory, 'SKILL.md')
     const { metadata } = parseSkill(await readFile(path, 'utf8'))
     return { name: skill.name, description: metadata.description, path, locator: path,
       source: 'bundled', provider: 'openubmc-packaged', rank: BUNDLED_SKILL_RANK,

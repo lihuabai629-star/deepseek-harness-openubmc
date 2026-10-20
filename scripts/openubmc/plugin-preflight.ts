@@ -45,6 +45,10 @@ export function apply(ctx: Context, config: Config): void {
     if (before.tools.length === 0 || before.skills.length === 0 || before.commands.length === 0) {
       throw new Error('openUBMC registrations are missing before disposal.')
     }
+    const setup = await ctx.skills.get('openubmc-environment-setup')
+    if (setup?.provider !== 'openubmc-packaged' || !setup.content.includes('dsh plugin --profile')) {
+      throw new Error('The packaged environment Skill must use DSH plugin management.')
+    }
     // Marking the in-memory entry disabled prevents self-disposal from saving a user patch.
     entry.options.disabled = true
     await entry.fiber.dispose()

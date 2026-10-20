@@ -22,7 +22,7 @@ python3 scripts/openubmc/verify_plugin.py \
   --dsh /absolute/path/dsh/apps/cli/lib/bin.js
 ```
 
-验证器使用源码目录之外的临时 home，在无密钥预检后移除插件。通过 `--update-archive` 传入另一插件版本，还可验证更新与恢复。它不连接设备或模型端点。已有托管 profile 继续使用下文的独立生命周期；不要在同一 profile 中同时启用两种集成。
+验证器使用源码目录之外的临时 home，在无密钥预检后移除插件。通过 `--update-archive` 传入另一插件版本，还可验证更新与恢复。它不连接设备或模型端点。[环境 Skill 快照](../../snapshots/session/openubmc-environment-skill/snapshot.yml)记录传给模型的 DSH 专用配置说明。已有托管 profile 继续使用下文的独立生命周期；不要在同一 profile 中同时启用两种集成。
 
 ## 创建和启动
 

@@ -34,7 +34,7 @@ The bundle adds a single `openubmc` entry. Override its interpreter paths or pri
     kbEnabled: true
 ```
 
-Without overrides, Python resolves as `python3`, Node uses the Host's standalone executable, and credentials and Runtime state use `credentials.env` and `openubmc-agent-state` under the selected DSH home. Packaged Electron or single-executable hosts require an explicit standalone Node path. Native `/run`, `/case`, execution authorization and recovery commands remain available in conversations. The bundle uses the native conversation view.
+Without overrides, Python resolves as `python3`, Node uses the Host's standalone executable, and credentials and Runtime state use `credentials.env` and `openubmc-agent-state` under the selected DSH home. Packaged Electron or single-executable hosts require an explicit standalone Node path. Native `/run`, `/case`, execution authorization and recovery commands remain available in conversations. The bundle uses the native conversation view; its environment Skill manages DSH packages and private configuration.
 
 ## Check, update and remove
 
