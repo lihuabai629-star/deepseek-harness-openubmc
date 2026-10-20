@@ -23,7 +23,7 @@ Agent 可以在 DSH 对话中收集 openUBMC 证据、通过 Skill 完成阶段�
 <a id="configuration-and-authority"></a>
 ## 配置与授权
 
-`serverName` 选择受保护的 MCP 命名空间。对应客户端需配置 `sessionIdMetadataKey: taskId`、结构化结果持久化及 `requiredToolCallPolicies: [openubmc-session-authority]`。Execute 请求使用规范字段名；Runtime 别名会在授权检查前被拒绝。缺少 Agent、未知工具及 Runtime 自有执行字段在发送前被拒绝。[profile 初始化器](../../../scripts/openubmc/README.zh.md) 组合这些配置；[Session 参考](../../../docs/subsystems/openubmc-cases.zh.md) 定义导出的状态类型。
+`serverName` 选择受保护的 MCP 命名空间。对应客户端需配置 `sessionIdMetadataKey: taskId`、结构化结果持久化及 `requiredToolCallPolicies: [openubmc-session-authority]`。Execute 请求使用规范字段名；Runtime 别名会在授权检查前被拒绝。缺少 Agent、未知工具及 Runtime 自有执行字段在发送前被拒绝。[profile 初始化器](../../../scripts/openubmc/README.zh.md) 组合这些配置。可安装 bundle 通过 `createRuntimeController` 复用纯授权归约、请求检查和指引，并使用插件自有的桥与持久授权写入器；其[安装说明](../../../scripts/openubmc/distribution/README.zh.md)定义可移植持久化语义。[Session 参考](../../../docs/subsystems/openubmc-cases.zh.md) 定义导出的状态类型。
 
 `operationDeadlineSeconds` 将 execute 的调用方等待限制在 120 秒以内；`observationDeadlineSeconds` 限制 observe。MCP 的 `toolCallTimeoutMs` 必须覆盖所选等待及 `completionGraceMs`。长动作的续接预算由 Runtime 管理；超时或取消不代表设备已回退。
 

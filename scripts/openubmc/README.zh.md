@@ -11,14 +11,14 @@ kind: "tutorial"
 
 ## 分发可安装插件
 
-[插件安装说明](distribution/README.zh.md)介绍通过 `dsh plugin` 安装的方法，使用者不需要源码 checkout。从干净的工作流 checkout 构建归档；载荷仅包含 Git 跟踪的 Skill 资源、Runtime 和 KB 源码。软件包包含预构建适配器，没有安装脚本。元数据记录所需 Host 版本和工作流修订。
+[插件安装说明](distribution/README.zh.md)介绍通过 `dsh plugin` 安装的方法，使用者不需要源码 checkout。从干净的工作流 checkout 构建归档；载荷仅包含 Git 跟踪的 Skill 资源、Runtime 和 KB 源码。软件包包含预构建适配器，没有安装脚本。元数据记录已验证的官方 Host 版本和工作流修订。可移植提供方复用原生授权归约器，并拥有私有 Session 关联；下文开发配置保留原生 Host 集成。
 
 ```sh
 corepack pnpm exec tsx scripts/openubmc/pack.ts \
   --workflow /absolute/path/openubmc-agent-workflow \
-  --out /absolute/path/artifacts --version 0.1.0
+  --out /absolute/path/artifacts --version 0.2.0
 python3 scripts/openubmc/verify_plugin.py \
-  --archive /absolute/path/artifacts/dsh-openubmc-0.1.0.tgz \
+  --archive /absolute/path/artifacts/dsh-openubmc-0.2.0.tgz \
   --dsh /absolute/path/dsh/apps/cli/lib/bin.js
 ```
 

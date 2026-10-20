@@ -79,9 +79,11 @@ export function executionAllowed(request: McpToolCall, state: OpenUbmcRuntimeSta
  * Ask the native human interaction service to authorize one exact proposed Run.
  * @param ctx - Host context with an optional native question service.
  * @param request - Validated start and its live calling Agent.
+ * @param record - Optional provider-owned durable grant writer; defaults to the native Session event.
  * @returns After a durable grant, or rejects without permitting dispatch.
  */
-export async function requestRunAuthorization(ctx: Context, request: McpToolCall): Promise<void> {
+export async function requestRunAuthorization(ctx: Context, request: McpToolCall,
+  record?: (arguments_: Record<string, import('@deepseek-ai/dsh-util-values').JsonValue>) => Promise<void>): Promise<void> {
   const scope = startScope(request.arguments)
   const agent = request.execution.agent
   const questions = ctx.get('userQuestions')
@@ -102,5 +104,6 @@ export async function requestRunAuthorization(ctx: Context, request: McpToolCall
     throw new Error('Target execution was not authorized.')
   }
   if (!isDeepStrictEqual(request.arguments, approvedArguments)) throw new Error('The proposed start changed while authorization was pending.')
-  agent.session.append('openubmc/authorization', { callId: request.execution.callId, arguments: approvedArguments })
+  if (record !== undefined) await record(approvedArguments)
+  else agent.session.append('openubmc/authorization', { callId: request.execution.callId, arguments: approvedArguments })
 }

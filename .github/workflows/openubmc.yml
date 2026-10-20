@@ -54,10 +54,10 @@ jobs:
         run: pnpm run build
       - name: Package and install the portable plugin
         run: |
-          pnpm exec vitest run scripts/openubmc/pack.spec.ts
-          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.1.0
-          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.1.1
-          python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.1.0.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.1.1.tgz" --dsh apps/cli/lib/bin.js
+          pnpm exec vitest run scripts/openubmc/pack.spec.ts scripts/openubmc/portable-runtime.spec.ts
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.2.0
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.2.1
+          python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.1.tgz" --dsh apps/cli/lib/bin.js
       - name: Check client types and documentation
         run: |
           pnpm run typecheck:contracts-ready
@@ -87,6 +87,59 @@ jobs:
         with:
           name: dsh-openubmc-plugin
           path: |
-            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.1.0.tgz
-            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.1.0.tgz.sha256
+            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.2.0.tgz
+            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.2.0.tgz.sha256
           if-no-files-found: error
+
+  compatibility:
+    if: github.repository == 'lihuabai629-star/deepseek-harness-openubmc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        dsh-version: ['0.1.7-rc.2', '0.2.0-rc.2', '0.2.1-rc.2']
+    env:
+      DSH_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          repository: lihuabai629-star/openubmc-agent-workflow
+          ref: aed2f4e98c243d927f0f35adb55f775dff514e81
+          path: .ci-runtime
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.dsh-version }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install locked build dependencies and official Host
+        env:
+          DSH_COMPAT_VERSION: ${{ matrix.dsh-version }}
+        run: |
+          pnpm install --frozen-lockfile
+          python3 -m pip install 'pydantic>=2.12,<3'
+          mkdir -p "$RUNNER_TEMP/official-host"
+          python3 - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "official-host"
+          (root / "package.json").write_text(json.dumps({"private": True, "packageManager": "pnpm@11.7.0"}))
+          PYCODE
+          npm install --ignore-scripts --no-audit --no-fund --prefix "$RUNNER_TEMP/official-host" "@deepseek-ai/dsh@$DSH_COMPAT_VERSION"
+      - name: Qualify official package lifecycle
+        env:
+          DSH_COMPAT_VERSION: ${{ matrix.dsh-version }}
+        run: |
+          mv .ci-runtime "$RUNNER_TEMP/openubmc-workflow"
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.2.0
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.2.1
+          python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.1.tgz" --dsh "$RUNNER_TEMP/official-host/node_modules/@deepseek-ai/dsh/lib/bin.js" --expected-host-version "$DSH_COMPAT_VERSION"
+          python3 scripts/openubmc/verify_web.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz" --dsh "$RUNNER_TEMP/official-host/node_modules/@deepseek-ai/dsh/lib/bin.js" --node "$(command -v node)"

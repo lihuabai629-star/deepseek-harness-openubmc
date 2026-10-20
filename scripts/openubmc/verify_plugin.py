@@ -13,7 +13,7 @@ import tempfile
 
 
 def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None = None,
-           incompatible_dsh: Path | None = None, timeout: float = 300) -> None:
+           expected_host_version: str | None = None, timeout: float = 300) -> None:
     """Install outside the source tree, probe offline, and preserve private data on removal."""
     with tempfile.TemporaryDirectory(prefix="dsh-openubmc-installed-") as raw:
         root = Path(raw)
@@ -54,6 +54,9 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
                 raise AssertionError("The installed bundle was not activated")
             return package
 
+        host_version = run("--version").strip()
+        if expected_host_version is not None and expected_host_version not in host_version:
+            raise AssertionError(f"Expected DSH {expected_host_version}, got {host_version}")
         run("plugin", "--profile", "headless", "add", str(archive))
         package = installed()
         payload = package / "payload/workflow"
@@ -77,21 +80,19 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
             raise AssertionError(f"Offline preflight did not complete:\n{output[-12000:]}")
         if "OPENUBMC_LIFECYCLE_OK" not in output:
             raise AssertionError(f"Plugin disposal and remount did not complete:\n{output[-12000:]}")
-        if incompatible_dsh is not None:
-            # A fresh home prevents an older reader from opening the compatible build's Session logs.
-            compatible_home = env["DSH_HOME"]
-            env["DSH_HOME"] = str(root / "incompatible-home")
-            try:
-                run("plugin", "--profile", "headless", "add", str(archive), entry=incompatible_dsh)
-                refusal = run("--profile", "headless", "--patch", str(overlay), "Validate Agent preflight.",
-                              entry=incompatible_dsh, expected_code=1)
-                if "requires a DSH build with native openUBMC MCP authority" not in refusal:
-                    raise AssertionError(f"The unsupported Host did not report the required capability:\n{refusal[-12000:]}")
-            finally:
-                env["DSH_HOME"] = compatible_home
         sessions = list((home / "sessions").rglob("*"))
         if not any(path.is_file() for path in sessions):
             raise AssertionError("The preflight did not persist a Session")
+        authority = list((home / "openubmc-agent-state/dsh-sessions").glob("*.json"))
+        if not authority or any(json.loads(path.read_text())["schema"] != "dsh-openubmc/session-authority/v1" for path in authority):
+            raise AssertionError("The plugin did not persist its own Session authority")
+        for path in sessions:
+            if path.suffix != ".jsonl":
+                continue
+            for line in path.read_text().splitlines():
+                record = json.loads(line)
+                if record.get("type", "").startswith("openubmc/"):
+                    raise AssertionError("Portable Sessions must not require custom openUBMC event types")
         retained = home / "openubmc-agent-state/retained-probe"
         retained.parent.mkdir(parents=True, exist_ok=True)
         retained.write_text("private state\n")
@@ -110,11 +111,11 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
             raise AssertionError("Uninstall left the bundle enabled")
         if (profile / "cordis.patch.yml").read_bytes() != user_patch or retained.read_text() != "private state\n":
             raise AssertionError("Uninstall changed user configuration or Runtime state")
-        if any(not path.exists() for path in sessions):
+        if any(not path.exists() for path in [*sessions, *authority]):
             raise AssertionError("Uninstall removed Session files")
         print(json.dumps({"status": "passed", "skills": len(mapping), "offline_preflight": True,
                           "dispose_and_remount": True, "update_and_restore": update_archive is not None,
-                          "incompatible_host_rejected": incompatible_dsh is not None,
+                          "host_version": host_version, "portable_session_events": True, "authority_retained": True,
                           "uninstall_retained_user_data": True}))
 
 
@@ -124,11 +125,11 @@ if __name__ == "__main__":
     parser.add_argument("--dsh", type=Path, required=True)
     parser.add_argument("--node", default=shutil.which("node"))
     parser.add_argument("--update-archive", type=Path)
-    parser.add_argument("--incompatible-dsh", type=Path)
+    parser.add_argument("--expected-host-version")
     parser.add_argument("--timeout", type=float, default=300)
     args = parser.parse_args()
     if not args.node or sys.platform != "linux":
         parser.error("The installed plugin smoke requires Linux/WSL and Node on PATH")
     verify(args.archive.resolve(strict=True), args.dsh.resolve(strict=True), args.node,
            update_archive=args.update_archive.resolve(strict=True) if args.update_archive else None,
-           incompatible_dsh=args.incompatible_dsh.resolve(strict=True) if args.incompatible_dsh else None, timeout=args.timeout)
+           expected_host_version=args.expected_host_version, timeout=args.timeout)

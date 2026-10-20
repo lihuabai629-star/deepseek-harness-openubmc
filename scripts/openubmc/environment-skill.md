@@ -9,7 +9,7 @@ Manage this integration through DSH's native plugin manager. The package contain
 
 ## Inspect and repair
 
-Read the selected profile's `package.json` and `cordis.patch.yml` without displaying secret values. The selected bundle is `dsh-openubmc`, its configuration entry is `openubmc`, and its `release.json` records source versions. The package requires a compatible DSH Host with native MCP authority and openUBMC Session event support; the official `0.2.0-rc.2` Host does not provide those capabilities. An unsupported Host needs the compatible DSH build; a version exemption cannot add missing capabilities.
+Read the selected profile's `package.json` and `cordis.patch.yml` without displaying secret values. The selected bundle is `dsh-openubmc`, its configuration entry is `openubmc`, and its `release.json` records source versions. The package supports qualified official DSH releases `0.1.7-rc.2`, `0.2.0-rc.2` and `0.2.1-rc.2`. Use the exact complete version; other versions need qualification before use. Its own bridge and private Session authority preserve execution permissions without custom Host events.
 
 Check the configured Python and Node executable paths and the initial MCP error. Python must be 3.10 or later; use the supported standalone Node version. Linux/WSL is supported. Device transports need their own tools, such as OpenSSH and sshpass for password SSH. Configuration and dependency checks do not establish a device login.
 
@@ -25,6 +25,6 @@ Knowledge configuration defaults to `~/.config/openubmc/kb-mcp.json` or the corr
 
 ## Update and remove
 
-Close the selected profile's Host before package changes. Use `dsh plugin --profile <profile> add <archive-or-package-spec>` to install or update, and `dsh plugin --profile <profile> remove dsh-openubmc` to remove. Use only the user-selected package source. A retained compatible archive restores plugin code; back up private data when changing Host versions. Uninstall retains credentials, Sessions and Runtime state. Never remove those directories as part of plugin repair.
+Close the selected profile's Host before package changes. Use `dsh plugin --profile <profile> add <archive-or-package-spec>` to install or update, and `dsh plugin --profile <profile> remove dsh-openubmc` to remove. Use only the user-selected package source. A retained compatible archive restores plugin code; back up private data when changing Host versions. Uninstall retains credentials, Sessions and Runtime state. Back up `stateDir/dsh-sessions` with Runtime state and Sessions; missing or corrupt authority fails closed after prior execution. Never remove those directories as part of plugin repair.
 
 For an offline check, use the package's `preflight` provider in a separate headless profile, as documented in its README. It submits an invalid observation without model or device credentials. A successful check does not authorize target execution. For target work, load the current stage owner's Skill, use observe/execute, and preserve the existing Run and authorization.

@@ -12,11 +12,11 @@ import { SessionLogOffset, TOOL_OUTCOME_UNKNOWN, type SessionId } from '@deepsee
 import { TOOL_ABORTED } from '@deepseek-ai/dsh-tools'
 import { runTurnSchema } from '@deepseek-ai/dsh-experimental-openubmc-cases/agent'
 import type { OpenUbmcRunId } from '@deepseek-ai/dsh-experimental-openubmc-cases/types'
-import { publicToolName, type McpToolCall } from '@deepseek-ai/dsh-mcp-client'
-import type {} from '@deepseek-ai/dsh-session-projection'
+import type { McpToolCall } from '@deepseek-ai/dsh-mcp-client'
+import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type { OpenUbmcRuntimeState } from './types.ts'
 import { commandGrant, executionAllowed, readOnlyScope, requestRunAuthorization, startScope } from './authority.ts'
-import { installOpenUbmcGuidance } from './guidance.ts'
+import { installOpenUbmcGuidance, openUbmcWorkflowGuidance, renderOpenUbmcRuntimeContext } from './guidance.ts'
 export type * from './types.ts'
 
 /** Cordis plugin name. */
@@ -59,6 +59,11 @@ const continuationSchema = actionSchema.refine(action => action.kind !== 'start'
 const runtimeOwned = ['case_id', 'command_id', 'authorization', 'workflow', 'epoch', 'task_id', 'operation_id']
 const executeAliases = ['action_type', 'actionKind', 'runId', 'gateId', 'gateVersion', 'schemaDigest', 'submissionId',
   'target_ip', 'bmc_ip', 'deliveryStrategy', 'entryOperation', 'entryArguments']
+
+// Config namespaces and the two protocol names fit the public tool-name alphabet and limit.
+function publicToolName(serverName: string, toolName: string): string {
+  return `mcp__${serverName}__${toolName}`
+}
 
 function nativeCallId(commandId: CommandId): ToolCallId {
   return ToolCallId(`command:${commandId}`)
@@ -132,13 +137,36 @@ function authorize(request: McpToolCall, state: OpenUbmcRuntimeState, config: Co
   return executionAllowed(request, state)
 }
 
+type RuntimeController = {
+  projection: ReturnType<typeof createRuntimeProjection>
+  commandGrant: typeof commandGrant
+  requestAuthorization: typeof requestRunAuthorization
+  guidance: string
+  renderContext: typeof renderOpenUbmcRuntimeContext
+  prepare: (request: McpToolCall, state: OpenUbmcRuntimeState) => boolean
+  parseContinuation: (input: unknown) => schema.infer<typeof jsonObject>
+}
+
 /**
- * Bind Runtime-issued Runs to trusted Sessions and retain native operation ids.
- * @param ctx - MCP dispatch, command and projection services.
- * @param config - Agent gateway namespace and caller wait limits.
+ * Share Session authority folding and dispatch checks with external tool providers.
+ * @param config - Runtime namespace and caller wait budgets.
+ * @returns Pure authority projection, request preparation and native action parser.
  */
-export function apply(ctx: Context, config: Config): void {
-  const activeCalls = new Map<SessionId, Set<ToolCallId>>()
+export function createRuntimeController(config: Config): RuntimeController {
+  return { projection: createRuntimeProjection(config),
+    commandGrant, requestAuthorization: requestRunAuthorization,
+    guidance: openUbmcWorkflowGuidance, renderContext: renderOpenUbmcRuntimeContext,
+    prepare: (request: McpToolCall, state: OpenUbmcRuntimeState) => {
+      request.metadata['openubmc/operationId'] = operationId(request, request.execution.callId)
+      return authorize(request, state, config)
+    },
+    parseContinuation: (input: unknown) => jsonObject.parse(continuationSchema.parse(input)),
+  }
+}
+
+function createRuntimeProjection(config: Config): Omit<ProjectionDefinition<'openubmc/runtime'>, 'wire'> & {
+  wire: NonNullable<ProjectionDefinition<'openubmc/runtime'>['wire']>
+} {
   const stateSchema: schema.ZodType<OpenUbmcRuntimeState> = schema.object({
     inheritedEventCount: schema.number().int().nonnegative().transform(SessionLogOffset),
     operations: schema.array(schema.string()), pendingGrants: schema.record(schema.string().transform(CommandId), schema.string()),
@@ -154,7 +182,7 @@ export function apply(ctx: Context, config: Config): void {
     uncertainCalls: schema.record(schema.string().transform(ToolCallId), callSchema),
     reconcileCallId: schema.string().transform(ToolCallId).nullable(),
   })
-  ctx.sessionProjections.register({
+  return {
     key: 'openubmc/runtime', stateVersion: 5, stateSchema,
     init: (_header, inheritedEventCount) => ({ inheritedEventCount, operations: [], pendingGrants: {},
       scopes: [], runScopes: {}, approvedCalls: {}, runs: {}, pendingCalls: {}, uncertainCalls: {}, reconcileCallId: null }),
@@ -281,7 +309,17 @@ export function apply(ctx: Context, config: Config): void {
       return { ...state, pendingGrants,
         scopes: [...state.scopes.filter(scope => !isDeepStrictEqual(scope, permission)), permission], reconcileCallId: null }
     },
-  })
+  }
+}
+
+/**
+ * Bind Runtime-issued Runs to trusted Sessions and retain native operation ids.
+ * @param ctx - MCP dispatch, command and projection services.
+ * @param config - Agent gateway namespace and caller wait limits.
+ */
+export function apply(ctx: Context, config: Config): void {
+  const activeCalls = new Map<SessionId, Set<ToolCallId>>()
+  ctx.sessionProjections.register(createRuntimeProjection(config))
   installOpenUbmcGuidance(ctx)
   ctx.commands.register({
     definitionId: CommandDefinitionId('@deepseek-ai/dsh-experimental-openubmc-runtime/action'), name: 'target-action',

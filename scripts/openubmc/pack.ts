@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { build } from 'tsdown'
 import { z } from 'zod'
+import { qualifiedHostVersions } from './compatibility.ts'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const manifestSchema = z.object({ version: z.string().min(1), profiles: z.object({ full: z.array(z.string()).min(1) }),
@@ -81,12 +82,12 @@ export async function packPlugin(options: PackOptions) {
     const bundles = await build({ config: false, entry: { index: join(root, 'scripts/openubmc/plugin-entry.ts'),
       preflight: join(root, 'scripts/openubmc/plugin-preflight.ts') },
     outDir: join(staging, 'lib'), tsconfig: join(root, 'tsconfig.json'), platform: 'node', format: 'esm', dts: false,
-    deps: { neverBundle: id => id.startsWith('@deepseek-ai/') && !id.startsWith('@deepseek-ai/dsh-experimental-openubmc-'),
-      alwaysBundle: [/^@deepseek-ai\/dsh-experimental-openubmc-/], onlyBundle: false },
+    deps: { neverBundle: id => id.startsWith('@modelcontextprotocol/client') || id.startsWith('@deepseek-ai/') && !id.startsWith('@deepseek-ai/dsh-experimental-openubmc-') && id !== '@deepseek-ai/dsh-atomic-write',
+      alwaysBundle: [/^@deepseek-ai\/dsh-experimental-openubmc-/, /^@deepseek-ai\/dsh-atomic-write$/], onlyBundle: false },
     clean: true, sourcemap: false, outExtensions: () => ({ js: '.js' }) })
     const lock = z.object({ packages: z.record(z.string(), z.object({ version: z.string().optional() }).loose()) })
       .parse(JSON.parse(await readFile(join(payload, 'workflow/openubmc-kb-mcp/package-lock.json'), 'utf8')))
-    const dependencies: Record<string, string> = {}
+    const dependencies: Record<string, string> = { '@modelcontextprotocol/client': '2.0.0' }
     for (const name of ['@modelcontextprotocol/sdk', 'zod']) {
       const selected = lock.packages[`node_modules/${name}`]?.version
       if (selected === undefined) throw new Error(`Missing locked KB dependency: ${name}`)
@@ -100,10 +101,11 @@ export async function packPlugin(options: PackOptions) {
         if (name !== undefined) requiredPeers.add(name)
       }
     }
-    const peers: Record<string, string> = { '@deepseek-ai/dsh': version }
+    const supportedHosts = qualifiedHostVersions.join(' || ')
+    const peers: Record<string, string> = { '@deepseek-ai/dsh': supportedHosts }
     for await (const path of glob(['vendor/*/package.json', 'packages/*/*/package.json'], { cwd: root })) {
       const manifest = z.object({ name: z.string(), version: z.string() }).parse(JSON.parse(await readFile(join(root, path), 'utf8')))
-      if (requiredPeers.delete(manifest.name)) peers[manifest.name] = manifest.version
+      if (requiredPeers.delete(manifest.name)) peers[manifest.name] = manifest.name.startsWith('@deepseek-ai/dsh-') ? supportedHosts : manifest.version
     }
     if (requiredPeers.size > 0) throw new Error(`Unresolved Host dependencies: ${[...requiredPeers].join(', ')}`)
     await writeFile(join(staging, 'package.json'), JSON.stringify({ name: 'dsh-openubmc', version: options.version,
@@ -117,7 +119,7 @@ export async function packPlugin(options: PackOptions) {
       dsh: { bundle: { patch: './cordis.patch.yml' } } }, null, 2) + '\n')
     await writeFile(join(staging, 'cordis.patch.yml'), '- insert:\n    - id: openubmc\n      name: dsh-openubmc\n')
     await writeFile(join(staging, 'release.json'), JSON.stringify({ ...source,
-      dshVersion: version, dshCommit: git(root, ['rev-parse', 'HEAD']).trim() }, null, 2) + '\n')
+      dshVersion: version, qualifiedHosts: supportedHosts.split(' || '), authoritySchema: 'dsh-openubmc/session-authority/v1', dshCommit: git(root, ['rev-parse', 'HEAD']).trim() }, null, 2) + '\n')
     await copyFile(join(root, 'LICENSE'), join(staging, 'LICENSE'))
     const notices: string[] = []
     for (const dependency of ['zod', 'js-yaml']) {

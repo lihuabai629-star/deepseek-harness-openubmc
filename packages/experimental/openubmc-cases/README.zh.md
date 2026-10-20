@@ -25,7 +25,7 @@ kind: "package-reference"
 
 `openubmc/cases` Session 投影公开每个 Case 的最近观察：修订号、已报告的 Case 状态、操作状态、原始工具名、失败标志、证据引用、后续动作、事件序号及继承标志。JSON 类型通过 `./types` 导出。重启时投影从已有 `tool/result` 元数据重建；checkpoint（检查点）仅是派生缓存。原生 Turn 和 ObservationReceipt 模式在 `agentResults` 中保留完整 JSON；v1 agent-envelope 仍可作为历史 Case 记录读取。存在 `agent_envelope` 时从中读取操作状态；Case 状态来自 context-runtime Case 投影或 capsule（状态摘要），未报告前保持未知。成功的状态和证据读取保留已知 Case 状态及恢复信息。完整 Case 读取替换已报告的 Case 字段；其他操作未报告证据引用时保留已有引用。格式错误的 Case 字段留下可见诊断，并保留上一次有效观察；后续有效观察会清除诊断。没有 Case ID 的结果不改变历史 Case 视图；其他服务器的结果不改变投影。继承的 Case 信息保持标记，直到当前会话的完整 Case 报告替换它。
 
-`/run [run-or-receipt-id]` 读取最近记录的 Agent 结果，包括 Gate、Incident、Outcome、证据、覆盖范围和时效。该命令不查询 Runtime、不续接 Run，也不授予执行权限。
+`/run [run-or-receipt-id]` 读取最近记录的 Agent 结果，包括 Gate、Incident、Outcome、证据、覆盖范围和时效。该命令不查询 Runtime、不续接 Run，也不授予执行权限。可移植提供方通过 `installCaseQueries` 传入私有 Turn 记录的同步读取器，使原生命令结果无需自定义 Host 事件即可查询。
 
 每个组合仅注册一次此插件。卸载会移除命令和投影注册。插件没有 invariant（不变量）伴随模块：唯一状态是 Session 日志的纯投影，没有独立维护且可能偏离的 Case 存储。
 

@@ -5,11 +5,18 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
 import { stageWorkflow } from './pack.ts'
+import { assertQualifiedHost } from './compatibility.ts'
 
 const roots: string[] = []
 afterEach(async () => {
   await Promise.all(roots.splice(0).map(path => rm(path, { recursive: true, force: true })))
 })
+
+it.each(['0.17', '0.1.7', '0.1.7-rc.1', '0.2.1-alpha.5', '0.2.2-rc.1'])(
+  'rejects an unqualified Host release before loading the provider: %s', (version) => {
+    expect(() => { assertQualifiedHost(version) }).toThrow('qualified DSH versions')
+  },
+)
 
 async function fixture(path = 'testing') {
   const root = await mkdtemp(join(tmpdir(), 'openubmc-payload-test-'))

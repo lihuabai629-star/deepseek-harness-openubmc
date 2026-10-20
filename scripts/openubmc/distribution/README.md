@@ -11,10 +11,10 @@ Install `dsh-openubmc` into an existing Web or headless profile. The archive con
 
 ## Install and start
 
-Use the compatible openUBMC DSH build and a downloaded plugin archive. The official `0.2.0-rc.2` build lacks the required MCP authority and Session event support; the plugin reports an explicit startup error on that build. `release.json` records the source versions used to build the archive. Close the selected profile's Host before changing its packages.
+Use an official DSH `0.1.7-rc.2`, `0.2.0-rc.2` or `0.2.1-rc.2` installation and the downloaded plugin archive. These exact releases are qualified; other versions fail at startup until qualified. A custom Host is unnecessary. `release.json` records the source versions used to build the archive. Close the selected profile's Host before changing its packages.
 
 ```sh
-dsh plugin --profile web add /absolute/path/dsh-openubmc-0.1.0.tgz
+dsh plugin --profile web add /absolute/path/dsh-openubmc-0.2.0.tgz
 dsh --profile web --no-open --host 127.0.0.1 --port 3080
 ```
 
@@ -36,6 +36,16 @@ The bundle adds a single `openubmc` entry. Override its interpreter paths or pri
 
 Without overrides, Python resolves as `python3`, Node uses the Host's standalone executable, and credentials and Runtime state use `credentials.env` and `openubmc-agent-state` under the selected DSH home. Packaged Electron or single-executable hosts require an explicit standalone Node path. Native `/run`, `/case`, execution authorization and recovery commands remain available in conversations. The bundle uses the native conversation view; its environment Skill manages DSH packages and private configuration.
 
+## Session authority and recovery
+
+The plugin owns the observe/execute bridge and injects the trusted Session and operation identities. Full structured results survive both success and failure in native tool logs. Runtime remains the authority for Runs, Gates, Incidents and device effects.
+
+Execution permissions, Run associations and unsettled calls live in `stateDir/dsh-sessions`, outside the installed package. Back up this directory together with the Runtime state and DSH Sessions. Records are validated, written with owner-only permissions and synced before dispatch; cross-process locks prevent overlapping execution in one Session. Missing or corrupt authority after a recorded execution fails closed. Keep writers on one host and filesystem; shared data across PID namespaces or network hosts is unsupported.
+
+Resume keeps the same Session association. Fork starts with separate authority and cannot continue the parent's Runs. Native `/target-authorize` grants and revokes execution scope; exact Run approval uses the native question service. A timeout, cancellation or disconnect leaves execution uncertain until the same Run is reconciled. An unacknowledged start uses `/target-reconcile <original-call-id>` followed by exact replay with the original operation identity. Reconnection never retries an effect automatically.
+
+The earlier `0.1.0` plugin uses required custom Session events. Keep those Sessions with their compatible Host and home; start a fresh Session for this plugin. Reinstalling the older archive restores its code but does not convert newer authority or Session data.
+
 ## Check, update and remove
 
 Install into a separate headless profile for the keyless preflight. Create `preflight.yml` with the following contents; the scripted provider sends only an invalid observation and contacts no target:
@@ -49,10 +59,10 @@ Install into a separate headless profile for the keyless preflight. Create `pref
 ```
 
 ```sh
-dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.1.0.tgz
+dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.2.0.tgz
 dsh --profile headless --patch /absolute/path/preflight.yml "Validate Agent preflight."
 ```
 
 Success prints `OPENUBMC_OFFLINE_OK`. The check verifies tool discovery and structured failure retention without model or device credentials. It does not verify remote login or knowledge retrieval.
 
-Install a newer archive with the same `add` command to update. Reinstall a retained compatible archive to restore its plugin code; keep a backup of the DSH home when changing software versions. Remove the bundle with `dsh plugin --profile web remove dsh-openubmc`. Removal retains sessions, target credentials and Runtime state. Required openUBMC Session events need a compatible Host reader even after removal.
+Install a newer archive with the same `add` command to update. Reinstall a retained compatible archive to restore its plugin code; keep a backup of the DSH home when changing software versions. Remove the bundle with `dsh plugin --profile web remove dsh-openubmc`. Removal retains sessions, target credentials and Runtime state. New plugin Sessions use standard Host events and remain readable after removal. Host Session-format downgrade rules still apply.

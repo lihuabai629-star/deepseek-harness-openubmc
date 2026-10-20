@@ -11,6 +11,8 @@ export interface Config {
   credentialsFile?: string
   /** Durable Runtime data; defaults to the selected DSH home's openubmc-agent-state. */
   stateDir?: string
+  /** Maximum wait for a concurrent Session authority update, in milliseconds. */
+  authorityLockWaitMs: number
   /** Whether the profile exposes the packaged knowledge-base MCP. */
   kbEnabled: boolean
   /** Maximum execute wait in seconds. */
@@ -27,6 +29,7 @@ export interface Config {
 export const Config: z<Config> = z.object({
   python: z.string().min(1).default('python3'),
   node: z.string().min(1), credentialsFile: z.string().min(1), stateDir: z.string().min(1),
+  authorityLockWaitMs: z.number().min(1).max(60000).default(1000),
   kbEnabled: z.boolean().default(true),
   operationDeadlineSeconds: z.number().min(1).max(120).default(120),
   observationDeadlineSeconds: z.number().min(1).max(2_147_483).default(180),

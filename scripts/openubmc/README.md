@@ -11,14 +11,14 @@ This profile connects DSH to the Python Target Runtime and Node knowledge MCP in
 
 ## Distribute an installable plugin
 
-The [packaged plugin instructions](distribution/README.md) describe installation through `dsh plugin` without source checkouts. Build the archive from a clean workflow checkout; only tracked Skill resources, Runtime and KB source enter the payload. The package contains prebuilt adapters and has no install scripts. Its metadata records the required Host version and workflow revision.
+The [packaged plugin instructions](distribution/README.md) describe installation through `dsh plugin` without source checkouts. Build the archive from a clean workflow checkout; only tracked Skill resources, Runtime and KB source enter the payload. The package contains prebuilt adapters and has no install scripts. Its metadata records qualified official Host versions and the workflow revision. The portable provider reuses the native authority reducer and owns its private Session associations; development profiles below keep their native Host integration.
 
 ```sh
 corepack pnpm exec tsx scripts/openubmc/pack.ts \
   --workflow /absolute/path/openubmc-agent-workflow \
-  --out /absolute/path/artifacts --version 0.1.0
+  --out /absolute/path/artifacts --version 0.2.0
 python3 scripts/openubmc/verify_plugin.py \
-  --archive /absolute/path/artifacts/dsh-openubmc-0.1.0.tgz \
+  --archive /absolute/path/artifacts/dsh-openubmc-0.2.0.tgz \
   --dsh /absolute/path/dsh/apps/cli/lib/bin.js
 ```
 

@@ -1054,7 +1054,7 @@ export interface InspectorOptions {
 ## `@deepseek-ai/dsh-experimental-openubmc-cases`
 
 - `inject`: `sessionProjections` · `commands`
-- `source`: [`packages/experimental/openubmc-cases/src/index.ts:19`](../packages/experimental/openubmc-cases/src/index.ts)
+- `source`: [`packages/experimental/openubmc-cases/src/index.ts:20`](../packages/experimental/openubmc-cases/src/index.ts)
 
 ```ts config-catalog
 /** Selects the trusted metadata source in the durable Session log. */

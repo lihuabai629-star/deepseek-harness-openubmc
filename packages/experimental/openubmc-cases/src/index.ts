@@ -4,7 +4,8 @@ import z from '@deepseek-ai/schemastery'
 import { z as schema } from 'zod'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { CommandDefinitionId } from '@deepseek-ai/dsh-commands'
-import { SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
+import { SessionLogOffset, SessionSeq, type Session } from '@deepseek-ai/dsh-session'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import { runTurnSchema, observationReceiptSchema } from './agent.ts'
 import type { OpenUbmcAgentResultId, OpenUbmcCaseId, OpenUbmcCaseObservation, OpenUbmcCasesState, OpenUbmcCasesView } from './types.ts'
@@ -157,6 +158,17 @@ export function createCasesProjection(serverName: string): Omit<ProjectionDefini
  * @param config - exact Runtime source selection.
  */
 export function apply(ctx: Context, config: Config): void {
+  installCaseQueries(ctx, config)
+}
+
+/**
+ * Install historical queries with optional provider-owned Run observations.
+ * @param ctx - Context with command and projection registries.
+ * @param config - Trusted Runtime namespace.
+ * @param readRuns - Portable provider's latest recorded Turns, including native command results.
+ */
+export function installCaseQueries(ctx: Context, config: Config,
+  readRuns?: (session: Session) => readonly Record<string, JsonValue>[]): void {
   ctx.sessionProjections.register(createCasesProjection(config.serverName))
   ctx.commands.register({
     definitionId: CommandDefinitionId('@deepseek-ai/dsh-experimental-openubmc-cases/run'), name: 'run',
@@ -165,10 +177,14 @@ export function apply(ctx: Context, config: Config): void {
       const state = ctx.sessionProjections.stateOf(invocation.agent.session, 'openubmc/cases')
       if (state === undefined) throw new Error('openUBMC observation projection is not registered')
       const query = invocation.rawInput.trim()
-      const results = (state.view.agentResults ?? []).filter(item => query === '' || item.id === query)
-      return { kind: query !== '' && results.length === 0 ? 'error' : 'success',
-        text: results.length === 0 ? 'No matching openUBMC Run or receipt has been observed.'
-          : results.map(item => `${item.inherited ? 'Inherited' : 'Session'} observation at event ${item.observedAtSeq}: ${JSON.stringify(item.document)}`).join('\n') }
+      const portable = readRuns?.(invocation.agent.session) ?? []
+      const results = (state.view.agentResults ?? []).filter(item => (query === '' || item.id === query)
+        && !portable.some(run => run.run_id === item.id))
+      const lines = [...results.map(item =>
+        `${item.inherited ? 'Inherited' : 'Session'} observation at event ${item.observedAtSeq}: ${JSON.stringify(item.document)}`),
+      ...portable.filter(run => query === '' || run.run_id === query).map(run => `Session observation: ${JSON.stringify(run)}`)]
+      return { kind: query !== '' && lines.length === 0 ? 'error' : 'success',
+        text: lines.length === 0 ? 'No matching openUBMC Run or receipt has been observed.' : lines.join('\n') }
     },
   })
   ctx.commands.register({

@@ -49,6 +49,9 @@ export function apply(ctx: Context, config: Config): void {
     if (setup?.provider !== 'openubmc-packaged' || !setup.content.includes('dsh plugin --profile')) {
       throw new Error('The packaged environment Skill must use DSH plugin management.')
     }
+    const grant = await ctx.commands.execute(agent, '/target-authorize execute 192.0.2.39 diagnose-and-fix source-only',
+      [], new AbortController().signal)
+    if (grant?.result.kind !== 'success') throw new Error('The official Host could not record native scoped authorization.')
     // Marking the in-memory entry disabled prevents self-disposal from saving a user patch.
     entry.options.disabled = true
     await entry.fiber.dispose()
@@ -58,6 +61,8 @@ export function apply(ctx: Context, config: Config): void {
     await entry.init()
     await entry.fiber.await()
     if (JSON.stringify(await selected()) !== JSON.stringify(before)) throw new Error('openUBMC registrations changed after remount.')
+    const revoke = await ctx.commands.execute(agent, '/target-authorize revoke', [], new AbortController().signal)
+    if (revoke?.result.kind !== 'success') throw new Error('The remounted provider could not revoke retained authorization.')
     console.log('OPENUBMC_LIFECYCLE_OK')
   })
 }

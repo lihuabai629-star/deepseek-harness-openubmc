@@ -9,7 +9,7 @@ import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import * as mcp from '@deepseek-ai/dsh-mcp-client'
 import { BUNDLED_SKILL_RANK, type SkillCandidate, type SkillProvider } from '@deepseek-ai/dsh-skill'
 import { load as parseYaml } from 'js-yaml'
-import * as runtime from '@deepseek-ai/dsh-experimental-openubmc-runtime'
+import { installPortableRuntime } from './portable-runtime.ts'
 import * as cases from '@deepseek-ai/dsh-experimental-openubmc-cases'
 import type { Config } from './plugin-config.ts'
 
@@ -34,7 +34,7 @@ function resolveOptions(config: Config) {
   if (!isAbsolute(node)) throw new Error('openUBMC config.node must be an absolute executable path.')
   const required = Math.max(config.operationDeadlineSeconds, config.observationDeadlineSeconds) * 1000 + config.completionGraceMs
   if (config.toolCallTimeoutMs < required) throw new Error(`openUBMC toolCallTimeoutMs must be at least ${required}.`)
-  return { node, python: config.python, kbEnabled: config.kbEnabled,
+  return { node, python: config.python, kbEnabled: config.kbEnabled, authorityLockWaitMs: config.authorityLockWaitMs,
     operationDeadlineSeconds: config.operationDeadlineSeconds, observationDeadlineSeconds: config.observationDeadlineSeconds,
     completionGraceMs: config.completionGraceMs, toolCallTimeoutMs: config.toolCallTimeoutMs,
     credentialsFile: resolve(config.credentialsFile ?? dshHomePath('credentials.env')),
@@ -74,15 +74,9 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     },
   }
   ctx.skills.registerProvider(() => provider)
-  await ctx.plugin(runtime, { serverName: 'openubmc-target-runtime', operationDeadlineSeconds: options.operationDeadlineSeconds,
-    observationDeadlineSeconds: options.observationDeadlineSeconds, completionGraceMs: options.completionGraceMs })
-  await ctx.plugin(cases, { serverName: 'openubmc-target-runtime' })
-  await ctx.plugin(mcp, { serverName: 'openubmc-target-runtime', transport: 'stdio', command: options.python,
-    args: ['-B', join(payload, 'runtime_stdio.py'), '--entry', join(workflow, 'openubmc-debug/scripts/target_runtime_mcp.py')],
-    cwd: workflow, sessionIdMetadataKey: 'taskId', structuredContentInText: true, structuredContentInMeta: true,
-    requiredToolCallPolicies: ['openubmc-session-authority'], toolCallTimeoutMs: options.toolCallTimeoutMs, failOnStartupError: true,
-    env: { OPENUBMC_TARGET_RUNTIME_INTERFACE_PROFILE: 'agent', OPENUBMC_TARGET_RUNTIME_STATE_DIR: options.stateDir,
-      OPENUBMC_CREDENTIALS_FILE: options.credentialsFile } })
+  const authority = await installPortableRuntime(ctx, { ...options, payload, workflow })
+  cases.installCaseQueries(ctx, { serverName: 'openubmc-target-runtime' }, session =>
+    Object.values(authority(session).runs).filter(run => run !== undefined))
   if (options.kbEnabled) await ctx.plugin(mcp, { serverName: 'openubmc-kb', transport: 'stdio', command: options.node,
     args: [join(workflow, 'openubmc-kb-mcp/src/server.js')], cwd: join(workflow, 'openubmc-kb-mcp'),
     failOnStartupError: true, toolCallTimeoutMs: options.toolCallTimeoutMs })
