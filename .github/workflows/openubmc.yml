@@ -82,14 +82,8 @@ jobs:
         run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install --with-deps chromium
       - name: Check native Web inspection and reload
         run: pnpm run test:web:built apps/web/tests/openubmc-cases.e2e.ts
-      - name: Save installable openUBMC plugin
-        uses: actions/upload-artifact@v6
-        with:
-          name: dsh-openubmc-plugin
-          path: |
-            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.2.0.tgz
-            ${{ runner.temp }}/openubmc-plugins/dsh-openubmc-0.2.0.tgz.sha256
-          if-no-files-found: error
+      - name: Summarize plugin checksums
+        run: sha256sum "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.2.0.tgz" >> "$GITHUB_STEP_SUMMARY"
 
   compatibility:
     if: github.repository == 'lihuabai629-star/deepseek-harness-openubmc'
