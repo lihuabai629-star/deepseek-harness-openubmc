@@ -16,7 +16,7 @@
     "openubmc-developer/resources/community/concurrency/references/lua-numeric-gc.md": "5a66af302247f67a682d66c4ebdfaa7c055a039bf8bb613987dbe7f4a52d838f",
     "openubmc-developer/resources/community/concurrency/references/patterns.md": "6f3825a455e3dda4606d5d719a830955dd5621cb31b9b3329a700733fd998185",
     "openubmc-developer/resources/community/concurrency/scripts/collect_candidates.py": "c2abbf80952e6a93d52655ed5a3514e8bd2cc5119d7b607f7ef24f0488b9e7d7",
-    "openubmc-developer/resources/community/provenance.json": "0bf23aad2b8b5b9ab394588cb317d5b950d8cfa1923d95e2f695b664ba00ed5a",
+    "openubmc-developer/resources/community/source.json": "0bf23aad2b8b5b9ab394588cb317d5b950d8cfa1923d95e2f695b664ba00ed5a",
     "openubmc-developer/resources/community/redfish-diff/LICENSE": "ce6ec526b29beb153a1bcc368ed429a89742e6e517694c0c4a3886e0bbe443cc",
     "openubmc-developer/resources/community/redfish-diff/references/methodology.md": "08485854462ae558382457109aae849bc135ff5b0326ad4e14bf2b719f4a9179",
     "openubmc-developer/resources/community/redfish-diff/scripts/analyze_redfish_diff.py": "b00c3798bed4330c49d87ff2535dc765919c152835f738b8438755f7fd635306",

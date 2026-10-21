@@ -45,7 +45,7 @@ not prove runtime correctness. Preserve raw reports locally; review/redact them
 before sharing outside the workspace.
 
 The pinned source and per-tool licenses are recorded in
-[provenance.json](../resources/community/provenance.json).
+[source.json](../resources/community/source.json).
 
 Interface documentation coverage uses prepared local snapshots. Run
 `python3 scripts/interface_coverage.py /path/to/interface-input.json`; see
