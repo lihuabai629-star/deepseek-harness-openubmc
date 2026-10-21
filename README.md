@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-This community repository hosts the openUBMC integration for DeepSeek Harness. To install it into official DSH, use the [prebuilt plugin release](https://github.com/lihuabai629-star/deepseek-harness-openubmc/releases/tag/openubmc-plugin-v0.2.0) and [plugin installation guide](scripts/openubmc/distribution/README.md).
+This community repository hosts the openUBMC integration for DeepSeek Harness. To install it into official DSH, use the [prebuilt plugin release](https://github.com/lihuabai629-star/deepseek-harness-openubmc/releases/tag/openubmc-plugin-v0.3.0) and [plugin installation guide](scripts/openubmc/distribution/README.md).
 
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
 

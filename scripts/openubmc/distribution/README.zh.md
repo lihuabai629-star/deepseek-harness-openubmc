@@ -14,7 +14,7 @@ kind: "tutorial"
 使用官方 DSH `0.1.7-rc.2`、`0.2.0-rc.2` 或 `0.2.1-rc.2` 安装版和已下载的插件归档。仅这些完整版本已通过验证；其他版本在通过验证前会被启动检查拒绝。无需定制 Host。`release.json` 记录构建归档所用的源码版本。修改软件包前先关闭所选 profile 的 Host。
 
 ```sh
-dsh plugin --profile web add /absolute/path/dsh-openubmc-0.2.0.tgz
+dsh plugin --profile web add /absolute/path/dsh-openubmc-0.3.0.tgz
 dsh --profile web --no-open --host 127.0.0.1 --port 3080
 ```
 
@@ -35,6 +35,16 @@ bundle 添加一个 `openubmc` 条目。在 profile 的 `cordis.patch.yml` 中�
 ```
 
 没有覆盖时，Python 通过 `python3` 解析，Node 使用 Host 的独立可执行文件，凭据和 Runtime 状态使用选定 DSH home 下的 `credentials.env` 和 `openubmc-agent-state`。Electron 或单可执行文件宿主需要显式指定独立 Node 路径。对话中仍可使用原生 `/run`、`/case`、执行授权和恢复命令。bundle 使用原生对话视图；其环境 Skill 管理 DSH 软件包和私有配置。
+
+打开设置 → 插件 → dsh-openubmc，通过当前已认证的 Web 地址配置设备、知识库或 Conan 账号。本地或 headless Host 可用 `/openubmc-configure [targets|kb|conan]` 在该 Host 打开私有回环配置页。保存会激活私有配置版本，不会连接设备；连接和登录检查由用户在页面显式执行。`/openubmc-doctor` 检查安装包完整性、本地模块加载和配置元数据。`/openubmc-repair [runtime|kb|all]` 修复自有依赖并重试不可用的服务。服务故障时仍保留配置工具；Python 可执行文件缺失时需修正插件配置。修复保留 Run 和用户设置。
+
+Developer Skill 包含来自 openUBMC 插件 2.1.9 的固定版本社区源码检查和接口文档覆盖资源，`release.json` 记录其来源。这些资源提供本地建议性检查；Runtime Gate 仍需实际证据。
+
+## 工作区与记录
+
+Host 在 Run 启动前选择 Session 工作目录，Runtime 冻结其仓库身份。`/openubmc-records` 读取 Session 交接记录，`export` 写入私有脱敏文档，`verify <filename>` 校验摘要。`test <JSON>` 在冻结的干净仓库中运行命令并记录测试回执；源码漂移或其他 Session 的 Run 会被拒绝。字段为 `runId`、`repoRef`、`commandRef`、`argv` 和可选的秒数 `timeout`。`answer <run-id>` 读取 Runtime 准备的最终回答；只有匹配的已提交最终文本才确认交付。Session 用量记录是不完整的观测，不能证明完整的提供方请求清单或自动归因到 Run。
+
+旧官方 headless runner 不派发斜杠命令。请让 Agent 使用 `openubmc_setup_status`、`openubmc_setup_prepare`、`openubmc_setup_open_configuration` 和绑定当前 Session 的 `openubmc_records` 工具。Web 对话支持上文的原生命令。
 
 ## 会话授权与恢复
 
@@ -59,7 +69,7 @@ Resume 保留同一 Session 关联。Fork 使用独立授权，不能续接父�
 ```
 
 ```sh
-dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.2.0.tgz
+dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.3.0.tgz
 dsh --profile headless --patch /absolute/path/preflight.yml "Validate Agent preflight."
 ```
 

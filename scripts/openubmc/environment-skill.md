@@ -13,15 +13,27 @@ Read the selected profile's `package.json` and `cordis.patch.yml` without displa
 
 Check the configured Python and Node executable paths and the initial MCP error. Python must be 3.10 or later; use the supported standalone Node version. Linux/WSL is supported. Device transports need their own tools, such as OpenSSH and sshpass for password SSH. Configuration and dependency checks do not establish a device login.
 
+Run `/openubmc-doctor` in the existing conversation for package integrity, local dependency imports, transport availability and activated configuration metadata. Import readiness does not prove a connected MCP provider or remote login. `/openubmc-repair runtime`, `/openubmc-repair kb` or `/openubmc-repair all` repairs only owned dependencies and retries unavailable providers. Existing providers and Runs are retained. If Python itself cannot start, correct the configured interpreter through DSH's plugin settings and restart the profile. A modified package must be reinstalled from a verified archive; do not bypass its integrity check. Keep setup tools available when Runtime or KB is unavailable.
+
 The `python`, `node`, `credentialsFile`, `stateDir` and `kbEnabled` fields are overridden under `id: openubmc` in the profile patch. Read the current values before changing them. Defaults select `python3`, the standalone Host Node, `$DSH_HOME/credentials.env` and `$DSH_HOME/openubmc-agent-state`. Preserve existing model settings, unrelated MCP entries and any explicit Runtime state location.
 
 ## Private credentials
 
 Reuse the configured private selector. Never print credential-file contents or place passwords in chat, shell arguments, profiles or logs. A missing account differs from rejected authentication, a network failure or a trust failure; inspect the actual error first.
 
-For a new local account, the packaged `openubmc-environment-setup/scripts/install_environment.py` supports a credentials-only hidden TTY command. Run it from the Skill's resource directory as `python3 scripts/install_environment.py credentials`; it writes the per-user openUBMC private file. Set the DSH entry's `credentialsFile` to that file explicitly. The `credentials --kb` variant configures the user's knowledge account independently. These subcommands do not install Skills or register client MCP entries. Use a terminal in which the user can enter hidden input; do not request secrets in conversation.
+Open DSH Settings → Plugins → dsh-openubmc for device, knowledge and Conan accounts. These pages use the existing authenticated Web address. In a local Web conversation, run `/openubmc-configure targets`, `/openubmc-configure kb` or `/openubmc-configure conan`, and present the returned URL with its fragment intact. In headless mode, use the setup tools; older official headless runners do not dispatch slash commands. A loopback URL opens on the Host machine; remote users use the Web settings entry or a private tunnel. Do not expose an unauthenticated configuration port.
+
+For a task waiting on configuration, use `openubmc_setup_open_configuration` with the required `kind`, optional `focusTarget` and `waitForSave: true`. Keep the owning Host running. The secret-free activation event continues the existing task at its next Runtime request without granting device permission. Closing or expiration is not success; do not reopen automatically. Saving activates a private revision without a device probe. A connection check, KB login or Conan login remains an explicit page action; do not reinterpret TLS or host-identity failures as a missing password. Follow [credential exposure response](references/credential-exposure-response.md) if a secret appeared in chat.
 
 Knowledge configuration defaults to `~/.config/openubmc/kb-mcp.json` or the corresponding `XDG_CONFIG_HOME` directory. A local configuration check does not verify KB login or retrieval. No shared account or OAuth secret is supplied by the plugin.
+
+## Workspace and delivery records
+
+Before a new Run, the Host captures the trusted Session working directory. Runtime freezes the selected repository identity; model metadata cannot replace it. `/openubmc-records` reads the current Session handoff. `/openubmc-records export` writes a private, content-addressed, redacted document; `/openubmc-records verify <filename>` checks it. These operations dispatch no target requests. Session usage observations are partial, exclude inherited fork requests and do not establish complete provider usage or automatic Run attribution.
+
+In headless mode or during a model turn, use `openubmc_records` with `command: handoff|export|verify|answer|test`. Its Session identity comes from the Host. `verify` takes `file`, `answer` takes `runId`, and `test` takes the same test request under `test`. Do not invent another task ID or edit the shared records directly.
+
+For a test required by a returned Gate, use `/openubmc-records test <JSON>` with `runId`, `repoRef`, `commandRef`, `argv` and optional `timeout`. It runs the actual command only against the frozen clean repository and records its receipt; source drift or foreign Run ownership is rejected. A test record does not itself satisfy a Gate. Use `/openubmc-records answer <run-id>` for Runtime's prepared terminal answer. Only an exact committed final message confirms delivery; reading or preparing an answer does not.
 
 ## Update and remove
 

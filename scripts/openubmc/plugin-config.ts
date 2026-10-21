@@ -9,6 +9,8 @@ export interface Config {
   node?: string
   /** Private credential selector; defaults to the selected DSH home's credentials.env. */
   credentialsFile?: string
+  /** Private knowledge configuration; defaults to the per-user openUBMC source. */
+  kbConfigFile?: string
   /** Durable Runtime data; defaults to the selected DSH home's openubmc-agent-state. */
   stateDir?: string
   /** Maximum wait for a concurrent Session authority update, in milliseconds. */
@@ -23,16 +25,22 @@ export interface Config {
   completionGraceMs: number
   /** MCP transport wait in milliseconds. */
   toolCallTimeoutMs: number
+  /** Complete local setup or dependency repair budget in seconds. */
+  setupTimeoutSeconds: number
+  /** Inactive private configuration page lifetime in seconds. */
+  configurationIdleSeconds: number
 }
 
 /** Deployment settings remain editable in the profile's own patch. */
 export const Config: z<Config> = z.object({
   python: z.string().min(1).default('python3'),
-  node: z.string().min(1), credentialsFile: z.string().min(1), stateDir: z.string().min(1),
+  node: z.string().min(1), credentialsFile: z.string().min(1), stateDir: z.string().min(1), kbConfigFile: z.string().min(1),
   authorityLockWaitMs: z.number().min(1).max(60000).default(1000),
   kbEnabled: z.boolean().default(true),
   operationDeadlineSeconds: z.number().min(1).max(120).default(120),
   observationDeadlineSeconds: z.number().min(1).max(2_147_483).default(180),
   completionGraceMs: z.number().min(1).max(2_147_483_647).default(10000),
   toolCallTimeoutMs: z.number().min(1).max(2_147_483_647).default(190000),
+  setupTimeoutSeconds: z.number().min(1).max(3600).default(660),
+  configurationIdleSeconds: z.number().min(1).max(3600).default(900),
 })

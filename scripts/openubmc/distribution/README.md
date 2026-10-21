@@ -14,7 +14,7 @@ Install `dsh-openubmc` into an existing Web or headless profile. The archive con
 Use an official DSH `0.1.7-rc.2`, `0.2.0-rc.2` or `0.2.1-rc.2` installation and the downloaded plugin archive. These exact releases are qualified; other versions fail at startup until qualified. A custom Host is unnecessary. `release.json` records the source versions used to build the archive. Close the selected profile's Host before changing its packages.
 
 ```sh
-dsh plugin --profile web add /absolute/path/dsh-openubmc-0.2.0.tgz
+dsh plugin --profile web add /absolute/path/dsh-openubmc-0.3.0.tgz
 dsh --profile web --no-open --host 127.0.0.1 --port 3080
 ```
 
@@ -35,6 +35,16 @@ The bundle adds a single `openubmc` entry. Override its interpreter paths or pri
 ```
 
 Without overrides, Python resolves as `python3`, Node uses the Host's standalone executable, and credentials and Runtime state use `credentials.env` and `openubmc-agent-state` under the selected DSH home. Packaged Electron or single-executable hosts require an explicit standalone Node path. Native `/run`, `/case`, execution authorization and recovery commands remain available in conversations. The bundle uses the native conversation view; its environment Skill manages DSH packages and private configuration.
+
+Open Settings → Plugins → dsh-openubmc to configure device, knowledge or Conan accounts through the current authenticated Web address. For a local or headless Host, `/openubmc-configure [targets|kb|conan]` opens a private loopback page on that Host. Saving activates a private revision without connecting to a device; connection and login checks are explicit page actions. `/openubmc-doctor` checks package integrity, local imports and configuration metadata. `/openubmc-repair [runtime|kb|all]` repairs owned dependencies and retries unavailable providers. Setup remains available when a provider fails; a missing Python executable requires correcting the plugin configuration. Repair retains Runs and user settings.
+
+The Developer Skill includes pinned community source checks and interface documentation coverage resources from openUBMC plugin 2.1.9, with their source identity in `release.json`. They provide local advisory checks; Runtime Gates still require actual evidence.
+
+## Workspace and records
+
+The Host selects the Session working directory before a Run starts; Runtime freezes its repository identity. `/openubmc-records` reads the Session handoff, `export` writes a private redacted document and `verify <filename>` checks its digest. `test <JSON>` runs a command against the frozen clean repository and records a test receipt; source drift and another Session's Run are rejected. Its fields are `runId`, `repoRef`, `commandRef`, `argv` and optional `timeout` in seconds. `answer <run-id>` reads Runtime's prepared final answer; only matching committed final text confirms delivery. Session usage is partial and does not establish a complete provider inventory or automatic Run attribution.
+
+Older official headless runners do not dispatch slash commands. Ask the agent to use `openubmc_setup_status`, `openubmc_setup_prepare`, `openubmc_setup_open_configuration` and the Session-bound `openubmc_records` tool instead. The Web conversation supports the native commands above.
 
 ## Session authority and recovery
 
@@ -59,7 +69,7 @@ Install into a separate headless profile for the keyless preflight. Create `pref
 ```
 
 ```sh
-dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.2.0.tgz
+dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.3.0.tgz
 dsh --profile headless --patch /absolute/path/preflight.yml "Validate Agent preflight."
 ```
 

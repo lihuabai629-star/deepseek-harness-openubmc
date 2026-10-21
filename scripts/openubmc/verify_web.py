@@ -13,7 +13,8 @@ import subprocess
 import tempfile
 import time
 from urllib.parse import urljoin, urlsplit
-from urllib.request import build_opener, HTTPCookieProcessor
+from urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
+from urllib.error import HTTPError
 
 
 class Scripts(HTMLParser):
@@ -38,7 +39,7 @@ def verify(archive: Path, dsh: Path, node: str, timeout: float = 120) -> None:
         installed = subprocess.run([node, str(dsh), "plugin", "--profile", "web", "add", str(archive)],
                                    cwd=root, env=env, capture_output=True, text=True, timeout=timeout)
         if installed.returncode:
-            raise RuntimeError("Web profile plugin installation failed")
+            raise RuntimeError("Web profile plugin installation failed:\n" + installed.stdout[-4000:] + installed.stderr[-4000:])
         log_path = root / "web.log"
         with log_path.open("w") as log:
             process = subprocess.Popen([node, str(dsh), "--profile", "web", "--host", "127.0.0.1",
@@ -78,8 +79,61 @@ def verify(archive: Path, dsh: Path, node: str, timeout: float = 120) -> None:
                 with opener.open(url, timeout=15) as response:
                     if response.status != 200 or not response.read():
                         raise AssertionError("A Web frontend script is unavailable")
+            route = urljoin(base, 'openubmc?kind=targets')
+            try:
+                urlopen(route, timeout=15)
+            except HTTPError as error:
+                if error.code != 401:
+                    raise AssertionError('Anonymous configuration must fail authentication') from None
+            else:
+                raise AssertionError('Configuration accepted an anonymous request')
+            with opener.open(route, timeout=30) as response:
+                page = response.url
+                if urlsplit(page).netloc != urlsplit(base).netloc or not urlsplit(page).fragment:
+                    raise AssertionError('Configuration did not stay on the authenticated Web address')
+                document = response.read()
+                if b'src="page.js"' not in document or b'href="page.css"' not in document:
+                    raise AssertionError('Configuration assets do not preserve the proxy prefix')
+            token = urlsplit(page).fragment
+            clean = page.split('#', 1)[0]
+            origin = f'{urlsplit(base).scheme}://{urlsplit(base).netloc}'
+            headers = {'X-OpenUBMC-Session': token, 'Origin': origin, 'Content-Type': 'application/json'}
+            def request(path, data=None, custom_headers=None):
+                req = Request(urljoin(clean, path), headers=custom_headers or headers,
+                              data=json.dumps(data).encode() if data is not None else None)
+                try:
+                    with opener.open(req, timeout=45) as response:
+                        return response.status, response.read()
+                except HTTPError as error:
+                    return error.code, error.read()
+            if request('api/state', custom_headers={'Origin': origin})[0] != 403:
+                raise AssertionError('Configuration accepted a missing page token')
+            if request('api/state', custom_headers={**headers, 'Origin': 'https://example.invalid'})[0] != 403:
+                raise AssertionError('Configuration accepted a foreign Origin')
+            code, body = request('api/state')
+            if code != 200:
+                raise AssertionError('Configuration state unavailable through the proxy')
+            code, body = request('page.js')
+            if code != 200 or b"new URL('.' + path, location.href)" not in body:
+                raise AssertionError('Page requests do not preserve the proxy prefix')
+            code, body = request('api/save', {'kind': 'targets', 'expected_revision': None,
+                                            'config': {'schema_version': 1}})
+            if code != 200:
+                raise AssertionError('Local configuration draft failed')
+            revision = json.loads(body)['revision']
+            code, body = request('api/activate', {'kind': 'targets', 'revision': revision, 'expected_active_revision': None})
+            if code != 200 or json.loads(body)['active_revision'] != revision:
+                raise AssertionError('Local configuration activation failed')
+            code, body = request('api/plugin', {'action': 'status'})
+            report = json.loads(body)
+            if code != 200 or report.get('integrity') is not True or report.get('remote_target_authentication') != 'not_checked':
+                raise AssertionError('Diagnostics confused local readiness with device authentication')
+            if request('api/close', {})[0] != 200:
+                raise AssertionError('Configuration page failed to close')
             print(json.dumps({"status": "passed", "authenticated_index": True,
-                              "frontend_scripts": len(scripts), "model_calls": 0, "target_calls": 0}))
+                              "frontend_scripts": len(scripts), "configuration_proxy": True,
+                              "private_activation": True, "foreign_origin_rejected": True,
+                              "model_calls": 0, "target_calls": 0}))
         finally:
             try:
                 os.killpg(process.pid, signal.SIGTERM)

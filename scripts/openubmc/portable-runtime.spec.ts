@@ -6,7 +6,7 @@ import { createServer, type Socket } from 'node:net'
 import { existsSync, readdirSync } from 'node:fs'
 import { expect, it, onTestFinished } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import Sessions, { SessionId } from '@deepseek-ai/dsh-session'
+import Sessions, { SessionId, type Session } from '@deepseek-ai/dsh-session'
 import Projections from '@deepseek-ai/dsh-session-projection'
 import { z } from 'zod'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -36,9 +36,11 @@ async function fixture() {
   await ctx.plugin(Commands)
   await ctx.plugin(Tools)
   await ctx.plugin(SystemPrompt)
+  const captured: Array<{ id: string; cwd: string | undefined }> = []
   const options = { payload: root, workflow: root, python: 'python3',
     stateDir: join(root, 'state'), credentialsFile: join(root, 'absent.env'), operationDeadlineSeconds: 1,
-    observationDeadlineSeconds: 1, completionGraceMs: 1000, toolCallTimeoutMs: 30000, authorityLockWaitMs: 100 }
+    observationDeadlineSeconds: 1, completionGraceMs: 1000, toolCallTimeoutMs: 30000, authorityLockWaitMs: 100,
+    captureWorkspace: async (session: Session) => { captured.push({ id: session.id, cwd: session.header.cwd }) } }
   const plugin = { name: 'portable-test', inject: ['tools', 'commands', 'systemPrompt', 'sessionProjections'],
     apply: async (child: Context) => {
       const authority = await installPortableRuntime(child, options)
@@ -46,7 +48,7 @@ async function fixture() {
         Object.values(authority(session).runs).filter(run => run !== undefined))
     } }
   let fiber = await ctx.plugin(plugin)
-  const session = ctx.sessions.create(SessionId('owner'))
+  const session = ctx.sessions.create(SessionId('owner'), { meta: { cwd: root } })
   const agent: Agent = { id: session.id, session, ctx, options: {}, inbox: createInboxStub(), status: 'idle',
     send() {}, followup() {}, steer() {}, inject() {}, cancel() {}, whenIdle: async () => {},
     runMaintenance: task => task(new AbortController().signal) }
@@ -66,7 +68,7 @@ async function fixture() {
   const callSchema = z.object({ _meta: z.record(z.string(), z.json()) })
   const calls = async () => (await readFile(join(root, 'calls.jsonl'), 'utf8')).trim().split('\n')
     .map(line => callSchema.parse(JSON.parse(line)))
-  return { root, ctx, session, agent, execute, command, calls,
+  return { root, ctx, session, agent, execute, command, calls, captured,
     remount: async () => { await fiber.dispose(); fiber = await ctx.plugin(plugin) } }
 }
 
@@ -80,6 +82,7 @@ portableTest('retains failed Turn JSON and trusted identity on the public tool e
   const calls = await f.calls()
   expect(calls[0]?._meta.taskId).toBe('owner')
   expect(calls[0]?._meta['openubmc/operationId']).toMatch(/^dsh-[a-f0-9]{64}$/)
+  expect(f.captured).toEqual([{ id: 'owner', cwd: f.root }])
   expect(f.session.snapshotEvents().some(event => event.type.startsWith('openubmc/'))).toBe(false)
 })
 

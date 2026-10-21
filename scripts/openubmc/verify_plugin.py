@@ -80,6 +80,12 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
             raise AssertionError(f"Offline preflight did not complete:\n{output[-12000:]}")
         if "OPENUBMC_LIFECYCLE_OK" not in output:
             raise AssertionError(f"Plugin disposal and remount did not complete:\n{output[-12000:]}")
+        setup = root / "setup-only.yml"
+        setup.write_text(overlay.read_text().replace('verifyLifecycle: true', 'verifySetupOnly: true')
+                         + "- id: openubmc\n  config:\n    python: /nonexistent/dsh-python\n")
+        setup_output = run("--profile", "headless", "--patch", str(setup), "Check local setup readiness.")
+        if 'OPENUBMC_SETUP_ONLY_OK' not in setup_output:
+            raise AssertionError("A missing Runtime interpreter removed native setup diagnostics")
         sessions = list((home / "sessions").rglob("*"))
         if not any(path.is_file() for path in sessions):
             raise AssertionError("The preflight did not persist a Session")
@@ -115,6 +121,7 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
             raise AssertionError("Uninstall removed Session files")
         print(json.dumps({"status": "passed", "skills": len(mapping), "offline_preflight": True,
                           "dispose_and_remount": True, "update_and_restore": update_archive is not None,
+                          "setup_retained_without_interpreter": True,
                           "host_version": host_version, "portable_session_events": True, "authority_retained": True,
                           "uninstall_retained_user_data": True}))
 

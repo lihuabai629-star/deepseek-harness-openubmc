@@ -12,6 +12,8 @@ import { load as parseYaml } from 'js-yaml'
 import { installPortableRuntime } from './portable-runtime.ts'
 import * as cases from '@deepseek-ai/dsh-experimental-openubmc-cases'
 import type { Config } from './plugin-config.ts'
+import { installLocalAdmin } from './local-admin.ts'
+import { installConfigurationWeb } from './configuration-web.ts'
 
 const payloadSchema = schema.object({
   skills: schema.array(schema.object({ name: schema.string().min(1), path: schema.string().min(1) })).min(1),
@@ -37,6 +39,8 @@ function resolveOptions(config: Config) {
   return { node, python: config.python, kbEnabled: config.kbEnabled, authorityLockWaitMs: config.authorityLockWaitMs,
     operationDeadlineSeconds: config.operationDeadlineSeconds, observationDeadlineSeconds: config.observationDeadlineSeconds,
     completionGraceMs: config.completionGraceMs, toolCallTimeoutMs: config.toolCallTimeoutMs,
+    setupTimeoutSeconds: config.setupTimeoutSeconds, configurationIdleSeconds: config.configurationIdleSeconds,
+    ...(config.kbConfigFile === undefined ? {} : { kbConfigFile: resolve(config.kbConfigFile) }),
     credentialsFile: resolve(config.credentialsFile ?? dshHomePath('credentials.env')),
     stateDir: resolve(config.stateDir ?? dshHomePath('openubmc-agent-state')) }
 }
@@ -50,34 +54,80 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const options = resolveOptions(config)
   const payload = fileURLToPath(new URL('../payload/', import.meta.url))
   const workflow = join(payload, 'workflow')
-  const manifest = payloadSchema.parse(JSON.parse(await readFile(join(payload, 'skills.json'), 'utf8')))
-  const candidates: SkillCandidate[] = await Promise.all(manifest.skills.map(async (skill) => {
-    const directory = join(workflow, skill.path)
-    const path = skill.name === 'openubmc-environment-setup' ? join(payload, 'environment-skill.md') : join(directory, 'SKILL.md')
-    const { metadata } = parseSkill(await readFile(path, 'utf8'))
-    return { name: skill.name, description: metadata.description, path, locator: path,
-      source: 'bundled', provider: 'openubmc-packaged', rank: BUNDLED_SKILL_RANK,
-      resourceBase: { kind: 'directory', path: directory },
-      invocation: { modelInvocable: metadata['disable-model-invocation'] !== true, userInvocable: metadata['user-invocable'] !== false } }
-  }))
-  const provider: SkillProvider = { name: 'openubmc-packaged', list: () => Promise.resolve(candidates),
-    async get(candidate, lookup) {
-      const { locator, rank: _rank, ...summary } = candidate
-      const { content } = parseSkill(await readFile(schema.string().parse(locator), { encoding: 'utf8', signal: lookup.signal }))
-      let text = content
-      for (const entry of manifest.skills) {
-        for (const prefix of ['/root/.agents/skills/', '$HOME/.agents/skills/', '~/.agents/skills/']) {
-          text = text.replaceAll(prefix + entry.name, join(workflow, entry.path))
+  const mountSkills = async () => {
+    const manifest = payloadSchema.parse(JSON.parse(await readFile(join(payload, 'skills.json'), 'utf8')))
+    const candidates: SkillCandidate[] = await Promise.all(manifest.skills.map(async (skill) => {
+      const directory = join(workflow, skill.path)
+      const path = skill.name === 'openubmc-environment-setup' ? join(payload, 'environment-skill.md') : join(directory, 'SKILL.md')
+      const { metadata } = parseSkill(await readFile(path, 'utf8'))
+      return { name: skill.name, description: metadata.description, path, locator: path,
+        source: 'bundled', provider: 'openubmc-packaged', rank: BUNDLED_SKILL_RANK,
+        resourceBase: { kind: 'directory', path: directory },
+        invocation: { modelInvocable: metadata['disable-model-invocation'] !== true, userInvocable: metadata['user-invocable'] !== false } }
+    }))
+    const provider: SkillProvider = { name: 'openubmc-packaged', list: () => Promise.resolve(candidates),
+      async get(candidate, lookup) {
+        const { locator, rank: _rank, ...summary } = candidate
+        const { content } = parseSkill(await readFile(schema.string().parse(locator), { encoding: 'utf8', signal: lookup.signal }))
+        let text = content
+        for (const entry of manifest.skills) {
+          for (const prefix of ['/root/.agents/skills/', '$HOME/.agents/skills/', '~/.agents/skills/']) {
+            text = text.replaceAll(prefix + entry.name, join(workflow, entry.path))
+          }
+        }
+        return { ...summary, content: text }
+      },
+    }
+    ctx.skills.registerProvider(() => provider)
+  }
+  let skillsMounted = false
+  let runtimeMounted = false
+  let kbMounted = false
+  let mounting: Promise<void> | undefined
+  const mount = (): Promise<void> => {
+    mounting ??= (async () => {
+      let status: Awaited<ReturnType<typeof admin.run>>
+      try { status = await admin.run({ command: 'doctor' }) } catch (_error) {
+        ctx.logger.warn('openUBMC local environment unavailable; check the configured Python executable and /openubmc-doctor.')
+        return
+      }
+      if (status.ok === false) {
+        ctx.logger.warn('openUBMC local diagnostics unavailable; use /openubmc-doctor to inspect interpreter readiness.')
+        return
+      }
+      if (status.integrity !== true) {
+        ctx.logger.warn('openUBMC package integrity failed; reinstall a verified archive. Local setup remains available.')
+        return
+      }
+      if (!skillsMounted) { await mountSkills(); skillsMounted = true }
+      if (!runtimeMounted) {
+        const fiber = ctx.plugin({ name: 'openubmc-native-runtime',
+          apply: async (child: Context) => {
+            const authority = await installPortableRuntime(child, { ...options, payload, workflow,
+              captureWorkspace: admin.capture })
+            cases.installCaseQueries(child, { serverName: 'openubmc-target-runtime' }, session =>
+              Object.values(authority(session).runs).filter(run => run !== undefined))
+          } })
+        try { await fiber.await(); runtimeMounted = true } catch (_error) {
+          await fiber.dispose()
+          ctx.logger.warn('openUBMC Runtime unavailable; use /openubmc-doctor or /openubmc-repair runtime.')
         }
       }
-      return { ...summary, content: text }
-    },
+      if (options.kbEnabled && !kbMounted) {
+        const entry = schema.object({ entry: schema.string() }).parse(await admin.run({ command: 'kb-entry' })).entry
+        const fiber = ctx.plugin(mcp, { serverName: 'openubmc-kb', transport: 'stdio', command: options.node,
+          args: [entry], cwd: resolve(entry, '../..'),
+          ...(options.kbConfigFile === undefined ? {} : { env: { OPENUBMC_KB_CONFIG: options.kbConfigFile } }),
+          failOnStartupError: true, toolCallTimeoutMs: options.toolCallTimeoutMs })
+        try { await fiber.await(); kbMounted = true } catch (_error) {
+          await fiber.dispose()
+          ctx.logger.warn('openUBMC knowledge service unavailable; use /openubmc-doctor or /openubmc-repair kb.')
+        }
+      }
+    })().finally(() => { mounting = undefined })
+    return mounting
   }
-  ctx.skills.registerProvider(() => provider)
-  const authority = await installPortableRuntime(ctx, { ...options, payload, workflow })
-  cases.installCaseQueries(ctx, { serverName: 'openubmc-target-runtime' }, session =>
-    Object.values(authority(session).runs).filter(run => run !== undefined))
-  if (options.kbEnabled) await ctx.plugin(mcp, { serverName: 'openubmc-kb', transport: 'stdio', command: options.node,
-    args: [join(workflow, 'openubmc-kb-mcp/src/server.js')], cwd: join(workflow, 'openubmc-kb-mcp'),
-    failOnStartupError: true, toolCallTimeoutMs: options.toolCallTimeoutMs })
+  const admin = installLocalAdmin(ctx, { ...options, payload }, mount)
+  ctx.inject(['webServer', 'connection'], (web) => { installConfigurationWeb(web, admin, options.setupTimeoutSeconds * 1000) })
+  await mount()
 }
