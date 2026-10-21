@@ -2,6 +2,8 @@
 
 English | [中文](README.zh.md)
 
+This community repository hosts the openUBMC integration for DeepSeek Harness. To install it into official DSH, use the [prebuilt plugin release](https://github.com/lihuabai629-star/deepseek-harness-openubmc/releases/tag/openubmc-plugin-v0.2.0) and [plugin installation guide](scripts/openubmc/distribution/README.md).
+
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
