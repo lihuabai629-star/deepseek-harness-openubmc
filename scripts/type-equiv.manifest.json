@@ -2399,9 +2399,44 @@
       "source": "packages/experimental/openubmc-runtime/src/types.ts"
     },
     {
+      "doc": "docs/subsystems/openubmc-cases.md",
+      "symbol": "OpenUbmcRuntimeView",
+      "source": "packages/experimental/openubmc-runtime/src/types.ts"
+    },
+    {
       "doc": "docs/subsystems/mcp.md",
       "symbol": "McpToolCall",
       "source": "packages/mcp/mcp-client/src/tools.ts"
+    },
+    {
+      "doc": "docs/subsystems/openubmc-cases.md",
+      "symbol": "OpenUbmcRunId",
+      "source": "packages/experimental/openubmc-cases/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/openubmc-cases.md",
+      "symbol": "OpenUbmcAgentObservation",
+      "source": "packages/experimental/openubmc-cases/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/openubmc-cases.md",
+      "symbol": "OpenUbmcPendingCall",
+      "source": "packages/experimental/openubmc-runtime/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/openubmc-cases.md",
+      "symbol": "OpenUbmcAgentResultId",
+      "source": "packages/experimental/openubmc-cases/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/openubmc-cases.md",
+      "symbol": "OpenUbmcExecutionScope",
+      "source": "packages/experimental/openubmc-runtime/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/openubmc-cases.md",
+      "symbol": "OpenUbmcRunScope",
+      "source": "packages/experimental/openubmc-runtime/src/types.ts"
     }
   ]
 }

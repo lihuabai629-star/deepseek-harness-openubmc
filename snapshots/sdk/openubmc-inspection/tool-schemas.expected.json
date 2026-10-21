@@ -301,15 +301,15 @@
       }
     },
     {
-      "name": "mcp__openubmc-target-runtime__case_read",
-      "description": "case_read",
+      "name": "mcp__openubmc-target-runtime__execute",
+      "description": "execute",
       "parameters": {
         "type": "object"
       }
     },
     {
-      "name": "mcp__openubmc-target-runtime__evidence_read",
-      "description": "evidence_read",
+      "name": "mcp__openubmc-target-runtime__observe",
+      "description": "observe",
       "parameters": {
         "type": "object"
       }

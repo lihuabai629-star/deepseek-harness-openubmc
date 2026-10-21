@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-10-20-openubmc-portable-authority.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-20-openubmc-portable-authority.md
+/agent-note-portable-openubmc-session-authority:
+  en: e50355df539527b5
+  zh: 0a665f2dcae5a5f1
+/agent-note-portable-openubmc-session-authority/problem:
+  en: 402f6c7ca37faae8
+  zh: 38cbdbef05e7b947
+/agent-note-portable-openubmc-session-authority/decision:
+  en: 7b7ccf8f917db6d4
+  zh: 7bbc9aabf359556a
+/agent-note-portable-openubmc-session-authority/alternatives-considered:
+  en: c35ed7a664dd0a28
+  zh: 655eae58dc923472
+/agent-note-portable-openubmc-session-authority/consequences:
+  en: 73de989814ca8598
+  zh: 1423ac3f22b1ec0a

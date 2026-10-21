@@ -67,7 +67,8 @@
     "@deepseek-ai/dsh-experimental-openubmc-cases": "workspace:*",
     "zod": "^4.4.3",
     "@deepseek-ai/dsh-host-webserver": "workspace:*",
-    "@deepseek-ai/dsh-brand": "workspace:*"
+    "@deepseek-ai/dsh-brand": "workspace:*",
+    "@deepseek-ai/dsh-experimental-openubmc-runtime": "workspace:*"
   },
   "files": [
     "lib/index.js",

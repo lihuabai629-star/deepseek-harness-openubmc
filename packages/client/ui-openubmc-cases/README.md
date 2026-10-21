@@ -1,5 +1,5 @@
 ---
-description: "Optional native Web presentation of durable openUBMC Case observations and bounded evidence reads."
+description: "Optional native Web presentation of durable openUBMC Runs, observation receipts and historical Cases."
 kind: "package-reference"
 ---
 
@@ -20,19 +20,19 @@ This optional Client plugin renders persisted Runtime results as Case cards in t
 
 ## Configuration and inspection
 
-Configure `serverName` with the same trusted MCP namespace as the Host [Case projection](../../experimental/openubmc-cases/README.md). The [openUBMC Web profile](../../../scripts/openubmc/README.md) composes the Host projection, Runtime authority and this plugin. The default Web profile does not load it.
+Configure `serverName` with the same trusted MCP namespace as the Host [Case projection](../../experimental/openubmc-cases/README.md). The [openUBMC Web profile](../../../scripts/openubmc/README.md) composes this plugin with `--case-ui`; its Host projection and Runtime authority also work without cards. The default Web profile does not load it.
 
-Refresh Case and evidence buttons invoke the Session's native `/case-refresh` and `/evidence` commands through the command Remote. They require the [Runtime adapter](../../experimental/openubmc-runtime/README.md); they do not ask a model or grant target execution. The adapter owns evidence read limits and Case isolation. Native inspection results enter durable conversation history, so reloading the page reconstructs the cards.
+Native Run cards retain Gate ids, versions and response schemas; Incident recovery details; Outcome, facts, gaps and progress. Observation receipt cards expose coverage, freshness, results and evidence. Complete JSON remains expandable. Historical Case cards retain their recorded fields without live read controls.
 
-Every card is a historical observation. An observation is marked as possibly stale unless it is the latest full Case read. Fork-inherited cards keep their historical label and disable live controls; reading the fork's new Case produces a separate current observation. Operation errors stay visibly failed even when a subsequent Case query succeeds. Invalid or foreign-source metadata uses the generic tool presentation.
+Every card shows a recorded observation. A later result marks the earlier card as possibly stale; fork-inherited cards retain their historical label. Only the latest current-session Run card offers explicit authorization, continuation, cancellation and reconciliation through native Host commands. Continuation controls follow the Host's permission for that Run; read-only diagnosis does not need a general execution grant. Session authorization and revocation remain separate controls. Gate forms retain the returned identity and submission binding, collect explicit response fields and leave complete schema validation to Runtime. Failed submissions retain the draft. Rendering, expanding or reloading a card never invokes execution. Failed results remain failed; invalid or foreign-source metadata uses generic tool presentation.
 
 ## Dev Note
 
-The Client owns a Conversation definition, one keyed renderer, locale dictionaries and native command callbacks. The Host face publishes configuration only. No invariant companion is published: all presentation comes from the Session log and the existing Host projection, without an independent Case state store.
+The Client owns a Conversation definition, keyed renderers and locale dictionaries. The Host face publishes configuration only. No invariant companion is published: all presentation comes from the Session log and the existing Host projection, without an independent Case state store.
 
 ## Model Experience
 
-None, as this plugin presents persisted Case metadata and invokes non-model inspection commands.
+None, as explicit controls invoke native Host commands without a model request.
 
 #### KV Cache effect
 
@@ -40,4 +40,4 @@ This plugin does not change model requests or reusable prefixes.
 
 ## Known Limitations and Deferred Work
 
-- Cards render Runtime-provided phase, evidence and artifact JSON. They do not open host artifact paths or implement device controls. A stale label does not perform background polling. Case queries require a reachable Runtime, while historical cards remain readable offline.
+- Cards render Runtime-provided phase, evidence and artifact JSON. They do not open host artifact paths or provide Run creation. A stale label does not perform background polling. Recorded cards remain readable offline.

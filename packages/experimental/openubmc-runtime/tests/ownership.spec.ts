@@ -1,111 +1,74 @@
-/** Session ownership through the public MCP tool executor. */
-import { Context } from '@deepseek-ai/cordis'
-import { ToolCallId } from '@deepseek-ai/dsh-llm'
-import Sessions, { SessionId } from '@deepseek-ai/dsh-session'
-import Projections from '@deepseek-ai/dsh-session-projection'
-import Commands from '@deepseek-ai/dsh-commands'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import Tools from '@deepseek-ai/dsh-tools'
-import { createMcpToolDefinition } from '@deepseek-ai/dsh-mcp-client'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
+/** Native Agent authority, opaque Run ownership and fork isolation. */
 import { expect, it, vi } from 'vitest'
-import * as runtime from '../src/index.ts'
+import { SessionId } from '@deepseek-ai/dsh-session'
+import { CommandId } from '@deepseek-ai/dsh-commands'
+import { bench, response } from './harness.ts'
 
-it('denies foreign Cases, keeps resume identity and requires a fresh human grant after fork', async () => {
-  const ctx = new Context()
+it('reads a retired authorization record without granting native execute', async () => {
+  const b = await bench()
   try {
-    await ctx.plugin(Sessions)
-    await ctx.plugin(Projections)
-    await ctx.plugin(Commands)
-    await ctx.plugin(SystemPrompt)
-    await ctx.plugin(Tools)
-    const fiber = await ctx.plugin(runtime, { serverName: 'runtime', operationDeadlineSeconds: 10, completionGraceMs: 1000, workflowMaxSteps: 1, evidenceReadLimitBytes: 65536 })
-    ctx.commands.register({ name: 'noop', description: 'Unrelated user command', handler: () => ({ kind: 'success' }) })
-    const session = ctx.sessions.create(SessionId('owner-a'))
-    const agent: Agent = {
-      id: session.id, session, ctx, options: {}, inbox: createInboxStub(), status: 'idle',
-      send() {}, followup() {}, steer() {}, inject() {}, cancel() {}, whenIdle: async () => {},
-      runMaintenance: task => task(new AbortController().signal),
-    }
-    const call = vi.fn(async (_args: Record<string, unknown>) => ({ content: [{ type: 'text', text: 'ok' }] }))
-    for (const rawName of ['case_read', 'debug_run']) ctx.tools.register(createMcpToolDefinition(ctx, {
-      name: rawName, rawName, metadataServerName: 'runtime', sessionIdMetadataKey: 'taskId', requiredToolCallPolicies: ['openubmc-session-authority'], toolCallTimeoutMs: 11000, description: rawName,
-      inputSchema: { type: 'object' }, call,
-    }))
-    const execute = (owner: Agent, name: string, args: object = {}) => ctx.tools.execute({
-      name, callId: ToolCallId('ownership-call'), arguments: args, agent: owner, signal: new AbortController().signal,
-    })
-    await ctx.commands.execute(agent, '/noop', [], new AbortController().signal)
-    expect((await execute(agent, 'case_read', { case_id: 'foreign' })).isError).toBe(true)
+    const commandId = CommandId('legacy-grant')
+    b.session.append('command/run', { commandId, name: 'target-authorize', args: 'debug_run', source: { kind: 'user' } })
+    b.session.append('command/done', { commandId, kind: 'success' })
+    const call = vi.fn(async () => response())
+    b.register('execute', call)
+    expect(b.ctx.sessionProjections.stateOf(b.session, 'openubmc/runtime')!.operations).toEqual([])
+    expect((await b.execute('execute', { kind: 'start' })).isError).toBe(true)
     expect(call).not.toHaveBeenCalled()
-    expect((await execute(agent, 'case_read')).isError).toBe(false)
-    expect(call.mock.calls.at(-1)?.[0]).toEqual({ case_id: runtime.sessionCaseId(session.id) })
-    expect((await execute(agent, 'debug_run')).isError).toBe(true)
-    expect((await ctx.commands.execute(agent, '/target-authorize debug_run', [], new AbortController().signal))?.result.kind).toBe('success')
-    expect((await execute(agent, 'debug_run')).isError).toBe(false)
-    const replaceCase = ctx.on('mcp/tool-call', (request, next) => {
-      request.arguments = { case_id: 'foreign' }
-      return next()
-    })
-    const callsBefore = call.mock.calls.length
-    expect((await execute(agent, 'debug_run')).isError).toBe(true)
-    expect(call).toHaveBeenCalledTimes(callsBefore)
-    replaceCase()
-    await expect(ctx.commands.execute(agent, '/target-authorize unsupported', [], new AbortController().signal)).rejects.toThrow('Usage:')
-    expect((await execute(agent, 'debug_run')).isError).toBe(false)
-    expect((await ctx.commands.execute(agent, '/target-authorize revoke', [], new AbortController().signal))?.result.kind).toBe('success')
-    expect((await execute(agent, 'debug_run')).isError).toBe(true)
-    await ctx.commands.execute(agent, '/target-authorize debug_run', [], new AbortController().signal)
-    for (const [name, serverName, key] of [
-      ['runtime_status', 'runtime', 'taskId'], ['unknown', 'runtime', 'taskId'],
-      ['no-key', 'runtime', undefined], ['unprotected', 'other', undefined],
-    ] as const) ctx.tools.register(createMcpToolDefinition(ctx, {
-      name, rawName: name, serverName, ...(key === undefined ? {} : { sessionIdMetadataKey: key }), description: name,
-      ...(serverName === 'runtime' ? { requiredToolCallPolicies: ['openubmc-session-authority'], toolCallTimeoutMs: 11000 } : {}),
-      inputSchema: { type: 'object' }, call,
-    }))
-    expect((await execute(agent, 'runtime_status')).isError).toBe(false)
-    expect((await execute(agent, 'runtime_status', { case_id: runtime.sessionCaseId(session.id) })).isError).toBe(false)
-    const alterStatus = ctx.on('mcp/tool-call', (request, next) => { request.arguments = { case_id: 'foreign' }; return next() })
-    expect((await execute(agent, 'runtime_status')).isError).toBe(true)
-    alterStatus()
-    expect((await execute(agent, 'unknown')).isError).toBe(true)
-    expect((await execute(agent, 'no-key')).isError).toBe(true)
-    expect((await execute(agent, 'unprotected', { case_id: 'foreign' })).isError).toBe(false)
-    expect((await ctx.tools.execute({ name: 'case_read', callId: ToolCallId('no-agent'), arguments: {}, signal: new AbortController().signal })).isError).toBe(true)
-    const absent = vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValueOnce(undefined)
-    try {
-      expect((await execute(agent, 'debug_run')).isError).toBe(true)
-    } finally {
-      absent.mockRestore()
-    }
-    const authority = ctx.sessionProjections.stateOf(session, 'openubmc/runtime')
-    const absentAtDispatch = vi.spyOn(ctx.sessionProjections, 'stateOf').mockReturnValueOnce(authority).mockReturnValueOnce(undefined)
-    try {
-      expect((await execute(agent, 'debug_run')).isError).toBe(true)
-    } finally { absentAtDispatch.mockRestore() }
-    const revokeDuringDispatch = ctx.on('mcp/tool-call', async (_request, next) => {
-      await ctx.commands.execute(agent, '/target-authorize revoke', [], new AbortController().signal)
-      return next()
-    })
-    expect((await execute(agent, 'debug_run')).isError).toBe(true)
-    revokeDuringDispatch()
-    await ctx.commands.execute(agent, '/target-authorize debug_run', [], new AbortController().signal)
-    const fork = ctx.sessions.fork(session, undefined, SessionId('owner-fork'))
-    const forkAgent = { ...agent, id: fork.id, session: fork }
-    expect((await execute(forkAgent, 'debug_run')).isError).toBe(true)
-    expect((await execute(forkAgent, 'case_read', { case_id: runtime.sessionCaseId(session.id) })).isError).toBe(true)
-    expect((await execute(forkAgent, 'case_read')).isError).toBe(false)
-    expect(call.mock.calls.at(-1)?.[0]).toEqual({ case_id: runtime.sessionCaseId(fork.id) })
-    await fiber.dispose()
-    expect(await ctx.commands.execute(agent, '/target-authorize debug_run', [], new AbortController().signal)).toBeUndefined()
-    expect(ctx.sessionProjections.stateOf(session, 'openubmc/runtime')).toBeUndefined()
-    expect((await execute(agent, 'case_read', { case_id: 'foreign' })).isError).toBe(true)
-    expect(JSON.stringify((await execute(agent, 'case_read')).content)).toContain('Required MCP tool-call policy is unavailable')
-    await ctx.plugin(runtime, { serverName: 'runtime', operationDeadlineSeconds: 10, completionGraceMs: 1000, workflowMaxSteps: 1, evidenceReadLimitBytes: 65536 })
-    expect((await execute(agent, 'case_read')).isError).toBe(false)
-  } finally {
-    await ctx.fiber.dispose()
-  }
+  } finally { await b.ctx.fiber.dispose() }
+})
+
+it('binds multiple Runtime-issued Runs, rejects foreign access and restores authority only in the original Session', async () => {
+  const b = await bench()
+  let seed
+  try {
+    let index = 0
+    const call = vi.fn(async () => response(`run-${++index}`))
+    b.register('execute', call)
+    b.register('observe', async () => ({ content: [{ type: 'text', text: 'observation' }] }))
+    b.register('workflow.next', call)
+    expect((await b.execute('observe')).isError).toBe(false)
+    expect((await b.execute('execute', { kind: 'start' })).isError).toBe(true)
+    expect(call).not.toHaveBeenCalled()
+    await b.command('/target-authorize execute')
+    expect((await b.execute('execute', { kind: 'start' })).isError).toBe(false)
+    expect((await b.execute('execute', { kind: 'start' })).isError).toBe(false)
+    expect(Object.keys(b.ctx.sessionProjections.stateOf(b.session, 'openubmc/runtime')!.runs)).toEqual(['run-1', 'run-2'])
+    expect((await b.execute('execute', { kind: 'resume', run_id: 'foreign' })).isError).toBe(true)
+    expect((await b.execute('execute', { kind: 'start', case_id: 'legacy' })).isError).toBe(true)
+    expect((await b.execute('workflow.next')).isError).toBe(true)
+    const fork = b.ctx.sessions.fork(b.session, undefined, SessionId('fork-agent'))
+    const forkAgent = { ...b.agent, id: fork.id, session: fork }
+    await b.command('/target-authorize execute', forkAgent)
+    expect((await b.execute('execute', { kind: 'resume', run_id: 'run-1' }, forkAgent)).isError).toBe(true)
+    expect((await b.execute('execute', { kind: 'start' }, forkAgent)).isError).toBe(false)
+    await b.command('/target-authorize revoke')
+    expect((await b.execute('execute', { kind: 'resume', run_id: 'run-1' })).isError).toBe(true)
+    await b.command('/target-authorize execute')
+    seed = b.session.snapshotEvents()
+  } finally { await b.ctx.fiber.dispose() }
+  const restored = await bench(seed)
+  try {
+    restored.register('execute', async () => response('run-1'))
+    expect((await restored.execute('execute', { kind: 'resume', run_id: 'run-1' })).isError).toBe(false)
+  } finally { await restored.ctx.fiber.dispose() }
+})
+
+it('rechecks authority and Run/Gate arguments after middleware and fails closed during unload', async () => {
+  const b = await bench()
+  try {
+    const call = vi.fn(async () => response())
+    b.register('execute', call)
+    await b.command('/target-authorize execute')
+    await b.execute('execute', { kind: 'start' })
+    const mutate = b.ctx.on('mcp/tool-call', (request, next) => { request.arguments = { kind: 'resume', run_id: 'foreign' }; return next() })
+    expect((await b.execute('execute', { kind: 'resume', run_id: 'run-owned' })).isError).toBe(true)
+    mutate()
+    const revoke = b.ctx.on('mcp/tool-call', async (_request, next) => { await b.command('/target-authorize revoke'); return next() })
+    expect((await b.execute('execute', { kind: 'resume', run_id: 'run-owned' })).isError).toBe(true)
+    revoke()
+    await b.fiber.dispose()
+    expect((await b.execute('execute', { kind: 'start' })).isError).toBe(true)
+    expect(call).toHaveBeenCalledTimes(1)
+  } finally { await b.ctx.fiber.dispose() }
 })

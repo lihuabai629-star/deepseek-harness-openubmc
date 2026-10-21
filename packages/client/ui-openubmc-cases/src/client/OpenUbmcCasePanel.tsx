@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { DisclosureRow, IconChevronRightOutlineRegular, StateDot, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { OpenUbmcCaseChatData } from './definition.ts'
-import type { CaseInspectionActions } from './index.ts'
 import css from './OpenUbmcCasePanel.module.css'
 
-export type OpenUbmcCasePanelProps = PropsRuntime<'conversation.chat.node', 'openubmc-case'> & PropsLocale<'openubmcCases'> & InjectFace<CaseInspectionActions>
+export type OpenUbmcCasePanelProps = PropsRuntime<'conversation.chat.node', 'openubmc-case'> & PropsLocale<'openubmcCases'>
 
 function dot(status: string, failed: boolean): StateDotState {
   if (failed) return 'error'
@@ -26,23 +25,9 @@ function listSection(label: string, values: readonly unknown[], none: string) {
 }
 
 /** Display persisted Case facts; it provides no device-changing controls. */
-export function OpenUbmcCasePanel({ node, useProjection, t, refreshCase, readEvidence }: OpenUbmcCasePanelProps) {
+export function OpenUbmcCasePanel({ node, useProjection, t }: OpenUbmcCasePanelProps) {
   const data: OpenUbmcCaseChatData = node.data
-  const alive = useRef(true)
-  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
   const [open, setOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const inspect = async (action: () => Promise<string | null>) => {
-    setBusy(true); setError(null)
-    try {
-      const error = await action()
-      if (alive.current) setError(error)
-    } catch (failure) {
-      if (alive.current) setError(failure instanceof Error ? failure.message : String(failure))
-    }
-    finally { if (alive.current) setBusy(false) }
-  }
   const view = useProjection('openubmc/cases')
   const observed = view?.cases.find(item => item.caseId === data.caseId)
   const inherited = node.anchorSeq < (view?.inheritedEventCount ?? 0)
@@ -60,12 +45,7 @@ export function OpenUbmcCasePanel({ node, useProjection, t, refreshCase, readEvi
       {listSection(t('artifacts'), data.artifacts, t('none'))}
       {listSection(t('actions'), data.nextActions, t('none'))}
       {data.evidenceBody === null ? null : <pre className={css.values}>{data.evidenceBody}</pre>}
-      <div className={css.meta}><button type="button" disabled={busy || inherited} onClick={() => { void inspect(refreshCase) }}>{t('refresh')}</button>
-        {data.evidence.map((value, index) => {
-          const id = typeof value === 'object' && value !== null && !Array.isArray(value) ? value.evidence_id : undefined
-          return typeof id !== 'string' ? null : <button type="button" key={index} disabled={busy || inherited} onClick={() => { void inspect(() => readEvidence(id)) }}>{t('readEvidence', { value: id })}</button>
-        })}
-      </div>{error === null ? null : <p role="alert">{error}</p>}
+
     </DisclosureRow>
   </section>
 }

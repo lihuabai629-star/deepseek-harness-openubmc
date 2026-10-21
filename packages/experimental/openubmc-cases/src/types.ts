@@ -7,6 +7,22 @@ import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 /** Runtime-owned Case identity, admitted from protocol JSON. */
 export type OpenUbmcCaseId = Branded<'openubmc.case'>
 
+/** Runtime-issued semantic Run identity. */
+export type OpenUbmcRunId = Branded<'openubmc.run'>
+
+/** Opaque identity of a returned Run or observation receipt. */
+export type OpenUbmcAgentResultId = Branded<'openubmc.agent-result'>
+
+/** Complete last returned Agent result; Runtime remains the state authority. */
+export interface OpenUbmcAgentObservation {
+  id: OpenUbmcAgentResultId
+  kind: 'run' | 'observation'
+  document: Record<string, JsonValue>
+  isError: boolean
+  inherited: boolean
+  observedAtSeq: SessionSeq
+}
+
 /** Latest observed result for one Case; this carries no execution authorization. */
 export interface OpenUbmcCaseObservation {
   caseId: OpenUbmcCaseId
@@ -33,6 +49,8 @@ export interface OpenUbmcCasesView {
   /** Fork prefix provided with the wire view for historical observation labels. */
   inheritedEventCount?: SessionLogOffset | undefined
   cases: OpenUbmcCaseObservation[]
+  /** Last returned Turns and receipts, including failure and recovery details. */
+  agentResults?: OpenUbmcAgentObservation[] | undefined
   failure: string | null
 }
 
@@ -52,7 +70,7 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
   }
 }
 
-/** Read-only native inspection, independent of the model transcript. */
+/** Native Runtime query or continuation result, independent of the model transcript. */
 export interface OpenUbmcInspection {
   commandId: CommandId
   message: { isError: boolean }
@@ -61,7 +79,7 @@ export interface OpenUbmcInspection {
 
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
-    /** Native Case/evidence query results outside the model transcript. */
+    /** Native Runtime query and continuation results outside the model transcript. */
     'openubmc/inspection': OpenUbmcInspection
   }
 }

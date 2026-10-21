@@ -23,7 +23,11 @@
       "default": "./lib/types/types.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./agent": {
+      "types": "./lib/types/agent.d.ts",
+      "default": "./lib/types/agent.js"
+    }
   },
   "files": [
     "lib/index.js",

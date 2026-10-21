@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-openubmc-cases/README.md
 /:
-  en: 6cda09557187b5d1
-  zh: aa37fbe85592e8a3
+  en: 120caaad1301ac96
+  zh: ca6f5cd5ea71c07e
 /deepseek-ai-dsh-client-ui-openubmc-cases:
   en: 74b96027351d0b58
   zh: 056ebf5105423478
@@ -15,17 +15,17 @@
   en: 5a2f04891c315be3
   zh: f10dbec7e373c258
 /deepseek-ai-dsh-client-ui-openubmc-cases/configuration-and-inspection:
-  en: 1d5bbfc67ff5d6f8
-  zh: d4870e72f6b87ccb
+  en: 2973f3ec3fb40d77
+  zh: bcb5903b619b7e0b
 /deepseek-ai-dsh-client-ui-openubmc-cases/dev-note:
-  en: bdea05ef431db24f
-  zh: fd0d469a4af7caeb
+  en: 6a83657f05dc0178
+  zh: 9c457ed0934c201e
 /deepseek-ai-dsh-client-ui-openubmc-cases/model-experience:
-  en: 801ad0f41dc4658d
-  zh: 658c9a299b328abf
+  en: c5d9a81daa84e6be
+  zh: e76af5bad543021f
 /deepseek-ai-dsh-client-ui-openubmc-cases/model-experience/kv-cache-effect:
   en: 7071dff1af186b6c
   zh: 1f3287e5db936d15
 /deepseek-ai-dsh-client-ui-openubmc-cases/known-limitations-and-deferred-work:
-  en: f4a62ad088300af4
-  zh: 3c7b3d78bbdedaa0
+  en: a82aed6cd8fd74da
+  zh: 81d2318ae60ac201

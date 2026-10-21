@@ -1056,7 +1056,7 @@ export interface InspectorOptions {
 ## `@deepseek-ai/dsh-experimental-openubmc-cases`
 
 - `inject`: `sessionProjections` · `commands`
-- `source`: [`packages/experimental/openubmc-cases/src/index.ts:18`](../packages/experimental/openubmc-cases/src/index.ts)
+- `source`: [`packages/experimental/openubmc-cases/src/index.ts:20`](../packages/experimental/openubmc-cases/src/index.ts)
 
 ```ts config-catalog
 /** Selects the trusted metadata source in the durable Session log. */
@@ -1072,22 +1072,20 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-experimental-openubmc-runtime`
 
-- `inject`: `commands` · `sessionProjections` · `tools`
-- `source`: [`packages/experimental/openubmc-runtime/src/index.ts:25`](../packages/experimental/openubmc-runtime/src/index.ts)
+- `inject`: `commands` · `sessionProjections` · `tools` · `systemPrompt`
+- `source`: [`packages/experimental/openubmc-runtime/src/index.ts:28`](../packages/experimental/openubmc-runtime/src/index.ts)
 
 ```ts config-catalog
-/** Exact Runtime namespace protected by this adapter. */
+/** Caller wait budgets for the Agent gateway. */
 export interface Config {
-  /** MCP server configured with trusted Session metadata. */
+  /** Exact MCP namespace protected by this adapter. */
   serverName: string
-  /** Maximum domain deadline admitted for a device operation, in seconds. */
+  /** Bounded execute wait in seconds; Runtime owns long-running work. */
   operationDeadlineSeconds: number
-  /** Additional MCP wait beyond the bounded domain work, in milliseconds. */
+  /** Bounded observation wait in seconds. */
+  observationDeadlineSeconds: number
+  /** MCP completion allowance beyond the caller wait, in milliseconds. */
   completionGraceMs: number
-  /** Maximum automatic Runtime operations in one workflow request (protocol limit 64). */
-  workflowMaxSteps: number
-  /** Maximum bytes requested by a native evidence inspection. */
-  evidenceReadLimitBytes: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-openubmc-runtime -->

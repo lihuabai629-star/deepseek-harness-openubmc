@@ -1,76 +1,81 @@
 {
   "final_response": "SDK_INSPECTION_OK",
   "inspection_in_run_events": 0,
-  "inspection_notifications": 1,
-  "inspection": {
-    "commandId": "{{command:1}}",
-    "message": {
-      "isError": false
-    },
-    "meta": {
-      "mcp": {
-        "serverName": "openubmc-target-runtime",
-        "toolName": "case_read",
-        "structuredContent": {
-          "schema": "openubmc.target-runtime.v1/context-runtime",
-          "case_id": "case-sdk-inspection",
-          "revision": 4,
-          "status": "active",
-          "operations": [],
-          "mutation_outcome_unknown_operations": {},
-          "workflow_inputs": {
-            "deadline": 10
-          },
-          "phase_records": [
-            {
-              "phase_type": "build.artifact",
-              "status": "completed"
-            }
-          ],
-          "evidence_refs": [
-            {
-              "evidence_id": "evidence-1",
-              "kind": "diagnostic"
-            }
-          ],
-          "next_actions": [
-            "inspect diagnostic"
-          ],
-          "agent_envelope": {
-            "schema": "openubmc.target-runtime.v1/agent-envelope",
-            "case_id": "case-sdk-inspection",
-            "revision": 4,
-            "status": "completed",
-            "operation": {
-              "name": "case_read",
-              "status": "completed"
+  "inspection_notifications": 2,
+  "inspections": [
+    {
+      "commandId": "{{command:1}}",
+      "message": {
+        "isError": false
+      },
+      "meta": {
+        "mcp": {
+          "serverName": "openubmc-target-runtime",
+          "toolName": "observe",
+          "structuredContent": {
+            "schema": "openubmc.target-runtime.v1/agent-gateway-v1/observation-receipt",
+            "receipt_id": "observation-sdk",
+            "status": "complete",
+            "coverage": {
+              "requested": 1,
+              "available": 1,
+              "unavailable": 0,
+              "not_checked": 0,
+              "complete": true
             },
-            "evidence_refs": [
-              {
-                "evidence_id": "evidence-1",
-                "kind": "diagnostic"
+            "freshness": {
+              "mode": "live",
+              "max_age_seconds": 0,
+              "status": "live",
+              "observed_at": "2026-10-19T00:00:00Z"
+            },
+            "results": {
+              "ssh": {
+                "kind": "capability",
+                "values": [
+                  {
+                    "name": "ssh",
+                    "status": "available"
+                  }
+                ]
               }
-            ],
-            "next_actions": [
-              "inspect diagnostic"
-            ],
-            "capsule": {
-              "schema": "openubmc.target-runtime.v1/context-runtime/capsule",
-              "case_id": "case-sdk-inspection",
-              "case_revision": 4,
-              "status": "active",
-              "artifact_revisions": [
-                {
-                  "artifact_sha256": "offline-digest"
-                }
-              ],
-              "next_actions": [
-                "inspect diagnostic"
-              ]
-            }
+            },
+            "gaps": [],
+            "evidence": [
+              {
+                "uri": "receipt://observation-sdk#ssh"
+              }
+            ]
           }
         }
       }
+    },
+    {
+      "commandId": "{{command:2}}",
+      "message": {
+        "isError": true
+      },
+      "meta": {
+        "mcp": {
+          "serverName": "openubmc-target-runtime",
+          "toolName": "execute",
+          "dispatchStatus": "not-started"
+        }
+      }
     }
-  }
+  ],
+  "authorization_in_run_events": 1,
+  "authorization_notifications": 1,
+  "authorizations": [
+    {
+      "callId": "{{tool-call:1}}",
+      "arguments": {
+        "kind": "start",
+        "target": "192.0.2.10",
+        "intent": "diagnose-and-fix",
+        "delivery_strategy": "source-only",
+        "deadline": 10
+      }
+    }
+  ]
 }

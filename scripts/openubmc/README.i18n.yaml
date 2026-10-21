@@ -8,21 +8,24 @@
 /openubmc-development-profile:
   en: 355370eb7bd7f74d
   zh: 1adbc9c790c5bbc7
+/openubmc-development-profile/distribute-an-installable-plugin:
+  en: d677d36debfc0ce4
+  zh: 5a0c4fa5cfd3fd43
 /openubmc-development-profile/create-and-launch:
-  en: 46fd434a00bc40f6
-  zh: f69517661a18868b
+  en: 32e5b7e9db073bcc
+  zh: dbfcdf8d54033ab7
 /openubmc-development-profile/offline-startup-check:
-  en: 035b33e42c16f7be
-  zh: 9b67caf263e21d9e
+  en: f829242cb8156205
+  zh: 8486984d23d98eca
 /openubmc-development-profile/identity-and-recovery:
-  en: 2b810a52e8be93ba
-  zh: c548309a62111b8a
+  en: b7b723fbd555b44a
+  zh: bfe0327eb341b8c8
 /openubmc-development-profile/credentials-and-limitations:
-  en: 4201b4748825130a
-  zh: 18e7d0c934b37bb5
+  en: 735ca3cab1a3ae19
+  zh: 8c4d8bb385de2e10
 /openubmc-development-profile/managed-profile-lifecycle:
-  en: e4f3037b8266e224
-  zh: f7dc18c7ef96d428
+  en: 21471c7a302fef5a
+  zh: 79aa68f42ccd74d8
 /openubmc-development-profile/service-staging:
-  en: ee9a38a5bf647812
-  zh: ad86c2ebb643011a
+  en: db7bb7cdb6dc5a9e
+  zh: 567ad4f1bb349e5f

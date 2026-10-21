@@ -7,8 +7,10 @@ from pathlib import Path
 import shutil
 
 
-def initialize(workflow: Path, home: Path, template: str, node: str, python: str) -> None:
+def initialize(workflow: Path, home: Path, template: str, node: str, python: str, *, case_ui: bool = False) -> None:
     """Create a fresh home; never modify an existing deployment or workflow checkout."""
+    if case_ui and template != "web":
+        raise ValueError("--case-ui requires --template web")
     case_package = "@deepseek-ai/dsh-experimental-openubmc-cases"
     runtime_package = "@deepseek-ai/dsh-experimental-openubmc-runtime"
     case_ui_package = "@deepseek-ai/dsh-client-ui-openubmc-cases"
@@ -17,7 +19,7 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
     case_ui_source = Path(__file__).resolve().parents[2] / "packages/client/ui-openubmc-cases"
     if not (case_source / "package.json").is_file():
         raise ValueError(f"Missing native Case package: {case_source}")
-    if template == "web" and not (case_ui_source / "package.json").is_file():
+    if case_ui and not (case_ui_source / "package.json").is_file():
         raise ValueError(f"Missing native Case Web package: {case_ui_source}")
     manifest = json.loads((workflow / "workflow.json").read_text())
     mapping = {entry["name"]: workflow / entry["path"] for entry in manifest["skills"]}
@@ -53,17 +55,17 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
         module_root.mkdir(parents=True)
         (module_root / "dsh-experimental-openubmc-cases").symlink_to(case_source, target_is_directory=True)
         (module_root / "dsh-experimental-openubmc-runtime").symlink_to(runtime_source, target_is_directory=True)
-        if template == "web":
+        if case_ui:
             (module_root / "dsh-client-ui-openubmc-cases").symlink_to(case_ui_source, target_is_directory=True)
         (profile / "package.json").write_text(json.dumps({
             "name": "dsh-profile-openubmc", "private": True, "type": "module",
             "dependencies": {case_package: f"link:{case_source}", runtime_package: f"link:{runtime_source}",
-                              **({case_ui_package: f"link:{case_ui_source}"} if template == "web" else {})},
+                              **({case_ui_package: f"link:{case_ui_source}"} if case_ui else {})},
             "dsh": {"profile": {"bundles": ["@deepseek-ai/dsh-base", f"@deepseek-ai/dsh-{bundle}"]}},
         }, indent=2) + "\n")
         entries = [
             {"id": "openubmc-runtime", "name": runtime_package, "config": {"serverName": "openubmc-target-runtime",
-                "operationDeadlineSeconds": 600, "completionGraceMs": 60000, "workflowMaxSteps": 1, "evidenceReadLimitBytes": 65536}},
+                "operationDeadlineSeconds": 120, "observationDeadlineSeconds": 180, "completionGraceMs": 10000}},
             {"id": "openubmc-cases", "name": "@deepseek-ai/dsh-experimental-openubmc-cases",
              "config": {"serverName": "openubmc-target-runtime"}},
             {"id": "openubmc-target-runtime", "name": "@deepseek-ai/dsh-mcp-client", "config": {
@@ -71,8 +73,8 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
                 "args": [str(Path(__file__).with_name("runtime_stdio.py")), "--entry", str(runtime)], "cwd": str(workflow), "sessionIdMetadataKey": "taskId",
                 "structuredContentInText": True, "structuredContentInMeta": True,
                 "requiredToolCallPolicies": ["openubmc-session-authority"],
-                "toolCallTimeoutMs": 660000, "failOnStartupError": True,
-                "env": {"OPENUBMC_TARGET_RUNTIME_STATE_DIR": str(home / "openubmc-state"),
+                "toolCallTimeoutMs": 190000, "failOnStartupError": True,
+                "env": {"OPENUBMC_TARGET_RUNTIME_INTERFACE_PROFILE": "agent", "OPENUBMC_TARGET_RUNTIME_STATE_DIR": str(home / "openubmc-agent-state"),
                         "OPENUBMC_CREDENTIALS_FILE": str(home / "credentials.env")},
             }},
             {"id": "openubmc-kb", "name": "@deepseek-ai/dsh-mcp-client", "config": {
@@ -80,7 +82,7 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
                 "args": [str(kb)], "cwd": str(kb.parent.parent), "failOnStartupError": True,
             }},
         ]
-        if template == "web": entries.insert(0, {"id": "openubmc-case-ui", "name": case_ui_package, "config": {"serverName": "openubmc-target-runtime"}})
+        if case_ui: entries.insert(0, {"id": "openubmc-case-ui", "name": case_ui_package, "config": {"serverName": "openubmc-target-runtime"}})
         patch = [
             {"id": "skill-filesystem", "config": {
                 "includeDefaultRoots": False, "customSkillDirs": [str(skills)], "watch": False,
@@ -102,10 +104,11 @@ def main() -> None:
     parser.add_argument("--workflow", type=Path, required=True)
     parser.add_argument("--home", type=Path, required=True)
     parser.add_argument("--template", choices=["headless", "web"], default="headless")
+    parser.add_argument("--case-ui", action="store_true", help="Add optional diagnostic cards to the Web conversation")
     parser.add_argument("--node", required=True)
     parser.add_argument("--python", default="python3")
     args = parser.parse_args()
-    initialize(args.workflow.resolve(), args.home.absolute(), args.template, args.node, args.python)
+    initialize(args.workflow.resolve(), args.home.absolute(), args.template, args.node, args.python, case_ui=args.case_ui)
 
 
 if __name__ == "__main__":

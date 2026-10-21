@@ -2,5 +2,5 @@
 {"type":"permission/preset","data":{"preset":"danger-full-access"}}
 {"type":"sandbox/mode","data":{"mode":"danger-full-access"}}
 {"type":"approval/policy","data":{"policy":"never"}}
-{"type":"command/run","data":{"commandId":"{{command:1}}","name":"target-authorize","args":" debug_run","source":{"kind":"user"}}}
-{"type":"command/done","data":{"commandId":"{{command:1}}","kind":"success","text":"Target execution authorized for this Session: debug_run."}}
+{"type":"command/run","data":{"commandId":"{{command:1}}","name":"target-authorize","args":" execute","source":{"kind":"user"}}}
+{"type":"command/done","data":{"commandId":"{{command:1}}","kind":"success","text":"Target execution authorized for this Session: execute."}}

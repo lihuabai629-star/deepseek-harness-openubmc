@@ -301,26 +301,17 @@
       }
     },
     {
-      "name": "mcp__openubmc-target-runtime__case_read",
-      "description": "Read recorded Case state.",
+      "name": "mcp__openubmc-target-runtime__execute",
+      "description": "execute",
       "parameters": {
-        "type": "object",
-        "properties": {
-          "case_id": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "case_id"
-        ]
+        "type": "object"
       }
     },
     {
-      "name": "mcp__openubmc-target-runtime__debug_run",
-      "description": "Read diagnostic state.",
+      "name": "mcp__openubmc-target-runtime__observe",
+      "description": "observe",
       "parameters": {
-        "type": "object",
-        "properties": {}
+        "type": "object"
       }
     },
     {

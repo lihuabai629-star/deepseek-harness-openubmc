@@ -7,8 +7,7 @@
         serverName: openubmc-target-runtime
         operationDeadlineSeconds: 10
         completionGraceMs: 1000
-        workflowMaxSteps: 1
-        evidenceReadLimitBytes: 1024
+        observationDeadlineSeconds: 10
     - id: openubmc-mcp
       name: '@deepseek-ai/dsh-mcp-client'
       config:

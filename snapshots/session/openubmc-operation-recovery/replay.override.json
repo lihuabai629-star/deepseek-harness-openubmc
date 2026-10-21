@@ -13,8 +13,8 @@
         "block": {
           "type": "tool-call",
           "id": "lost",
-          "name": "mcp__openubmc-target-runtime__upgrade_run",
-          "arguments": "{}"
+          "name": "mcp__openubmc-target-runtime__execute",
+          "arguments": "{\"kind\":\"start\",\"intent\":\"diagnose-and-fix\",\"target\":\"192.0.2.10\",\"delivery_strategy\":\"source-only\"}"
         }
       },
       {
@@ -46,8 +46,8 @@
         "block": {
           "type": "tool-call",
           "id": "blind-retry",
-          "name": "mcp__openubmc-target-runtime__upgrade_run",
-          "arguments": "{}"
+          "name": "mcp__openubmc-target-runtime__execute",
+          "arguments": "{\"kind\":\"start\",\"intent\":\"diagnose-and-fix\",\"target\":\"192.0.2.10\",\"delivery_strategy\":\"source-only\"}"
         }
       },
       {
@@ -79,8 +79,8 @@
         "block": {
           "type": "tool-call",
           "id": "read",
-          "name": "mcp__openubmc-target-runtime__case_read",
-          "arguments": "{}"
+          "name": "mcp__openubmc-target-runtime__observe",
+          "arguments": "{\"target\":\"192.0.2.10\",\"selectors\":[{\"id\":\"ssh\",\"kind\":\"capability\",\"names\":[\"ssh\"]}]}"
         }
       },
       {
@@ -112,8 +112,8 @@
         "block": {
           "type": "tool-call",
           "id": "no-new-grant",
-          "name": "mcp__openubmc-target-runtime__upgrade_run",
-          "arguments": "{}"
+          "name": "mcp__openubmc-target-runtime__execute",
+          "arguments": "{\"kind\":\"start\",\"intent\":\"diagnose-and-fix\",\"target\":\"192.0.2.10\",\"delivery_strategy\":\"source-only\"}"
         }
       },
       {
@@ -145,8 +145,8 @@
         "block": {
           "type": "tool-call",
           "id": "recovered",
-          "name": "mcp__openubmc-target-runtime__upgrade_run",
-          "arguments": "{}"
+          "name": "mcp__openubmc-target-runtime__execute",
+          "arguments": "{\"kind\":\"start\",\"intent\":\"diagnose-and-fix\",\"target\":\"192.0.2.10\",\"delivery_strategy\":\"source-only\"}"
         }
       },
       {
@@ -177,7 +177,7 @@
         "index": 0,
         "block": {
           "type": "text",
-          "text": "Case records were read before a new human grant permitted continuation."
+          "text": "The unacknowledged start was recovered with its original operation identity."
         }
       },
       {
