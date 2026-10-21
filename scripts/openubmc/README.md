@@ -105,6 +105,8 @@ The [native conversation record](qualification/2026-10-19-native-conversation.js
 
 The [native business qualification record](qualification/2026-10-20-business.json) covers source-to-bytecode matching, two Apply operations and observed NC-SI diagnostic execution. An operator restored the original backup through guarded compensation; Runtime reconciliation and native DSH resume confirmed completion on the existing rollback Run and Effect. The record retains pre-existing NC-SI errors and four disconnected ports; it does not qualify fully automatic business rollback or firmware activation.
 
+The separate [native recovery qualification record](qualification/2026-10-20-recovery.json) covers business Apply and explicit Rollback without operator compensation, followed by fresh checks of the original checksum, metadata, framework and four ports. A controlled loss of a verified temporary-file rollback reply and two rejected recovery calls retain one Run and Effect across three Runtime processes; the final reconciliation completes with one mutation dispatch. Terminal journal replay accepts verified absence without raw callback payloads. The scripted driver and deliberate fault are recorded separately from real-model autonomy, portable Host qualification and firmware activation.
+
 ## Service staging
 
 A source CLI wrapper that preserves the caller’s working directory must set `TSX_TSCONFIG_PATH` to the snapshot’s `tsconfig.json` and load the snapshot’s `tsx/esm` hook. Workspace imports depend on those source mappings; an absolute CLI path alone does not select them.

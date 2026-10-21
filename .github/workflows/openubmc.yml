@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
-          ref: aed2f4e98c243d927f0f35adb55f775dff514e81
+          ref: 67288ab4e9c0c3a1eb3b907399de9769a0425803
           path: .ci-runtime
           persist-credentials: false
       - name: Isolate pinned Runtime source
@@ -118,7 +118,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
-          ref: aed2f4e98c243d927f0f35adb55f775dff514e81
+          ref: 67288ab4e9c0c3a1eb3b907399de9769a0425803
           path: .ci-runtime
           persist-credentials: false
       - name: Isolate pinned Runtime source
@@ -180,7 +180,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
-          ref: aed2f4e98c243d927f0f35adb55f775dff514e81
+          ref: 67288ab4e9c0c3a1eb3b907399de9769a0425803
           path: .ci-runtime
           persist-credentials: false
       - name: Isolate pinned Runtime source

@@ -105,6 +105,8 @@ python3 scripts/openubmc/manage.py uninstall --home /tmp/dsh-openubmc-managed
 
 [原生业务验证记录](qualification/2026-10-20-business.json)覆盖源码与字节码匹配、两次 Apply 和已观察到的 NC-SI 诊断执行。操作员通过受校验保护的补偿恢复原备份；Runtime 核对与 DSH 原生 resume 确认既有回退 Run 和 Effect 已完成。该记录保留既有 NC-SI 错误和四个端口断开状态，不验证全自动业务回退或固件激活。
 
+独立的[原生恢复验证记录](qualification/2026-10-20-recovery.json)覆盖了无需操作员补偿的业务 Apply 和显式 Rollback，随后重新核查原始校验值、元数据、框架和四个端口。受控丢弃已验证的临时文件回退回执，并拒绝前两次恢复调用后，三个 Runtime 进程始终保留同一个 Run 和 Effect；最终核查完成，设备变更仅派发一次。终态日志重放可以在没有原始回调内容时认可已验证的文件缺失结果。记录明确区分脚本驱动、刻意注入的故障、真实模型自主执行、可移植 Host 验证和固件激活。
+
 ## 服务预部署
 
 保留调用者工作目录的源码 CLI wrapper 必须将 `TSX_TSCONFIG_PATH` 设为快照中的 `tsconfig.json`，并加载快照的 `tsx/esm` hook。工作区导入依赖这些源码映射；仅使用 CLI 绝对路径不会选中它们。

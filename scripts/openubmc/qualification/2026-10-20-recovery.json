@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-20",
+  "interface": "openubmc.target-runtime.v1/agent-gateway-v1",
+  "target": "User-supplied development BMC, Huawei BC83ETHA / SF221Q; openUBMC 25.06 / SDK 5.12.00.01",
+  "runtime": {
+    "business_revision": "aed2f4e98c243d927f0f35adb55f775dff514e81",
+    "recovery_revision": "a88e68370066e61a1c1ecf04dd1f7a9d60024924",
+    "delivery_revision": "67288ab4e9c0c3a1eb3b907399de9769a0425803",
+    "fix_pr": "https://github.com/lihuabai629-star/openubmc-agent-workflow/pull/315"
+  },
+  "execution": {
+    "path": "DSH source profile -> trusted Host authority -> MCP -> real Python Runtime -> physical target",
+    "driver": "Scripted model selecting explicit qualification actions; not a real-model autonomy qualification",
+    "isolated_home": true,
+    "operator_compensation_used": false,
+    "execution_grant_revoked": true,
+    "credentials_private_configuration_and_raw_logs_published": false,
+    "dsh_source_pr": "https://github.com/lihuabai629-star/deepseek-harness-openubmc/pull/17",
+    "exact_dsh_source_identity_retained_in_private_record": true
+  },
+  "business_file": {
+    "path": "/opt/bmc/apps/network_adapter/lualib/ncsi/ncsi_comm.lua",
+    "original_sha256": "bc47f0ca3aeab69cfec2d335ce015d1e63109a76b3a7ae026a6cc3af0a3a5e4e",
+    "diagnostic_sha256": "49781bf850ff2b2f9d81de818633f26f78b37cc9082f7f4a82724699481608cd",
+    "mode": "440",
+    "uid": 104,
+    "gid": 104,
+    "restart_scope": "skynet",
+    "apply_run_id": "run-ce330f0066520505dac876ef2c1c59a6",
+    "rollback_run_id": "run-b0148d659e63a4e887ce38e063e0867c",
+    "apply_effect_id": "op-run-9d1f8b56d75aefb16bd18bdd",
+    "rollback_effect_id": "op-run-049e884fbf6a71c1d5e9851b",
+    "apply_and_explicit_rollback_outcomes": "completed",
+    "journals": "verified",
+    "root_mount_restored": true,
+    "original_file_restored": true
+  },
+  "fresh_business_verification": {
+    "run_id": "run-b128722c76b04dcedebf288f78897b89",
+    "outcome": "completed",
+    "evidence_id": "e7f6b262f7c4be9311719546ac1724fe6181067a42f524d20fd088d1260146bf",
+    "coverage": {
+      "complete": true,
+      "completed": 7,
+      "requested": 7
+    },
+    "content_complete": true,
+    "truncated": false,
+    "framework_components": {
+      "normal": 53,
+      "total": 53
+    },
+    "adapter_and_four_ports_readable": true,
+    "port_link_states": [
+      "Disconnected",
+      "Disconnected",
+      "Disconnected",
+      "Disconnected"
+    ],
+    "preexisting_ncsi_initialization_errors_retained": true,
+    "temporary_diagnostic_absent_after_restoration": true,
+    "full_evidence_blob_examined": true
+  },
+  "controlled_lost_reply": {
+    "scope": "Checksum-guarded removal of an independently created temporary file; restart_scope=none",
+    "injection": "Drop the domain acknowledgement only after the real rollback journal is verified. Reject the first two recovery calls before domain inspection; permit the third.",
+    "run_id": "run-e98b3246dfb38815184f63bc601f4170",
+    "effect_id": "op-run-b2ce48d057e4c474dbb920d7",
+    "mutation_dispatches": 1,
+    "recovery_calls": 3,
+    "distinct_runtime_processes": 3,
+    "same_run_and_effect": true,
+    "journal_count": 1,
+    "journal_stage": "verified",
+    "expected_missing": true,
+    "epoch_before": 0,
+    "epoch_after": 1,
+    "outcome": "completed",
+    "integrity_acceptance": "passed",
+    "metadata_acceptance": "not_applicable",
+    "native_terminal_resume": "completed",
+    "terminal_resume_changed_journal": false
+  },
+  "final_independent_read_only_check": {
+    "temporary_path_and_symlink_absent": true,
+    "business_original_checksum_and_metadata_match": true,
+    "root_mount_read_only": true,
+    "supplementary_transport_read": true,
+    "device_write_performed": false
+  },
+  "retained_prior_trial": {
+    "run_id": "run-1a182bd372ff3377aed3381e51de40ed",
+    "outcome": "failed",
+    "mutation_journal": "verified",
+    "mutation_dispatches": 1,
+    "recovery_calls": 3,
+    "reason": "Terminal journal replay omitted raw mutation/verification payloads; closeout did not recognize already-verified file absence. The source fix and a separate new trial establish completion; this historical failure was not rewritten."
+  },
+  "limitations": [
+    "The fault is deliberately injected after verified domain completion; it is not a physical network outage or an interruption in the middle of a device write.",
+    "Native Apply and explicit Rollback use a scripted qualification driver. Real-model autonomy and portable-host live execution are separate qualifications.",
+    "The target retains its existing NC-SI initialization errors and disconnected ports; these checks do not establish NIC repair.",
+    "No full component/product build, HPM upload, firmware activation or firmware rollback was performed."
+  ]
+}

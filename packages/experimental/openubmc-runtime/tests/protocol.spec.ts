@@ -1,5 +1,6 @@
 /** Real upstream Agent gateway through shared stdio and a persistent DSH Session. */
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -71,6 +72,52 @@ it.skipIf(workflow === undefined)('runs native observe/start/Gate/continuation a
         }
         events = JSON.parse(JSON.stringify(b.session.snapshotEvents())) as SessionEvent[]
       } finally { await b.ctx.fiber.dispose() }
+    }
+  } finally { await rm(state, { recursive: true, force: true }) }
+}, 60_000)
+
+it.skipIf(workflow === undefined).each(['retry', 'retry-removed'])('refreshes repeated native reconciliation across restarts without dispatching the Effect again (%s)', async (scenario) => {
+  const state = await mkdtemp(join(tmpdir(), 'dsh-agent-reconcile-retry-'))
+  let events: readonly SessionEvent[] = []
+  let runId = ''
+  const artifact = join(state, 'patch.lua')
+  const body = 'return "offline recovery fixture"\n'
+  try {
+    await writeFile(artifact, body)
+    for (let generation = 0; generation < 3; generation++) {
+      const b = await bench(events)
+      try {
+        await b.ctx.plugin(mcp, { serverName: 'runtime', transport: 'stdio', command: 'python3',
+          args: [wrapper, '--entry', fixture], cwd: workflow!,
+          env: { DSH_OPENUBMC_WORKFLOW: workflow!, DSH_RECOVERY_STATE: state, DSH_RECOVERY_SCENARIO: scenario },
+          sessionIdMetadataKey: 'taskId', requiredToolCallPolicies: ['openubmc-session-authority'],
+          structuredContentInMeta: true, structuredContentInText: true, failOnStartupError: true, toolCallTimeoutMs: 21000 })
+        if (generation === 0) {
+          await b.command('/target-authorize execute')
+          const started = await b.execute('execute', { kind: 'start', intent: scenario === 'retry' ? 'live-patch' : 'rollback', target: '192.0.2.10',
+            entry_operation: 'live_patch_run', entry_arguments: { ...(scenario === 'retry' ? { local_path: artifact,
+              artifact_sha256: createHash('sha256').update(body).digest('hex'), remote_path: '/tmp/fixture.lua',
+            } : { action: 'rollback', remove_created: true, expected_current_sha256: 'a'.repeat(64), remote_path: '/tmp/fixture.lua' }),
+            mode: '600', restart_scope: 'none', mdb_only: true } })
+          expect(started.isError, JSON.stringify(started.content)).toBe(false)
+          const turn = meta.parse(started.meta).mcp.structuredContent
+          runId = z.string().parse(turn.run_id)
+          expect(turn).toMatchObject({ state: 'incident', incident: { code: 'mutation_outcome_unknown' } })
+        } else {
+          const recovered = await b.command(`/target-action ${JSON.stringify({ kind: 'control', run_id: runId, command: 'reconcile' })}`)
+          expect(recovered?.result.kind).toBe('success')
+          const inspection = b.session.snapshotEvents().findLast(event => event.type === 'openubmc/inspection')
+          if (inspection?.type !== 'openubmc/inspection') throw new Error('Native recovery result missing')
+          const turn = meta.parse(inspection.data.meta).mcp.structuredContent
+          expect(turn.run_id).toBe(runId)
+          expect(turn.state).toBe(generation === 1 ? 'incident' : 'completed')
+        }
+        events = structuredClone(b.session.snapshotEvents())
+      } finally { await b.ctx.fiber.dispose() }
+      const records = (await readFile(join(state, 'effects.jsonl'), 'utf8')).trim().split('\n')
+        .map(line => z.object({ kind: z.enum(['dispatch', 'recover']), effect_id: z.string() }).parse(JSON.parse(line)))
+      expect(records.map(record => record.kind)).toEqual(['dispatch', ...Array<string>(generation + 1).fill('recover')])
+      expect(new Set(records.map(record => record.effect_id)).size).toBe(1)
     }
   } finally { await rm(state, { recursive: true, force: true }) }
 }, 60_000)
