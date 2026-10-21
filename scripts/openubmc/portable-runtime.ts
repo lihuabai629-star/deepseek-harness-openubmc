@@ -33,6 +33,8 @@ export interface PortableRuntimeOptions {
   completionGraceMs: number
   toolCallTimeoutMs: number
   authorityLockWaitMs: number
+  /** Trusted workspace capture before a new Run; absent only in protocol fixtures. */
+  captureWorkspace?: (session: Session) => Promise<unknown>
 }
 
 /**
@@ -116,6 +118,9 @@ export async function installPortableRuntime(
           })
         }
         const signal = AbortSignal.any([request.execution.signal, stopping.signal])
+        if (request.toolName === 'execute' && request.arguments.kind === 'start') {
+          await options.captureWorkspace?.(session)
+        }
         request.metadata.taskId = session.id
         const connected = await connect()
         result = resultSchema.parse(await journal.dispatch(session, request.execution.callId, (state) => {

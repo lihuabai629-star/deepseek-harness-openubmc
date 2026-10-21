@@ -16,13 +16,15 @@ The [packaged plugin instructions](distribution/README.md) describe installation
 ```sh
 corepack pnpm exec tsx scripts/openubmc/pack.ts \
   --workflow /absolute/path/openubmc-agent-workflow \
-  --out /absolute/path/artifacts --version 0.2.0
+  --out /absolute/path/artifacts --version 0.3.0
 python3 scripts/openubmc/verify_plugin.py \
-  --archive /absolute/path/artifacts/dsh-openubmc-0.2.0.tgz \
+  --archive /absolute/path/artifacts/dsh-openubmc-0.3.0.tgz \
   --dsh /absolute/path/dsh/apps/cli/lib/bin.js
 ```
 
 The verifier uses a temporary home outside the checkout and removes the plugin after the keyless preflight. Pass `--update-archive` with a different plugin version to exercise update and restoration too. It never contacts a device or model endpoint. The [environment Skill snapshot](../../snapshots/session/openubmc-environment-skill/snapshot.yml) records the DSH-specific setup instructions delivered to the model. Existing managed profiles retain their separate lifecycle below; do not activate both integrations in one profile.
+
+`verify_web.py --archive <archive> --dsh <official-bin.js> --node <node>` checks authenticated Web assets, private configuration proxying, Origin and page-token refusals, local activation and diagnostics without target access. The portable bundle owns its configuration workers and private dependency cache. Its Host records bridge reuses the pinned Runtime stores for trusted workspace capture, test receipts, export and final delivery; Session usage remains explicitly partial. The packer overlays the source-check resources listed in `supplement/source.json` and inventories release-owned files in `integrity.json`.
 
 ## Create and launch
 

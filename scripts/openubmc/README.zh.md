@@ -16,13 +16,15 @@ kind: "tutorial"
 ```sh
 corepack pnpm exec tsx scripts/openubmc/pack.ts \
   --workflow /absolute/path/openubmc-agent-workflow \
-  --out /absolute/path/artifacts --version 0.2.0
+  --out /absolute/path/artifacts --version 0.3.0
 python3 scripts/openubmc/verify_plugin.py \
-  --archive /absolute/path/artifacts/dsh-openubmc-0.2.0.tgz \
+  --archive /absolute/path/artifacts/dsh-openubmc-0.3.0.tgz \
   --dsh /absolute/path/dsh/apps/cli/lib/bin.js
 ```
 
 验证器使用源码目录之外的临时 home，在无密钥预检后移除插件。通过 `--update-archive` 传入另一插件版本，还可验证更新与恢复。它不连接设备或模型端点。[环境 Skill 快照](../../snapshots/session/openubmc-environment-skill/snapshot.yml)记录传给模型的 DSH 专用配置说明。已有托管 profile 继续使用下文的独立生命周期；不要在同一 profile 中同时启用两种集成。
+
+`verify_web.py --archive <archive> --dsh <official-bin.js> --node <node>` 检查认证 Web 资源、私有配置代理、Origin 和页面 token 拒绝、本地激活及诊断，不访问目标。portable bundle 拥有其配置进程和私有依赖缓存。Host 记录桥复用固定版本 Runtime 存储，提供可信工作区捕获、测试回执、导出和最终交付；Session 用量明确标为不完整。打包器叠加 `supplement/source.json` 列出的源码检查资源，并在 `integrity.json` 中记录发行包自有文件清单。
 
 ## 创建和启动
 

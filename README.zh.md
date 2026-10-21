@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-本社区仓库提供 openUBMC 与 DeepSeek Harness 的集成。安装到官方 DSH 时，请使用[预构建插件发行版](https://github.com/lihuabai629-star/deepseek-harness-openubmc/releases/tag/openubmc-plugin-v0.2.0)，并参照[插件安装说明](scripts/openubmc/distribution/README.zh.md)。
+本社区仓库提供 openUBMC 与 DeepSeek Harness 的集成。安装到官方 DSH 时，请使用[预构建插件发行版](https://github.com/lihuabai629-star/deepseek-harness-openubmc/releases/tag/openubmc-plugin-v0.3.0)，并参照[插件安装说明](scripts/openubmc/distribution/README.zh.md)。
 
 DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
 
