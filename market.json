@@ -1,0 +1,64 @@
+{
+  "format": 1,
+  "title": {
+    "en": "openUBMC for DSH",
+    "zh": "openUBMC DSH 插件"
+  },
+  "description": {
+    "en": "Qualified openUBMC workflow bundles for official DSH releases.",
+    "zh": "面向官方 DSH 发行版的 openUBMC 工作流插件。"
+  },
+  "metadata": {
+    "labels": {
+      "preview": {
+        "title": {
+          "en": "Preview",
+          "zh": "预览"
+        }
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "dsh-openubmc",
+      "title": {
+        "en": "openUBMC",
+        "zh": "openUBMC"
+      },
+      "description": {
+        "en": "Native observe/execute, private account setup, durable Runs and recovery.",
+        "zh": "原生 observe/execute、私有账号配置、持久任务与恢复。"
+      },
+      "homepage": "https://github.com/lihuabai629-star/deepseek-harness-openubmc/releases/tag/openubmc-plugin-v0.3.0",
+      "repository": {
+        "url": "https://github.com/lihuabai629-star/deepseek-harness-openubmc",
+        "directory": "scripts/openubmc"
+      },
+      "metadata": {
+        "keywords": [
+          "openubmc",
+          "bmc",
+          "observe",
+          "execute"
+        ],
+        "labels": [
+          "preview"
+        ]
+      },
+      "versions": [
+        {
+          "version": "0.3.0",
+          "publishTimestamp": 1792586305,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/lihuabai629-star/deepseek-harness-openubmc.git",
+            "commit": "70241bb3cc67627feba3bdd64ef1d1a15b443398"
+          },
+          "engines": {
+            "dsh": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2"
+          }
+        }
+      ]
+    }
+  ]
+}
