@@ -28,6 +28,8 @@ python3 scripts/openubmc/verify_plugin.py \
 
 打包的 Skill 使用 `stateDir/skill-resources` 下按内容摘要寻址的私有资源。Markdown 命令将 Skill 逻辑名解析为同一版本的目录，覆盖嵌套参考文档。脚本保留源文件字节和执行权限。加载会校验已有版本并拒绝修改过的资源。软件包更新或移除会将这些资源与 Runtime 历史一起保留。
 
+便携插件包含 full 配置的文档审查和离线日志分析。原生运维命令和提供方报告配置见[安装指南](distribution/README.zh.md)。
+
 ## 创建和启动
 
 在 DSH 仓库中运行，指定一个尚不存在的 home 路径：

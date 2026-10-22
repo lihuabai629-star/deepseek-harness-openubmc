@@ -35,12 +35,17 @@ function resolveOptions(config: Config) {
   }
   const node = config.node ?? process.execPath
   if (!isAbsolute(node)) throw new Error('openUBMC config.node must be an absolute executable path.')
+  if ((config.providerReportFile === undefined) !== (config.providerRef === undefined)) {
+    throw new Error('openUBMC providerReportFile and providerRef must be configured together.')
+  }
   const required = Math.max(config.operationDeadlineSeconds, config.observationDeadlineSeconds) * 1000 + config.completionGraceMs
   if (config.toolCallTimeoutMs < required) throw new Error(`openUBMC toolCallTimeoutMs must be at least ${required}.`)
   return { node, python: config.python, kbEnabled: config.kbEnabled, authorityLockWaitMs: config.authorityLockWaitMs,
     operationDeadlineSeconds: config.operationDeadlineSeconds, observationDeadlineSeconds: config.observationDeadlineSeconds,
     completionGraceMs: config.completionGraceMs, toolCallTimeoutMs: config.toolCallTimeoutMs,
     setupTimeoutSeconds: config.setupTimeoutSeconds, configurationIdleSeconds: config.configurationIdleSeconds,
+    ...(config.providerReportFile === undefined ? {} : {
+      providerReportFile: resolve(config.providerReportFile), providerRef: config.providerRef }),
     ...(config.kbConfigFile === undefined ? {} : { kbConfigFile: resolve(config.kbConfigFile) }),
     credentialsFile: resolve(config.credentialsFile ?? dshHomePath('credentials.env')),
     stateDir: resolve(config.stateDir ?? dshHomePath('openubmc-agent-state')) }

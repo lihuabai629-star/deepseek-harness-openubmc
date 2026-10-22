@@ -63,6 +63,11 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
         mapping = json.loads((package / "payload/skills.json").read_text())["skills"]
         if not mapping or any(not (payload / item["path"] / "SKILL.md").is_file() for item in mapping):
             raise AssertionError("Packaged Skill mapping is incomplete")
+        operator = subprocess.run([sys.executable, "-B", str(package / "payload/runtime_operator.py"),
+            "--state-dir", str(home / "operator-probe-state"), "--credentials-file", str(home / "missing.env"),
+            "--session-id", "operator-qualification"], capture_output=True, text=True, env=env, timeout=timeout)
+        if operator.returncode or "case_replay_export" not in operator.stdout or '"name": "execute"' in operator.stdout:
+            raise AssertionError("Installed headless operator helper did not retain the disjoint administration interface")
         support = payload / "openubmc-target-runtime"
         probe = subprocess.run([sys.executable, "-I", "-B", "-c",
             "import sys; sys.path.insert(0, sys.argv[1]); "

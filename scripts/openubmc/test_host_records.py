@@ -117,6 +117,39 @@ class HostBridgeTests(unittest.TestCase):
         self.assertIsNone(usage["input_tokens"])
         self.assertNotEqual(usage["status"], "complete")
 
+    def test_trusted_provider_inventory_retains_exact_run_attribution_and_rejects_foreign_task(self):
+        _service, turn = self.start()
+        report = self.root / "provider.json"
+        body = {"schema": "openubmc.provider-requests/v1", "task_ref": "owner",
+            "provider_ref": "fixture-provider", "evidence_kind": "observed", "inventory_complete": True,
+            "provider_requests": [{"invocation_ref": "physical-request-1", "run_ref": turn["run_id"],
+                "usage": {"input_tokens": 13, "output_tokens": 8, "cached_tokens": 0}}]}
+        report.write_text(json.dumps(body))
+        fields = {"providerReportFile": str(report), "providerRef": "fixture-provider",
+            "measurements": [{"invocation_ref": "partial-host-settlement", "run_ref": None, "usage": {}}]}
+        handoff = self.call("handoff", **fields)
+        self.assertEqual(handoff["task_aggregate"]["usage_totals"]["input_tokens"], 13)
+        self.assertEqual(handoff["runs"][0]["run_record"]["usage"]["input_tokens"], 13)
+        self.assertEqual(handoff["runs"][0]["run_record"]["usage"]["status"], "available")
+        body["task_ref"] = "another-session"
+        report.write_text(json.dumps(body))
+        self.assertIsNone(self.call("handoff", **fields)["task_aggregate"]["usage_totals"]["input_tokens"])
+        report.unlink()
+        self.assertIsNone(self.call("handoff", **fields)["task_aggregate"]["usage_totals"]["input_tokens"])
+
+    def test_export_pruning_previews_before_deleting_owned_exports(self):
+        self.start()
+        path = Path(self.call("export")["path"])
+        directory = path.parent
+        foreign = directory / "user-data.txt"
+        foreign.write_text("retain")
+        request = {"beforeTimestamp": datetime.now(timezone.utc).timestamp() + 60}
+        self.assertTrue(self.call("prune", **request)["dry_run"])
+        self.assertTrue(path.exists())
+        self.assertFalse(self.call("prune", apply=True, **request)["dry_run"])
+        self.assertFalse(path.exists())
+        self.assertTrue(foreign.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

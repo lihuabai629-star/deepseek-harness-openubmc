@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
-          ref: 456721f7fcc4b04f6abd1496d571dcca576e6a63
+          ref: 88103e5a8b42434d787ae60034552429a20ae824
           path: .ci-runtime
           persist-credentials: false
       - name: Isolate pinned Runtime source
@@ -62,10 +62,10 @@ jobs:
         run: pnpm run build
       - name: Package and install the portable plugin
         run: |
-          pnpm exec vitest run scripts/openubmc/pack.spec.ts scripts/openubmc/portable-runtime.spec.ts scripts/openubmc/local-process.spec.ts scripts/openubmc/skill-resources.spec.ts
-          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.3.1
-          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.3.2
-          python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.3.1.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.3.2.tgz" --dsh apps/cli/lib/bin.js
+          pnpm exec vitest run scripts/openubmc/pack.spec.ts scripts/openubmc/portable-runtime.spec.ts scripts/openubmc/local-process.spec.ts scripts/openubmc/skill-resources.spec.ts scripts/openubmc/records-projection.spec.ts
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.4.0
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$DSH_OPENUBMC_WORKFLOW" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.4.1
+          python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.4.0.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.4.1.tgz" --dsh apps/cli/lib/bin.js
       - name: Check packaged source helpers
         run: |
           node --test scripts/openubmc/supplement/openubmc-developer/resources/community/compliance/scripts/*.test.mjs scripts/openubmc/supplement/openubmc-developer/resources/interface-coverage/scripts/*.test.mjs
@@ -101,7 +101,7 @@ jobs:
       - name: Summarize plugin checksums
         run: |
           printf 'Source commit: `%s`\n\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
-          sha256sum "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.3.1.tgz" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.4.0.tgz" >> "$GITHUB_STEP_SUMMARY"
 
   compatibility:
     needs: integration
@@ -124,7 +124,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
-          ref: 456721f7fcc4b04f6abd1496d571dcca576e6a63
+          ref: 88103e5a8b42434d787ae60034552429a20ae824
           path: .ci-runtime
           persist-credentials: false
       - name: Isolate pinned Runtime source
@@ -157,10 +157,10 @@ jobs:
         env:
           DSH_COMPAT_VERSION: ${{ matrix.dsh-version }}
         run: |
-          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.3.1
-          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.3.2
-          python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.3.1.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.3.2.tgz" --dsh "$RUNNER_TEMP/official-host/node_modules/@deepseek-ai/dsh/lib/bin.js" --expected-host-version "$DSH_COMPAT_VERSION"
-          python3 scripts/openubmc/verify_web.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.3.1.tgz" --dsh "$RUNNER_TEMP/official-host/node_modules/@deepseek-ai/dsh/lib/bin.js" --node "$(command -v node)"
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.4.0
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.4.1
+          python3 scripts/openubmc/verify_plugin.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.4.0.tgz" --update-archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.4.1.tgz" --dsh "$RUNNER_TEMP/official-host/node_modules/@deepseek-ai/dsh/lib/bin.js" --expected-host-version "$DSH_COMPAT_VERSION"
+          python3 scripts/openubmc/verify_web.py --archive "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.4.0.tgz" --dsh "$RUNNER_TEMP/official-host/node_modules/@deepseek-ai/dsh/lib/bin.js" --node "$(command -v node)"
 
   candidate-release:
     if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
@@ -186,7 +186,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: lihuabai629-star/openubmc-agent-workflow
-          ref: 456721f7fcc4b04f6abd1496d571dcca576e6a63
+          ref: 88103e5a8b42434d787ae60034552429a20ae824
           path: .ci-runtime
           persist-credentials: false
       - name: Isolate pinned Runtime source
@@ -201,9 +201,9 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm run build
-          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.3.1
+          pnpm exec tsx scripts/openubmc/pack.ts --workflow "$RUNNER_TEMP/openubmc-workflow" --out "$RUNNER_TEMP/openubmc-plugins" --version 0.4.0
           cd "$RUNNER_TEMP/openubmc-plugins"
-          sha256sum --check dsh-openubmc-0.3.1.tgz.sha256
+          sha256sum --check dsh-openubmc-0.4.0.tgz.sha256
       - name: Attach plugin to the draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -211,5 +211,5 @@ jobs:
         run: |
           test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
           gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
-            "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.3.1.tgz" \
-            "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.3.1.tgz.sha256"
+            "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.4.0.tgz" \
+            "$RUNNER_TEMP/openubmc-plugins/dsh-openubmc-0.4.0.tgz.sha256"

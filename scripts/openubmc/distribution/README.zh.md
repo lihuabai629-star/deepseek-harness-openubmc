@@ -14,11 +14,13 @@ kind: "tutorial"
 使用官方 DSH `0.1.7-rc.2`、`0.2.0-rc.2` 或 `0.2.1-rc.2` 安装版和已下载的插件归档。仅这些完整版本已通过验证；其他版本在通过验证前会被启动检查拒绝。无需定制 Host。`release.json` 记录构建归档所用的源码版本。修改软件包前先关闭所选 profile 的 Host。
 
 ```sh
-dsh plugin --profile web add /absolute/path/dsh-openubmc-0.3.1.tgz
+dsh plugin --profile web add /absolute/path/dsh-openubmc-0.4.0.tgz
 dsh --profile web --no-open --host 127.0.0.1 --port 3080
 ```
 
 打开 DSH 打印的认证 URL。通过 DSH 现有设置配置自己的模型。目标凭据和 Runtime 历史保存在选定的 `DSH_HOME` 中，位于插件目录之外；知识库凭据沿用 openUBMC 现有用户配置。归档不携带账号、模型密钥或设备授权。加载 profile 不会发送设备操作。Web 插件页也可通过软件包规格输入框安装同一归档。
+
+将 `DSH_HOME` 和工作区放在 `/tmp` 之外的持久目录。沙箱 shell 可能使用私有临时目录，无法执行保存在 Host `/tmp` 中的 Skill 脚本。
 
 ## 本地配置
 
@@ -46,6 +48,14 @@ Host 在 Run 启动前选择 Session 工作目录，Runtime 冻结其仓库身�
 
 旧官方 headless runner 不派发斜杠命令。请让 Agent 使用 `openubmc_setup_status`、`openubmc_setup_prepare`、`openubmc_setup_open_configuration` 和绑定当前 Session 的 `openubmc_records` 工具。Web 对话支持上文的原生命令。
 
+完整 Skill 清单包含文档审查和离线日志包分析。文档扫描器只提取命令，不执行文档中的命令；语义和产品一致性检查仍需相应证据。离线日志分析支持有界解包、时间线、事件关联、结构化摘要和目录覆盖审计，远程采集仍由日志采集 Skill 负责。
+
+`/openubmc-operator tools` 列出 Runtime 运维操作；`/openubmc-operator <operation> <JSON>` 按公布的 schema 调用。它提供证据查询与附加、重放、Outcome 审查与提升，以及已解决 Case 的生命周期管理，具有当前安装范围的管理访问权限。这是原生用户命令，不进入模型工具清单，也不提供 Agent 或领域执行操作。完整结构化失败保留在命令历史中。
+
+`/openubmc-records prune <JSON>` 预览导出记录清理，`beforeTimestamp` 使用 UTC epoch 秒数；`apply: true` 只删除符合条件的自有导出。可成对配置 `providerReportFile` 和 `providerRef`，选择可信的持久化 `openubmc.provider-requests/v1` 报告。只有完整、身份匹配且包含明确 Run 引用的请求清单才能提供完整 Run 用量。报告缺失、冲突或不完整时保留未知或部分状态；默认 Session 观测不会推断 Run 归属。
+
+旧版 headless runner 可通过 `python3 <installed-package>/payload/runtime_operator.py --state-dir <private-state> --credentials-file <private-selector> --session-id <session>` 管理同一私有状态，无需模型推理。默认列出运维操作；添加 `--operation <name> --arguments '<JSON>'` 调用公布的操作。辅助程序验证安装包完整性，操作失败时返回非零退出码。
+
 ## 会话授权与恢复
 
 插件拥有 observe/execute 桥，并注入可信 Session 与操作标识。成功和失败的完整结构化结果均保留在原生工具日志中。Runtime 仍是 Run、Gate、Incident 和设备副作用的权威。
@@ -69,7 +79,7 @@ Resume 保留同一 Session 关联。Fork 使用独立授权，不能续接父�
 ```
 
 ```sh
-dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.3.1.tgz
+dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.4.0.tgz
 dsh --profile headless --patch /absolute/path/preflight.yml "Validate Agent preflight."
 ```
 

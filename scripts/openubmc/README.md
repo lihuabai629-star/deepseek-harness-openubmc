@@ -28,6 +28,8 @@ The verifier uses a temporary home outside the checkout and removes the plugin a
 
 Packaged Skills use private content-addressed resources under `stateDir/skill-resources`. Markdown commands resolve logical Skill names to the same generation's directories, including nested references. Scripts retain their source bytes and executable permissions. Mount verifies an existing generation and rejects modified resources. Package updates and removal retain these generations with Runtime history.
 
+The portable plugin includes full-profile documentation review and offline log analysis. Its native operator command and provider-report selection are documented in the [installation guide](distribution/README.md).
+
 ## Create and launch
 
 Run from the DSH repository with a new home path:

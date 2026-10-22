@@ -24,6 +24,10 @@ export interface LocalAdminOptions {
   stateDir: string
   credentialsFile: string
   kbConfigFile?: string
+  /** Host-selected durable provider inventory; never supplied by a model tool. */
+  providerReportFile?: string
+  /** Provider identity expected in the selected inventory. */
+  providerRef?: string
   setupTimeoutSeconds: number
   configurationIdleSeconds: number
 }
@@ -32,11 +36,13 @@ const configureInput = z.object({ kind: z.enum(['targets', 'kb', 'conan']).defau
 const prepareInput = z.object({ capability: z.enum(['runtime', 'kb', 'all']).default('all') }).strict()
 const testInput = z.object({ runId: z.string().min(1), repoRef: z.string().min(1), commandRef: z.string().min(1),
   argv: z.array(z.string().max(4096)).min(1).max(128), timeout: z.number().positive().max(3600).default(600) }).strict()
+const pruneInput = z.object({ beforeTimestamp: z.number().nonnegative(), apply: z.boolean().default(false) }).strict()
 const recordsInput = z.discriminatedUnion('command', [
   z.object({ command: z.literal('handoff') }).strict(), z.object({ command: z.literal('export') }).strict(),
   z.object({ command: z.literal('verify'), file: z.string().min(1).max(128) }).strict(),
   z.object({ command: z.literal('answer'), runId: z.string().min(1) }).strict(),
   z.object({ command: z.literal('test'), test: testInput }).strict(),
+  pruneInput.extend({ command: z.literal('prune') }),
 ])
 
 /**
@@ -120,12 +126,25 @@ export function installLocalAdmin(ctx: Context, options: LocalAdminOptions, retr
           : action === 'verify' ? { command: 'verify', file: tail }
             : action === 'answer' ? { command: 'answer', runId: tail }
               : action === 'test' ? { command: 'test', test: testInput.parse(JSON.parse(tail)) }
-                : undefined
-      if (input === undefined) throw new Error('Use /openubmc-records [export | verify <filename> | answer <run-id> | test <JSON>].')
+                : action === 'prune' ? { command: 'prune', ...pruneInput.parse(JSON.parse(tail)) }
+                  : undefined
+      if (input === undefined) throw new Error('Use /openubmc-records [export | verify <filename> | answer <run-id> | test <JSON> | prune <JSON>].')
       const value = await records(agent.session, input, signal)
       return JSON.stringify(value, null, 2)
     },
   }
+  ctx.effect(() => ctx.commands.register({
+    definitionId: CommandDefinitionId('dsh-openubmc/openubmc-operator'), name: 'openubmc-operator',
+    description: 'Administer local Runtime evidence, replay, Outcomes and Case lifecycle',
+    input: { hint: 'tools | <operation> [JSON arguments]' },
+    handler: async ({ rawInput, agent, signal }) => {
+      const match = /^(\S+)(?:\s+([\s\S]+))?$/u.exec(rawInput.trim())
+      const operation = match?.[1] ?? 'tools'
+      const args = z.record(z.string(), z.json()).parse(JSON.parse(match?.[2] ?? '{}'))
+      const result = await run({ operation, arguments: args, taskId: agent.session.id }, 'runtime_operator.py', options.setupTimeoutSeconds, signal)
+      return { kind: result.isError === true ? 'error' : 'success', text: JSON.stringify(result, null, 2) }
+    },
+  }))
   for (const [name, handler] of Object.entries(handlers)) ctx.effect(() => ctx.commands.register({
     definitionId: CommandDefinitionId(`dsh-openubmc/${name}`), name,
     description: { 'openubmc-configure': 'Open private target, knowledge or Conan settings',
@@ -133,7 +152,7 @@ export function installLocalAdmin(ctx: Context, options: LocalAdminOptions, retr
       'openubmc-repair': 'Repair owned local dependencies and retry unavailable providers',
       'openubmc-records': 'Read, export, verify or recover current Session delivery records' }[name] ?? name,
     ...(name === 'openubmc-doctor' ? {} : { input: { hint: name === 'openubmc-configure' ? '[targets|kb|conan|JSON]'
-      : name === 'openubmc-repair' ? '[runtime|kb|all]' : '[export|verify <filename>|answer <run-id>|test <JSON>]' } }),
+      : name === 'openubmc-repair' ? '[runtime|kb|all]' : '[export|verify <filename>|answer <run-id>|test <JSON>|prune <JSON>]' } }),
     handler: async invocation => ({ kind: 'success', text: await handler(invocation.rawInput, invocation.agent, invocation.signal) }),
   }))
   for (const [name, parameters, execute] of [

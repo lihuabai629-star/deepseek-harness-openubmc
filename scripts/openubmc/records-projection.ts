@@ -18,13 +18,15 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
 
 /** Replayable observations without retaining message or tool payloads in private records. */
 export const recordsProjection: ProjectionDefinition<'openubmc/host-records'> = {
-  key: 'openubmc/host-records', stateVersion: 1, stateSchema,
+  key: 'openubmc/host-records', stateVersion: 2, stateSchema,
   init: (_header, inherited) => ({ inherited, overflow: false, measurements: [], final: null }),
   apply: (state, event) => {
     if (event.seq < state.inherited) return state
     if (event.type === 'turn/start') return { ...state, final: null }
     if (event.type !== 'assistant/message' && event.type !== 'assistant/attempt') return state
-    const usage = event.type === 'assistant/message' ? event.data.usage : undefined
+    const streamedUsage = event.data.stream.flatMap(record => record.type === 'chunk' && record.chunk.type === 'usage'
+      ? [record.chunk.usage] : []).at(-1)
+    const usage = event.type === 'assistant/message' ? event.data.usage ?? streamedUsage : streamedUsage
     const measurements = state.measurements.length >= 256 ? state.measurements : [...state.measurements, {
       invocation_ref: `dsh:settlement:${event.seq}`, run_ref: null,
       usage: usage === undefined ? {} : { input_tokens: usage.inputTokens, output_tokens: usage.outputTokens,
