@@ -66,7 +66,7 @@ export function apply(ctx: Context, config: Config): void {
       tools: ctx.tools.schemas().filter(tool => tool.name.startsWith('mcp__openubmc-')).map(tool => tool.name).sort(),
       skills: (await ctx.skills.list()).filter(skill => skill.provider === 'openubmc-packaged').map(skill => skill.name).sort(),
       commands: ctx.commands.list(agent).filter(command => ['run', 'case', 'target-authorize', 'target-action', 'target-reconcile',
-        'openubmc-configure', 'openubmc-doctor', 'openubmc-repair', 'openubmc-records']
+        'openubmc-configure', 'openubmc-doctor', 'openubmc-repair', 'openubmc-records', 'openubmc-operator']
         .includes(command.name)).map(command => command.name).sort(),
     })
     const before = await selected()
@@ -85,6 +85,17 @@ export function apply(ctx: Context, config: Config): void {
       throw new Error('Packaged reference commands do not resolve to their installed resource generation.')
     }
     await readFile(join(references, 'scripts/diagnostic_advice.py'))
+    for (const [name, script] of [['openubmc-doc-review', 'static_review.py'],
+      ['openubmc-log-bundle-analyzer', 'analyze_bundle.py']] as const) {
+      const skill = await ctx.skills.get(name)
+      if (skill?.resourceBase?.kind !== 'directory') throw new Error(`The packaged ${name} resources are unavailable.`)
+      await readFile(join(skill.resourceBase.path, 'scripts', script))
+    }
+    const operator = await ctx.commands.execute(agent, '/openubmc-operator tools', [], new AbortController().signal)
+    if (operator?.result.kind !== 'success' || !operator.result.text?.includes('case_replay_export')
+      || !operator.result.text.includes('session_outcome_promote') || ctx.tools.schemas().some(tool => tool.name === 'openubmc_operator')) {
+      throw new Error('Runtime administration must remain available only through the native operator command.')
+    }
     const doctor = await ctx.commands.execute(agent, '/openubmc-doctor', [], new AbortController().signal)
     if (doctor?.result.kind !== 'success' || doctor.result.text?.includes('"integrity": true') !== true) {
       throw new Error('The installed plugin did not pass its native local readiness check.')

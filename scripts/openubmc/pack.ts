@@ -96,7 +96,7 @@ export async function packPlugin(options: PackOptions) {
     await writeFile(join(payload, 'skills.json'), JSON.stringify({ skills: source.skills }, null, 2) + '\n')
     await copyFile(join(root, 'scripts/openubmc/environment-skill.md'), join(payload, 'environment-skill.md'))
     await copyFile(join(root, 'scripts/openubmc/runtime_stdio.py'), join(payload, 'runtime_stdio.py'))
-    for (const name of ['local_admin.py', 'host_records.py']) await copyFile(join(root, 'scripts/openubmc', name), join(payload, name))
+    for (const name of ['local_admin.py', 'host_records.py', 'runtime_operator.py']) await copyFile(join(root, 'scripts/openubmc', name), join(payload, name))
     const pagePath = join(payload, 'workflow/openubmc-environment-setup/assets/config-page/index.html')
     await writeFile(pagePath, (await readFile(pagePath, 'utf8'))
       .replace('id="plugin-preview"', 'id="plugin-preview" hidden')

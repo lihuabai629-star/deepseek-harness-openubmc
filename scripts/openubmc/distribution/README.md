@@ -14,7 +14,7 @@ Install `dsh-openubmc` into an existing Web or headless profile. The archive con
 Use an official DSH `0.1.7-rc.2`, `0.2.0-rc.2` or `0.2.1-rc.2` installation and the downloaded plugin archive. These exact releases are qualified; other versions fail at startup until qualified. A custom Host is unnecessary. `release.json` records the source versions used to build the archive. Close the selected profile's Host before changing its packages.
 
 ```sh
-dsh plugin --profile web add /absolute/path/dsh-openubmc-0.3.1.tgz
+dsh plugin --profile web add /absolute/path/dsh-openubmc-0.4.0.tgz
 dsh --profile web --no-open --host 127.0.0.1 --port 3080
 ```
 
@@ -46,6 +46,14 @@ The Host selects the Session working directory before a Run starts; Runtime free
 
 Older official headless runners do not dispatch slash commands. Ask the agent to use `openubmc_setup_status`, `openubmc_setup_prepare`, `openubmc_setup_open_configuration` and the Session-bound `openubmc_records` tool instead. The Web conversation supports the native commands above.
 
+The full Skill catalog includes documentation review and offline bundle analysis. Documentation scanners extract commands without running them; semantic and product checks retain their evidence requirements. Local bundle analysis provides bounded extraction, timelines, event correlations, structured summaries and catalog audits. Remote bundle collection remains available through the collection Skill.
+
+`/openubmc-operator tools` lists Runtime administration; `/openubmc-operator <operation> <JSON>` invokes its advertised schema. It exposes evidence inspection/attachment, replay, Outcome review/promotion and resolved Case lifecycle, with installation-level access. It is a native user command, absent from the model tool catalog, and cannot execute Agent/domain operations. Its complete structured failures remain in command history.
+
+`/openubmc-records prune <JSON>` previews export cleanup with `beforeTimestamp` in UTC epoch seconds; `apply: true` deletes only eligible owned exports. A trusted durable `openubmc.provider-requests/v1` report can be selected with paired `providerReportFile` and `providerRef` configuration fields. Only a complete, identity-matched inventory with explicit Run references supplies complete Run usage. Missing, conflicting or partial evidence remains unavailable or partial; default Session observations do not infer Run attribution.
+
+Older headless runners can administer the same private state without model inference through `python3 <installed-package>/payload/runtime_operator.py --state-dir <private-state> --credentials-file <private-selector> --session-id <session>`. It lists the operator catalog by default; add `--operation <name> --arguments '<JSON>'` for an advertised operation. The helper verifies package integrity and returns nonzero for failed operations.
+
 ## Session authority and recovery
 
 The plugin owns the observe/execute bridge and injects the trusted Session and operation identities. Full structured results survive both success and failure in native tool logs. Runtime remains the authority for Runs, Gates, Incidents and device effects.
@@ -69,7 +77,7 @@ Install into a separate headless profile for the keyless preflight. Create `pref
 ```
 
 ```sh
-dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.3.1.tgz
+dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.4.0.tgz
 dsh --profile headless --patch /absolute/path/preflight.yml "Validate Agent preflight."
 ```
 

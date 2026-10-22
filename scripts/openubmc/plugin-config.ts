@@ -13,6 +13,10 @@ export interface Config {
   kbConfigFile?: string
   /** Durable Runtime data; defaults to the selected DSH home's openubmc-agent-state. */
   stateDir?: string
+  /** Trusted provider-request report; paired with providerRef for complete accounting. */
+  providerReportFile?: string
+  /** Provider identity expected in the configured durable request report. */
+  providerRef?: string
   /** Maximum wait for a concurrent Session authority update, in milliseconds. */
   authorityLockWaitMs: number
   /** Whether the profile exposes the packaged knowledge-base MCP. */
@@ -35,6 +39,7 @@ export interface Config {
 export const Config: z<Config> = z.object({
   python: z.string().min(1).default('python3'),
   node: z.string().min(1), credentialsFile: z.string().min(1), stateDir: z.string().min(1), kbConfigFile: z.string().min(1),
+  providerReportFile: z.string().min(1), providerRef: z.string().min(1),
   authorityLockWaitMs: z.number().min(1).max(60000).default(1000),
   kbEnabled: z.boolean().default(true),
   operationDeadlineSeconds: z.number().min(1).max(120).default(120),

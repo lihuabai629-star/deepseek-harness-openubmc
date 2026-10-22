@@ -23,7 +23,12 @@ def handle(options):
     state = Path(options["stateDir"])
     task = options["taskId"]
     environment = dict(os.environ)
-    if "measurements" in options:
+    # A profile-selected report replaces inherited measurement registration.
+    if options.get("providerReportFile"):
+        environment.pop("OPENUBMC_HOST_MEASUREMENTS_FILE", None)
+        environment["OPENUBMC_HOST_PROVIDER_REPORT"] = options["providerReportFile"]
+        environment["OPENUBMC_HOST_PROVIDER_REF"] = options["providerRef"]
+    elif "measurements" in options:
         directory = state / "dsh-measurements"
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         report = directory / (hashlib.sha256(task.encode()).hexdigest() + ".json")
@@ -46,6 +51,10 @@ def handle(options):
     store = host.continuity
     read_run = lambda run: read_runtime_projection(state / "context-runtime.sqlite3", run)
     command = options["command"]
+    if command == "prune":
+        dry_run = not options.get("apply", False)
+        return {"dry_run": dry_run, "files": RecordExportStore(state / "dsh-exports").prune(
+            before_timestamp=options["beforeTimestamp"], dry_run=dry_run)}
     if command == "capture":
         host.capture_selection({"hook_event_name": "UserPromptSubmit", "session_id": task,
                                 "cwd": options.get("cwd")})
