@@ -26,10 +26,10 @@
         "zh": "openUBMC"
       },
       "description": {
-        "en": "Native observe/execute, private account setup, durable Runs and recovery.",
-        "zh": "原生 observe/execute、私有账号配置、持久任务与恢复。"
+        "en": "Native observe/execute, offline analysis, private setup, durable Runs and administration.",
+        "zh": "原生 observe/execute、离线分析、私有配置、持久任务与运维。"
       },
-      "homepage": "https://github.com/lihuabai629-star/deepseek-harness-openubmc/releases/tag/openubmc-plugin-v0.3.1",
+      "homepage": "https://github.com/lihuabai629-star/deepseek-harness-openubmc/releases/tag/openubmc-plugin-v0.4.0",
       "repository": {
         "url": "https://github.com/lihuabai629-star/deepseek-harness-openubmc",
         "directory": "scripts/openubmc"
@@ -46,6 +46,18 @@
         ]
       },
       "versions": [
+        {
+          "version": "0.4.0",
+          "publishTimestamp": 1792651360,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/lihuabai629-star/deepseek-harness-openubmc.git",
+            "commit": "fe0bd4139628a88b6de5354be1378eb81c7f10d4"
+          },
+          "engines": {
+            "dsh": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2"
+          }
+        },
         {
           "version": "0.3.1",
           "publishTimestamp": 1792641198,
