@@ -75,11 +75,18 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
         overlay.write_text("- id: llm-deepseek\n  disabled: true\n- insert:\n"
                            "    - id: openubmc-offline-model\n      name: dsh-openubmc/preflight\n"
                            "      config:\n        verifyLifecycle: true\n")
-        output = run("--profile", "headless", "--patch", str(overlay), "Validate Agent preflight.")
-        if "OPENUBMC_OFFLINE_OK" not in output:
-            raise AssertionError(f"Offline preflight did not complete:\n{output[-12000:]}")
-        if "OPENUBMC_LIFECYCLE_OK" not in output:
-            raise AssertionError(f"Plugin disposal and remount did not complete:\n{output[-12000:]}")
+        def check_preflight() -> None:
+            output = run("--profile", "headless", "--patch", str(overlay), "Validate Agent preflight.")
+            if "OPENUBMC_OFFLINE_OK" not in output:
+                raise AssertionError(f"Offline preflight did not complete:\n{output[-12000:]}")
+            if "OPENUBMC_LIFECYCLE_OK" not in output:
+                raise AssertionError(f"Plugin disposal and remount did not complete:\n{output[-12000:]}")
+
+        check_preflight()
+        resources = home / "openubmc-agent-state/skill-resources"
+        retained_resources = {path: path.read_bytes() for path in resources.glob("*/openubmc-debug/scripts/diagnostic_advice.py")}
+        if not retained_resources:
+            raise AssertionError("The installed Skills did not materialize private script resources")
         setup = root / "setup-only.yml"
         setup.write_text(overlay.read_text().replace('verifyLifecycle: true', 'verifySetupOnly: true')
                          + "- id: openubmc\n  config:\n    python: /nonexistent/dsh-python\n")
@@ -108,9 +115,11 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
             newer = json.loads((installed() / "package.json").read_text())["version"]
             if newer == older:
                 raise AssertionError("The update did not select a different package version")
+            check_preflight()
             run("plugin", "--profile", "headless", "add", str(archive))
             if json.loads((installed() / "package.json").read_text())["version"] != older:
                 raise AssertionError("The retained archive did not restore the original plugin")
+            check_preflight()
         run("plugin", "--profile", "headless", "remove", "dsh-openubmc")
         manifest = json.loads((profile / "package.json").read_text())
         if "dsh-openubmc" in manifest.get("dependencies", {}) or "dsh-openubmc" in manifest["dsh"]["profile"]["bundles"]:
@@ -119,8 +128,11 @@ def verify(archive: Path, dsh: Path, node: str, *, update_archive: Path | None =
             raise AssertionError("Uninstall changed user configuration or Runtime state")
         if any(not path.exists() for path in [*sessions, *authority]):
             raise AssertionError("Uninstall removed Session files")
+        if any(not path.is_file() or path.read_bytes() != content for path, content in retained_resources.items()):
+            raise AssertionError("Package lifecycle removed or changed a previously loaded Skill script")
         print(json.dumps({"status": "passed", "skills": len(mapping), "offline_preflight": True,
                           "dispose_and_remount": True, "update_and_restore": update_archive is not None,
+                          "skill_resources_retained": True,
                           "setup_retained_without_interpreter": True,
                           "host_version": host_version, "portable_session_events": True, "authority_retained": True,
                           "uninstall_retained_user_data": True}))

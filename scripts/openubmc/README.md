@@ -16,15 +16,17 @@ The [packaged plugin instructions](distribution/README.md) describe installation
 ```sh
 corepack pnpm exec tsx scripts/openubmc/pack.ts \
   --workflow /absolute/path/openubmc-agent-workflow \
-  --out /absolute/path/artifacts --version 0.3.0
+  --out /absolute/path/artifacts --version 0.3.1
 python3 scripts/openubmc/verify_plugin.py \
-  --archive /absolute/path/artifacts/dsh-openubmc-0.3.0.tgz \
+  --archive /absolute/path/artifacts/dsh-openubmc-0.3.1.tgz \
   --dsh /absolute/path/dsh/apps/cli/lib/bin.js
 ```
 
 The verifier uses a temporary home outside the checkout and removes the plugin after the keyless preflight. Pass `--update-archive` with a different plugin version to exercise update and restoration too. It never contacts a device or model endpoint. The [environment Skill snapshot](../../snapshots/session/openubmc-environment-skill/snapshot.yml) records the DSH-specific setup instructions delivered to the model. Existing managed profiles retain their separate lifecycle below; do not activate both integrations in one profile.
 
 `verify_web.py --archive <archive> --dsh <official-bin.js> --node <node>` checks authenticated Web assets, private configuration proxying, Origin and page-token refusals, local activation and diagnostics without target access. The portable bundle owns its configuration workers and private dependency cache. Its Host records bridge reuses the pinned Runtime stores for trusted workspace capture, test receipts, export and final delivery; Session usage remains explicitly partial. The packer overlays the source-check resources listed in `supplement/source.json` and inventories release-owned files in `integrity.json`.
+
+Packaged Skills use private content-addressed resources under `stateDir/skill-resources`. Markdown commands resolve logical Skill names to the same generation's directories, including nested references. Scripts retain their source bytes and executable permissions. Mount verifies an existing generation and rejects modified resources. Package updates and removal retain these generations with Runtime history.
 
 ## Create and launch
 
@@ -43,7 +45,7 @@ corepack pnpm dsh --profile openubmc "Inspect the openUBMC Agent tool schemas."
 
 Configure the model through DSH's existing credential settings or environment before the last command. `--template web` selects the Web bundle with DSH's native conversation and tool history; add `--case-ui` for optional Run, receipt and historical Case cards. Launch with `corepack pnpm dsh --profile openubmc --no-open --port 0` to allocate a separate loopback port. Launch only through `dsh`; the initializer does not start a server or model request.
 
-The initializer refuses an existing home. It creates `profiles/openubmc/cordis.patch.yml`, a private Runtime state directory location, and a Skill root containing the manifest's full profile. Skill names follow the manifest mappings; support files are symlinked to the checkout. Skill bodies replace known home-relative script paths with checkout paths. Recreate a fresh home to pick up changes to those bodies or the manifest. The workflow and DSH checkouts must remain available; the profile links the Runtime and observation packages from this DSH checkout. Session records, `/run` and `/case` remain available without the optional cards.
+The initializer refuses an existing home. It creates `profiles/openubmc/cordis.patch.yml`, a private Runtime state directory location, and a Skill root containing the manifest's full profile. Skill names follow the manifest mappings; Markdown files, including nested references, replace known home-relative script paths with checkout paths. Other support files are symlinked to the checkout. Recreate a fresh home to pick up Markdown or manifest changes. The workflow and DSH checkouts must remain available; the profile links the Runtime and observation packages from this DSH checkout. Session records, `/run` and `/case` remain available without the optional cards.
 
 ## Offline startup check
 

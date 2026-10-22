@@ -14,7 +14,7 @@ Install `dsh-openubmc` into an existing Web or headless profile. The archive con
 Use an official DSH `0.1.7-rc.2`, `0.2.0-rc.2` or `0.2.1-rc.2` installation and the downloaded plugin archive. These exact releases are qualified; other versions fail at startup until qualified. A custom Host is unnecessary. `release.json` records the source versions used to build the archive. Close the selected profile's Host before changing its packages.
 
 ```sh
-dsh plugin --profile web add /absolute/path/dsh-openubmc-0.3.0.tgz
+dsh plugin --profile web add /absolute/path/dsh-openubmc-0.3.1.tgz
 dsh --profile web --no-open --host 127.0.0.1 --port 3080
 ```
 
@@ -69,7 +69,7 @@ Install into a separate headless profile for the keyless preflight. Create `pref
 ```
 
 ```sh
-dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.3.0.tgz
+dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.3.1.tgz
 dsh --profile headless --patch /absolute/path/preflight.yml "Validate Agent preflight."
 ```
 

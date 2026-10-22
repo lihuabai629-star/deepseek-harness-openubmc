@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import shutil
 
 
@@ -36,18 +37,25 @@ def initialize(workflow: Path, home: Path, template: str, node: str, python: str
     try:
         skills = home / "openubmc-skills"
         skills.mkdir()
+        aliases = {alias: str(path) for name, path in mapping.items()
+                   for alias in (name, path.relative_to(workflow).as_posix())}
+        pattern = re.compile(r"(?:/root/\.agents/skills/|\$HOME/\.agents/skills/|~/\.agents/skills/)("
+                             + "|".join(re.escape(name) for name in sorted(aliases, key=len, reverse=True))
+                             + r")(?![\w-])")
+
+        def stage_resources(source: Path, target: Path) -> None:
+            if source.is_dir():
+                target.mkdir()
+                for child in source.iterdir():
+                    stage_resources(child, target / child.name)
+            elif source.suffix == ".md":
+                body = pattern.sub(lambda match: aliases[match[1]], source.read_text())
+                target.write_text(body)
+            else:
+                target.symlink_to(source)
+
         for name in selected:
-            target = skills / name
-            target.mkdir()
-            for source in mapping[name].iterdir():
-                if source.name == "SKILL.md":
-                    body = source.read_text()
-                    for skill_name, skill_path in mapping.items():
-                        for prefix in ("/root/.agents/skills/", "$HOME/.agents/skills/", "~/.agents/skills/"):
-                            body = body.replace(prefix + skill_name, str(skill_path))
-                    (target / source.name).write_text(body)
-                else:
-                    (target / source.name).symlink_to(source, target_is_directory=source.is_dir())
+            stage_resources(mapping[name], skills / name)
         profile = home / "profiles/openubmc"
         profile.mkdir(parents=True)
         bundle = {"headless": "headless", "web": "web-app"}[template]

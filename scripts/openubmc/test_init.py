@@ -22,6 +22,11 @@ def checkout(root):
     (skill / "SKILL.md").write_text("Run $HOME/.agents/skills/openubmc-dt-testing/scripts/check.py\n")
     (skill / "scripts").mkdir()
     (skill / "scripts/check.py").write_text("print('ok')\n")
+    (skill / "references").mkdir()
+    (skill / "references/commands.md").write_text(
+        "Run $HOME/.agents/skills/openubmc-dt-testing/scripts/check.py\n"
+        "Run /root/.agents/skills/testing/scripts/check.py\n"
+        "Keep ~/.agents/skills/openubmc-dt-testing-other/scripts/check.py\n")
     for entry in ("openubmc-debug/scripts/target_runtime_mcp.py", "openubmc-kb-mcp/src/server.js"):
         path = workflow / entry
         path.parent.mkdir(parents=True)
@@ -44,6 +49,12 @@ class ProfileTests(unittest.TestCase):
             deployed = home / "openubmc-skills/openubmc-dt-testing"
             self.assertIn(str(skill), (deployed / "SKILL.md").read_text())
             self.assertEqual((deployed / "scripts/check.py").read_text(), "print('ok')\n")
+            reference = deployed / "references/commands.md"
+            self.assertIn(str(skill / "scripts/check.py"), reference.read_text())
+            self.assertNotIn("$HOME/.agents/skills/", reference.read_text())
+            self.assertNotIn("/root/.agents/skills/", reference.read_text())
+            self.assertIn("~/.agents/skills/openubmc-dt-testing-other/", reference.read_text())
+            self.assertIn("$HOME/.agents/skills/", (skill / "references/commands.md").read_text())
             patch_path = home / "profiles/openubmc/cordis.patch.yml"
             original = patch_path.read_bytes()
             patch = json.loads(original)

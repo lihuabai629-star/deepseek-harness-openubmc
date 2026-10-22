@@ -14,6 +14,7 @@ import * as cases from '@deepseek-ai/dsh-experimental-openubmc-cases'
 import type { Config } from './plugin-config.ts'
 import { installLocalAdmin } from './local-admin.ts'
 import { installConfigurationWeb } from './configuration-web.ts'
+import { prepareSkillResources } from './skill-resources.ts'
 
 const payloadSchema = schema.object({
   skills: schema.array(schema.object({ name: schema.string().min(1), path: schema.string().min(1) })).min(1),
@@ -56,9 +57,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const workflow = join(payload, 'workflow')
   const mountSkills = async () => {
     const manifest = payloadSchema.parse(JSON.parse(await readFile(join(payload, 'skills.json'), 'utf8')))
+    const resources = await prepareSkillResources(workflow, options.stateDir, manifest.skills, join(payload, 'environment-skill.md'))
     const candidates: SkillCandidate[] = await Promise.all(manifest.skills.map(async (skill) => {
-      const directory = join(workflow, skill.path)
-      const path = skill.name === 'openubmc-environment-setup' ? join(payload, 'environment-skill.md') : join(directory, 'SKILL.md')
+      const directory = join(resources, skill.path)
+      const path = join(directory, 'SKILL.md')
       const { metadata } = parseSkill(await readFile(path, 'utf8'))
       return { name: skill.name, description: metadata.description, path, locator: path,
         source: 'bundled', provider: 'openubmc-packaged', rank: BUNDLED_SKILL_RANK,
@@ -69,13 +71,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       async get(candidate, lookup) {
         const { locator, rank: _rank, ...summary } = candidate
         const { content } = parseSkill(await readFile(schema.string().parse(locator), { encoding: 'utf8', signal: lookup.signal }))
-        let text = content
-        for (const entry of manifest.skills) {
-          for (const prefix of ['/root/.agents/skills/', '$HOME/.agents/skills/', '~/.agents/skills/']) {
-            text = text.replaceAll(prefix + entry.name, join(workflow, entry.path))
-          }
-        }
-        return { ...summary, content: text }
+        return { ...summary, content }
       },
     }
     ctx.skills.registerProvider(() => provider)
