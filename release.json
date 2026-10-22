@@ -54,8 +54,8 @@
     }
   ],
   "workflowVersion": "2.1.7",
-  "workflowCommit": "67288ab4e9c0c3a1eb3b907399de9769a0425803",
-  "pluginVersion": "0.3.0",
+  "workflowCommit": "456721f7fcc4b04f6abd1496d571dcca576e6a63",
+  "pluginVersion": "0.3.1",
   "supplementarySkills": {
     "version": "2.1.9",
     "sourceCommit": "38960986e93a2e24dbcd2a77f5c8b6447f908b98",
@@ -96,5 +96,5 @@
     "0.2.1-rc.2"
   ],
   "authoritySchema": "dsh-openubmc/session-authority/v1",
-  "dshCommit": "b6d1161afa4fe8c3daea04e5bc5a3a98ff29e6ac"
+  "dshCommit": "a8d2229185f2b5cc984c5195a5941770260e21bf"
 }

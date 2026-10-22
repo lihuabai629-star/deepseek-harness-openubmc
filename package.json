@@ -1,6 +1,6 @@
 {
   "name": "dsh-openubmc",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "openUBMC workflows, native observe/execute, durable Runs and knowledge tools for DSH",
   "type": "module",
   "license": "(MIT AND MulanPSL-2.0)",
