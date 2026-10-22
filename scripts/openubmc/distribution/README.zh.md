@@ -14,7 +14,7 @@ kind: "tutorial"
 使用官方 DSH `0.1.7-rc.2`、`0.2.0-rc.2` 或 `0.2.1-rc.2` 安装版和已下载的插件归档。仅这些完整版本已通过验证；其他版本在通过验证前会被启动检查拒绝。无需定制 Host。`release.json` 记录构建归档所用的源码版本。修改软件包前先关闭所选 profile 的 Host。
 
 ```sh
-dsh plugin --profile web add /absolute/path/dsh-openubmc-0.3.0.tgz
+dsh plugin --profile web add /absolute/path/dsh-openubmc-0.3.1.tgz
 dsh --profile web --no-open --host 127.0.0.1 --port 3080
 ```
 
@@ -69,7 +69,7 @@ Resume 保留同一 Session 关联。Fork 使用独立授权，不能续接父�
 ```
 
 ```sh
-dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.3.0.tgz
+dsh plugin --profile headless add /absolute/path/dsh-openubmc-0.3.1.tgz
 dsh --profile headless --patch /absolute/path/preflight.yml "Validate Agent preflight."
 ```
 

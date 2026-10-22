@@ -16,15 +16,17 @@ kind: "tutorial"
 ```sh
 corepack pnpm exec tsx scripts/openubmc/pack.ts \
   --workflow /absolute/path/openubmc-agent-workflow \
-  --out /absolute/path/artifacts --version 0.3.0
+  --out /absolute/path/artifacts --version 0.3.1
 python3 scripts/openubmc/verify_plugin.py \
-  --archive /absolute/path/artifacts/dsh-openubmc-0.3.0.tgz \
+  --archive /absolute/path/artifacts/dsh-openubmc-0.3.1.tgz \
   --dsh /absolute/path/dsh/apps/cli/lib/bin.js
 ```
 
 验证器使用源码目录之外的临时 home，在无密钥预检后移除插件。通过 `--update-archive` 传入另一插件版本，还可验证更新与恢复。它不连接设备或模型端点。[环境 Skill 快照](../../snapshots/session/openubmc-environment-skill/snapshot.yml)记录传给模型的 DSH 专用配置说明。已有托管 profile 继续使用下文的独立生命周期；不要在同一 profile 中同时启用两种集成。
 
 `verify_web.py --archive <archive> --dsh <official-bin.js> --node <node>` 检查认证 Web 资源、私有配置代理、Origin 和页面 token 拒绝、本地激活及诊断，不访问目标。portable bundle 拥有其配置进程和私有依赖缓存。Host 记录桥复用固定版本 Runtime 存储，提供可信工作区捕获、测试回执、导出和最终交付；Session 用量明确标为不完整。打包器叠加 `supplement/source.json` 列出的源码检查资源，并在 `integrity.json` 中记录发行包自有文件清单。
+
+打包的 Skill 使用 `stateDir/skill-resources` 下按内容摘要寻址的私有资源。Markdown 命令将 Skill 逻辑名解析为同一版本的目录，覆盖嵌套参考文档。脚本保留源文件字节和执行权限。加载会校验已有版本并拒绝修改过的资源。软件包更新或移除会将这些资源与 Runtime 历史一起保留。
 
 ## 创建和启动
 
@@ -43,7 +45,7 @@ corepack pnpm dsh --profile openubmc "Inspect the openUBMC Agent tool schemas."
 
 执行最后一条命令前，通过 DSH 现有凭据设置或环境配置模型。`--template web` 选择 Web bundle，使用 DSH 原生对话和工具历史；添加 `--case-ui` 可启用可选的 Run、回执和历史 Case 卡片。使用 `corepack pnpm dsh --profile openubmc --no-open --port 0` 分配独立的本机回环端口。仅通过 `dsh` 启动；初始化脚本不会启动服务或请求模型。
 
-初始化脚本拒绝已有 home。它创建 `profiles/openubmc/cordis.patch.yml`、私有 Runtime 状态目录位置，以及包含清单 full 配置全部技能的 Skill 根目录。Skill 名称遵循清单映射；支持文件通过符号链接指向源码。Skill 正文中已知的 home 相对脚本路径会替换为源码路径。正文或清单变化后，重新创建一个新 home。工作流和 DSH 源码目录必须保持可用；profile 链接此 DSH 源码中的 Runtime 和观察包。未启用可选卡片时，仍可使用会话记录、`/run` 和 `/case`。
+初始化脚本拒绝已有 home。它创建 `profiles/openubmc/cordis.patch.yml`、私有 Runtime 状态目录位置，以及包含清单 full 配置全部技能的 Skill 根目录。Skill 名称遵循清单映射；Markdown 文件（含嵌套参考文档）中已知的 home 相对脚本路径会替换为源码路径。其他支持文件通过符号链接指向源码。Markdown 或清单变化后，重新创建一个新 home。工作流和 DSH 源码目录必须保持可用；profile 链接此 DSH 源码中的 Runtime 和观察包。未启用可选卡片时，仍可使用会话记录、`/run` 和 `/case`。
 
 ## 离线启动检查
 

@@ -1,6 +1,8 @@
 /** Keyless preflight and optional lifecycle check for the packed bundle. @module */
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-commands'
@@ -75,6 +77,14 @@ export function apply(ctx: Context, config: Config): void {
     if (setup?.provider !== 'openubmc-packaged' || !setup.content.includes('dsh plugin --profile')) {
       throw new Error('The packaged environment Skill must use DSH plugin management.')
     }
+    const debug = await ctx.skills.get('openubmc-debug')
+    if (debug?.resourceBase?.kind !== 'directory') throw new Error('The packaged Debug resources are unavailable.')
+    const references = debug.resourceBase.path
+    const instructions = await readFile(join(references, 'references/diagnostic-advice.md'), 'utf8')
+    if (instructions.includes('$HOME/.agents/skills/') || !instructions.includes(join(references, 'scripts/diagnostic_advice.py'))) {
+      throw new Error('Packaged reference commands do not resolve to their installed resource generation.')
+    }
+    await readFile(join(references, 'scripts/diagnostic_advice.py'))
     const doctor = await ctx.commands.execute(agent, '/openubmc-doctor', [], new AbortController().signal)
     if (doctor?.result.kind !== 'success' || doctor.result.text?.includes('"integrity": true') !== true) {
       throw new Error('The installed plugin did not pass its native local readiness check.')

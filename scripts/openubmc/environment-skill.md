@@ -7,6 +7,8 @@ description: "Configure, check, update or remove the openUBMC DSH plugin on Linu
 
 Manage this integration through DSH's native plugin manager. The package contains the Runtime, KB and Skill resources. Keep credentials, Session files and Run history outside the installed package. Do not use the workflow install, repair, update or uninstall commands: those commands manage a separate Codex installation.
 
+Resolve scripts and references from the loaded Skill's resource directory. DSH retains private versioned resources across package updates; loose `~/.agents/skills` installations are independent.
+
 ## Inspect and repair
 
 Read the selected profile's `package.json` and `cordis.patch.yml` without displaying secret values. The selected bundle is `dsh-openubmc`, its configuration entry is `openubmc`, and its `release.json` records source versions. The package supports qualified official DSH releases `0.1.7-rc.2`, `0.2.0-rc.2` and `0.2.1-rc.2`. Use the exact complete version; other versions need qualification before use. Its own bridge and private Session authority preserve execution permissions without custom Host events.
