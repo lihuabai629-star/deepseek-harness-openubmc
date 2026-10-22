@@ -1,0 +1,100 @@
+{
+  "name": "dsh-openubmc",
+  "version": "0.4.0",
+  "description": "openUBMC workflows, native observe/execute, durable Runs and knowledge tools for DSH",
+  "type": "module",
+  "license": "(MIT AND MulanPSL-2.0)",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./preflight": "./lib/preflight.js",
+    "./client": "./lib/client.js"
+  },
+  "files": [
+    "lib",
+    "payload",
+    "cordis.patch.yml",
+    "release.json",
+    "integrity.json",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.txt",
+    "README.md",
+    "README.zh.md"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "os": [
+    "linux"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.4.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-home-paths": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-brand": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-subprocess": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-skill": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-mcp-client": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-llm": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-commands": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh-session": "0.1.7-rc.2 || 0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "3.18.4",
+    "@deepseek-ai/cordis": "4.0.4"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-home-paths": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-brand": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-subprocess": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-skill": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-mcp-client": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-llm": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-commands": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-session": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    },
+    "@deepseek-ai/cordis": {
+      "optional": true
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  }
+}

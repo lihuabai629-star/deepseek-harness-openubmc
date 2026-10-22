@@ -1,0 +1,927 @@
+"use strict";
+const incomingSession = location.hash.slice(1);
+if (incomingSession)
+  sessionStorage.setItem("openubmc-configuration-session:" + location.pathname, incomingSession);
+const session =
+  incomingSession ||
+  sessionStorage.getItem("openubmc-configuration-session:" + location.pathname) ||
+  "";
+history.replaceState(null, "", location.pathname);
+let state,
+  kind = "targets",
+  busy = false,
+  closed = false,
+  expertTargets = false,
+  dirty = false,
+  id = 0;
+const $ = (id) => document.getElementById(id);
+const reasons = {
+  remote_missing: "本机未找到该 Conan remote，请选择当前构建环境中的已有仓库。",
+  configuration_changed: "检查期间配置发生变化，请重新检查。",
+  connected: "连接成功",
+  credentials_missing: "账号不完整，请填写后保存。",
+  authentication_failed: "认证失败，请检查账号或密码。",
+  network_error: "网络连接失败，请检查地址和网络。",
+  host_identity_failed: "SSH 主机身份未确认，请在本机完成主机身份校验。",
+  tls_error: "TLS 证书校验失败，请配置可信证书。",
+  interaction_required: "认证需要验证码或其他人工操作，请在身份服务中完成。",
+  permission_denied: "账号没有访问权限。",
+  timeout: "检查超时，请检查网络和服务状态。",
+  check_unavailable: "本机检查工具或依赖未就绪。",
+  connection_failed: "连接未通过，请检查本机配置与服务状态。",
+  activation_required: "请先保存配置。",
+  target_required: "请填写要检查的目标 IP。",
+  confirmation_required: "请选择目标后点击检查连接。",
+  configuration_conflict: "配置已经变化，请刷新页面后重试。",
+};
+function node(tag, text, parent) {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  if (parent) parent.append(e);
+  return e;
+}
+function notice(text, error = false) {
+  $("notice").textContent = text;
+  $("notice").className = error ? "error" : "";
+}
+async function api(path, data) {
+  const response = await fetch(new URL('.' + path, location.href), {
+    method: data ? "POST" : "GET",
+    headers: {
+      "X-OpenUBMC-Session": session,
+      ...(data ? { "Content-Type": "application/json" } : {}),
+    },
+    ...(data ? { body: JSON.stringify(data) } : {}),
+  });
+  const result = await response.json();
+  if (!response.ok)
+    throw new Error(
+      result.message ||
+        (response.status === 403
+          ? "页面会话已失效，请重新打开本机配置页面。"
+          : "本地配置操作失败。"),
+    );
+  return result;
+}
+async function action(fn) {
+  if (busy) return;
+  busy = true;
+  document.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  try {
+    await fn();
+  } catch (error) {
+    notice(error.message, true);
+  } finally {
+    busy = false;
+    document.querySelectorAll("button").forEach((b) => (b.disabled = closed));
+  }
+}
+function input(parent, label, value = "", type = "text") {
+  const wrap = node("div", undefined, parent);
+  wrap.className = "field";
+  const key = "field-" + ++id;
+  const l = node("label", label, wrap);
+  l.htmlFor = key;
+  const e = node("input", undefined, wrap);
+  e.id = key;
+  e.type = type;
+  e.value = value;
+  e.autocomplete = type === "password" ? "new-password" : "off";
+  return e;
+}
+function select(parent, label, options, value = "") {
+  const wrap = node("div", undefined, parent);
+  wrap.className = "field";
+  const key = "field-" + ++id;
+  const l = node("label", label, wrap);
+  l.htmlFor = key;
+  const e = node("select", undefined, wrap);
+  e.id = key;
+  for (const [v, t] of options) {
+    const o = node("option", t, e);
+    o.value = v;
+  }
+  e.value = value;
+  return e;
+}
+function secret(parent, label, isSet, source) {
+  const wrap = node("div", undefined, parent);
+  wrap.className = "secret";
+  const mode = select(
+    wrap,
+    label + "操作",
+    [
+      ["keep", "保留"],
+      ["replace", "替换"],
+      ["remove", "移除"],
+    ],
+    isSet ? "keep" : "replace",
+  );
+  mode.setAttribute("aria-label", label + "操作");
+  mode.previousElementSibling.textContent = "处理方式";
+  const value = input(wrap, label, "", "password");
+  value.placeholder = isSet ? "已保存的秘密不会显示" : "输入后保存在本机";
+  value.disabled = mode.value !== "replace";
+  mode.onchange = () => {
+    value.disabled = mode.value !== "replace";
+    if (mode.value !== "replace") value.value = "";
+  };
+  node("small", isSet ? "已保存" : "未填写", wrap);
+  return () =>
+    mode.value === "replace"
+      ? { action: "replace", value: value.value }
+      : {
+          action: mode.value,
+          ...(mode.value === "keep" && source ? { source } : {}),
+        };
+}
+function table(parent, headers) {
+  const wrap = node("div", undefined, parent);
+  wrap.className = "table-wrap";
+  const t = node("table", undefined, wrap);
+  const row = node("tr", undefined, node("thead", undefined, t));
+  headers.forEach((h) => node("th", h, row));
+  return node("tbody", undefined, t);
+}
+let collect;
+function renderRemember() {
+  const form = $("remember");
+  form.hidden = kind !== "targets";
+  if (kind !== "targets") return;
+  const fields = $("remember-fields");
+  fields.replaceChildren();
+  const ip = input(fields, "设备 IP", state.page_session?.focus_target || "");
+  const purpose = select(fields, "目标", [["bmc", "BMC"], ["os", "OS"]], state.page_session?.purpose || "bmc");
+  const transport = select(fields, "协议", [["ssh", "SSH"], ["redfish", "Redfish"]], state.page_session?.transport || "ssh");
+  const user = input(fields, "连接用户名");
+  const password = input(fields, "连接密码", "", "password");
+  password.autocomplete = "new-password";
+  purpose.onchange = () => {
+    transport.querySelector('option[value="redfish"]').disabled = purpose.value === "os";
+    if (purpose.value === "os") transport.value = "ssh";
+  };
+  purpose.onchange();
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    if (dirty && !confirm("有尚未保存的修改，放弃修改并继续连接？")) return;
+    action(async () => {
+      const candidate = password.value;
+      try {
+        if (!ip.value.trim() || !user.value.trim() || !candidate) {
+          notice("请填写设备 IP、用户名和密码。", true);
+          return;
+        }
+        if (state.targets.revision !== state.targets.active_revision) {
+          notice("有尚未生效的配置，请先处理后再连接。", true);
+          return;
+        }
+        const result = await api("/api/connect-and-remember", {
+          kind: "targets",
+          target: { ip: ip.value.trim(), purpose: purpose.value, transport: transport.value },
+          user: user.value.trim(), password: candidate,
+          expected_revision: state.targets.revision,
+          expected_active_revision: state.targets.active_revision,
+        });
+        if (!result.verified) {
+          notice((reasons[result.code] || "连接未通过。") + " 凭据未保存。", true);
+          return;
+        }
+        state.targets = result.configuration;
+        expertTargets = separateBmcAccounts(state.targets.config);
+        render();
+        notice("连接成功，已为此 IP 记住账号。后续任务会自动使用。");
+        if (state.page_session?.wait_for_save) finishConfiguration();
+      } finally {
+        password.value = "";
+      }
+    });
+  };
+}
+function accountFields(parent, label, record = {}, source) {
+  const group = node("section", undefined, parent);
+  group.className = "account-form";
+  const grid = node("div", undefined, group);
+  grid.className = "account-grid";
+  const user = input(grid, label + " 用户名", record.user || "");
+  const passwordArea = node("div", undefined, grid);
+  let passwordAction = record.password_set ? "keep" : "remove";
+  const saved = node("div", undefined, passwordArea);
+  saved.className = "saved-secret";
+  node("span", label + " 密码已配置", saved);
+  const change = node("button", "修改密码", saved);
+  change.type = "button";
+  change.className = "add";
+  const password = input(passwordArea, label + " 密码", "", "password");
+  password.parentElement.hidden = Boolean(record.password_set);
+  saved.hidden = !record.password_set;
+  change.onclick = () => {
+    saved.hidden = true;
+    password.parentElement.hidden = false;
+    password.focus();
+  };
+  password.oninput = () => { passwordAction = password.value ? "replace" : record.password_set ? "keep" : "remove"; };
+  password.placeholder = record.password_set ? "留空保留已有密码" : "输入密码";
+  const advanced = node("details", undefined, group);
+  node("summary", "SSH 密钥与密码管理", advanced);
+  const identity = input(advanced, label + " SSH 密钥文件", record.identity_file || "");
+  const remove = node("button", "清除密码", advanced);
+  remove.type = "button";
+  remove.className = "delete";
+  remove.onclick = () => {
+    passwordAction = "remove";
+    password.value = "";
+    saved.hidden = true;
+    password.parentElement.hidden = false;
+    password.placeholder = "保存后清除密码";
+  };
+  return () => ({ user: user.value, identity_file: identity.value,
+    password: passwordAction === "replace" ? { action: "replace", value: password.value }
+      : { action: passwordAction, ...(passwordAction === "keep" && source ? { source } : {}) } });
+}
+
+function renderSimpleTargets(config) {
+  const parent = $("fields");
+  const credentials = config.credentials || {};
+  const bmcSource = config.defaults?.bmc?.ssh || config.defaults?.bmc?.redfish;
+  node("h3", "默认 BMC 账号", parent);
+  node("p", "SSH 和 Redfish 共用此账号。", parent);
+  const bmc = accountFields(parent, "BMC", credentials[bmcSource], bmcSource);
+  const osSection = node("details", undefined, parent);
+  node("summary", "默认 OS 账号（可选）", osSection);
+  osSection.open = state.page_session?.purpose === "os";
+  const osSource = config.defaults?.os?.ssh;
+  const os = accountFields(osSection, "OS", credentials[osSource], osSource);
+  const devices = node("details", undefined, parent);
+  node("summary", "设备与关联 OS", devices);
+  node("p", "添加关联 OS，或为某台设备设置不同账号。", devices);
+  const list = node("div", undefined, devices);
+  const rows = [];
+  const initialHosts = new Set([
+    ...Object.keys(config.devices || {}),
+    ...Object.keys(config.targets || {}).filter((ip) => config.targets[ip].bmc || !Object.keys(config.targets[ip]).length),
+  ]);
+  function optionalAccount(parent, label, title, source) {
+    const toggle = input(parent, title, "", "checkbox");
+    toggle.checked = Boolean(source);
+    toggle.parentElement.classList.add("checkbox-field");
+    const area = node("div", undefined, parent);
+    area.hidden = !toggle.checked;
+    const read = accountFields(area, label, credentials[source], source);
+    toggle.onchange = () => { area.hidden = !toggle.checked; };
+    return { toggle, read, source };
+  }
+  function addDevice(ip = "") {
+    const row = node("fieldset", undefined, list);
+    node("legend", "设备", row);
+    const address = input(row, "BMC IP", ip);
+    const originalBmc = config.targets?.[ip]?.bmc;
+    const bmc = optionalAccount(row, "设备 BMC", "此 BMC 使用不同账号", originalBmc?.ssh || originalBmc?.redfish);
+    const originalOs = config.devices?.[ip]?.os_ip || "";
+    const osIp = input(row, "关联 OS IP", originalOs);
+    osIp.placeholder = "可选";
+    const os = optionalAccount(row, "设备 OS", "此 OS 使用不同账号", config.targets?.[originalOs]?.os?.ssh);
+    const entry = { address, bmc, osIp, os };
+    rows.push(entry);
+    const remove = node("button", "移除设备", row);
+    remove.className = "delete";
+    remove.type = "button";
+    remove.onclick = () => { rows.splice(rows.indexOf(entry), 1); row.remove(); };
+  }
+  initialHosts.forEach(addDevice);
+  const focus = state.page_session?.focus_target;
+  if (focus) {
+    if (!initialHosts.has(focus)) addDevice(focus);
+    devices.open = true;
+  }
+  const add = node("button", "添加设备", devices);
+  add.type = "button";
+  add.className = "add";
+  add.onclick = () => addDevice();
+  collect = () => {
+    const result = structuredClone(config);
+    result.schema_version = 1;
+    result.credentials = Object.fromEntries(Object.entries(credentials).map(([name, record]) =>
+      [name, { user: record.user || "", identity_file: record.identity_file || "", password: { action: "keep", source: name } }]));
+    result.defaults ||= {};
+    function reference(read, original) {
+      const value = read();
+      if (!value.user && value.password.action === "remove" && !value.identity_file && !original) return;
+      const old = credentials[original];
+      if (old && value.user === (old.user || "") && value.identity_file === (old.identity_file || "") && value.password.action === "keep") return original;
+      const name = "account-" + crypto.randomUUID();
+      result.credentials[name] = value;
+      return name;
+    }
+    const defaultBmc = reference(bmc, bmcSource);
+    const defaultOs = reference(os, osSource);
+    if (defaultBmc) result.defaults.bmc = { ssh: defaultBmc, redfish: defaultBmc };
+    if (defaultOs) result.defaults.os = { ...result.defaults.os, ssh: defaultOs };
+    result.targets ||= {};
+    result.devices = {};
+    for (const host of initialHosts) {
+      if (result.targets[host]) delete result.targets[host].bmc;
+      if (result.targets[host] && !Object.keys(result.targets[host]).length) delete result.targets[host];
+      const oldOs = config.devices?.[host]?.os_ip;
+      if (result.targets[oldOs]) delete result.targets[oldOs].os;
+      if (result.targets[oldOs] && !Object.keys(result.targets[oldOs]).length) delete result.targets[oldOs];
+    }
+    const used = new Set();
+    const osOverrides = new Set();
+    for (const row of rows) {
+      const host = row.address.value.trim();
+      const osHost = row.osIp.value.trim();
+      if (!host || used.has(host)) throw new Error("BMC IP 不能为空或重复。");
+      used.add(host);
+      result.targets[host] ||= {};
+      if (row.bmc.toggle.checked) {
+        const name = reference(row.bmc.read, row.bmc.source);
+        if (!name) throw new Error("请填写此设备的 BMC 账号。");
+        result.targets[host].bmc = { ssh: name, redfish: name };
+      }
+      if (osHost) result.devices[host] = { os_ip: osHost };
+      if (row.os.toggle.checked) {
+        if (!osHost || osOverrides.has(osHost)) throw new Error("关联 OS IP 不能为空，且不能重复设置账号。");
+        osOverrides.add(osHost);
+        const name = reference(row.os.read, row.os.source);
+        if (!name) throw new Error("请填写关联 OS 的账号。");
+        result.targets[osHost] ||= {};
+        result.targets[osHost].os = { ssh: name };
+      }
+    }
+    const referenced = new Set([result.defaults, ...Object.values(result.targets)].flatMap((purposes) => Object.values(purposes).flatMap(Object.values)));
+    for (const name of Object.keys(result.credentials)) {
+      if (name.startsWith("account-") && !referenced.has(name)) delete result.credentials[name];
+    }
+    return result;
+  };
+}
+
+function records(parent, config, conan = false) {
+  node("h3", conan ? "仓库账号" : "常用账号", parent);
+  node(
+    "p",
+    conan
+      ? "填写已存在的 Conan remote 名称。检查成功后，Conan 会更新当前用户的认证缓存。"
+      : "保存一份账号，供多台设备使用。",
+    parent,
+  );
+  const body = table(
+    parent,
+    conan
+      ? ["Remote 名称", "用户名", "密码", ""]
+      : ["记录名称", "用户名", "密码", "SSH 密钥路径", ""],
+  );
+  const rows = [];
+  function add(name = "", record = {}) {
+    const row = node("tr", undefined, body);
+    row.className = "account-row";
+    body.closest("table").className = "accounts";
+    const cells = Array.from({ length: conan ? 4 : 5 }, () =>
+      node("td", undefined, row),
+    );
+    const n = input(cells[0], conan ? "Remote" : "名称", name);
+    const user = input(cells[1], "用户名", record.user || "");
+    const password = secret(cells[2], "密码", record.password_set, name);
+    let key = null;
+    if (!conan) {
+      const advanced = node("details", undefined, cells[3]);
+      node("summary", "SSH 密钥", advanced);
+      key = input(advanced, "密钥文件", record.identity_file || "");
+      advanced.open = Boolean(record.identity_file);
+    }
+    const remove = node("button", "删除", cells.at(-1));
+    remove.type = "button";
+    remove.className = "delete";
+    const entry = { row, n, user, password, key };
+    rows.push(entry);
+    remove.onclick = () => {
+      rows.splice(rows.indexOf(entry), 1);
+      row.remove();
+    };
+  }
+  Object.entries(config.credentials || {}).forEach(([name, r]) => add(name, r));
+  const button = node(
+    "button",
+    conan ? "添加仓库账号" : "添加凭据记录",
+    parent,
+  );
+  button.type = "button";
+  button.className = "add";
+  button.onclick = () => add();
+  const read = () => {
+    const value = Object.create(null);
+    for (const r of rows) {
+      const name = r.n.value.trim();
+      if (!name || Object.hasOwn(value, name))
+        throw new Error("凭据记录名称不能为空或重复。");
+      value[name] = {
+        user: r.user.value,
+        password: r.password(),
+        ...(r.key ? { identity_file: r.key.value } : {}),
+      };
+    }
+    return value;
+  };
+  read.options = () => rows.map((r) => [r.n.id, r.n.value.trim()]);
+  read.reference = (name) =>
+    rows.find((r) => r.n.value.trim() === name)?.n.id || "";
+  read.recordName = (reference) =>
+    rows.find((r) => r.n.id === reference)?.n.value.trim() || "";
+  return read;
+}
+function renderTargets(config) {
+  const parent = $("fields");
+  const getRecords = records(parent, config);
+  node("h3", "全局默认", parent);
+  const grid = node("div", undefined, parent);
+  grid.className = "form-grid";
+  const references = [];
+  const options = [["", "未配置"], ...getRecords.options()];
+  const bmcSsh = select(
+    grid,
+    "BMC SSH",
+    options,
+    getRecords.reference(config.defaults?.bmc?.ssh),
+  );
+  const redfish = select(
+    grid,
+    "BMC Redfish",
+    options,
+    getRecords.reference(config.defaults?.bmc?.redfish),
+  );
+  const osSsh = select(
+    grid,
+    "OS SSH",
+    options,
+    getRecords.reference(config.defaults?.os?.ssh),
+  );
+  references.push([bmcSsh, "未配置"], [redfish, "未配置"], [osSsh, "未配置"]);
+  const overrides = node("details", undefined, parent);
+  overrides.className = "overrides";
+  node("summary", "按 IP 使用不同账号", overrides);
+  node("p", "仅为账号不同的设备单独设置，其余设备使用全局默认。", overrides);
+  const body = table(overrides, [
+    "目标 IP",
+    "BMC SSH",
+    "BMC Redfish",
+    "OS SSH",
+    "",
+  ]);
+  const rows = [];
+  function add(ip = "", value = {}) {
+    const row = node("tr", undefined, body);
+    const cells = Array.from({ length: 5 }, () => node("td", undefined, row));
+    const address = input(cells[0], "IP 地址", ip);
+    const opts = [["", "继承全局默认"], ...getRecords.options()];
+    const ssh = select(
+      cells[1],
+      "SSH 记录",
+      opts,
+      getRecords.reference(value.bmc?.ssh),
+    );
+    const rf = select(
+      cells[2],
+      "Redfish 记录",
+      opts,
+      getRecords.reference(value.bmc?.redfish),
+    );
+    const os = select(
+      cells[3],
+      "OS 记录",
+      opts,
+      getRecords.reference(value.os?.ssh),
+    );
+    references.push(
+      [ssh, "继承全局默认"],
+      [rf, "继承全局默认"],
+      [os, "继承全局默认"],
+    );
+    const entry = { row, address, ssh, rf, os };
+    rows.push(entry);
+    const del = node("button", "删除", cells[4]);
+    del.type = "button";
+    del.className = "delete";
+    del.onclick = () => {
+      rows.splice(rows.indexOf(entry), 1);
+      row.remove();
+    };
+  }
+  Object.entries(config.targets || {}).forEach(([ip, value]) => add(ip, value));
+  const addButton = node("button", "添加 IP 覆盖", overrides);
+  addButton.type = "button";
+  addButton.className = "add";
+  addButton.onclick = () => add();
+  function refs(sshReference, rfReference, osReference) {
+    const ssh = getRecords.recordName(sshReference);
+    const rf = getRecords.recordName(rfReference);
+    const os = getRecords.recordName(osReference);
+    return {
+      ...(ssh || rf
+        ? { bmc: { ...(ssh ? { ssh } : {}), ...(rf ? { redfish: rf } : {}) } }
+        : {}),
+      ...(os ? { os: { ssh: os } } : {}),
+    };
+  }
+  parent.oninput = () => {
+    for (const [ref, empty] of references) {
+      const old = ref.value;
+      ref.replaceChildren();
+      for (const [v, t] of [["", empty], ...getRecords.options()]) {
+        const option = node("option", t, ref);
+        option.value = v;
+      }
+      ref.value = old;
+    }
+  };
+  collect = () => {
+    const targets = Object.create(null);
+    for (const row of rows) {
+      const ip = row.address.value.trim();
+      if (!ip || Object.hasOwn(targets, ip))
+        throw new Error("覆盖 IP 不能为空或重复。");
+      targets[ip] = refs(row.ssh.value, row.rf.value, row.os.value);
+    }
+    return {
+      schema_version: 1,
+      credentials: getRecords(),
+      defaults: refs(bmcSsh.value, redfish.value, osSsh.value),
+      targets,
+      ...(config.devices ? { devices: config.devices } : {}),
+    };
+  };
+}
+function renderKb(config) {
+  const parent = $("fields");
+  const grid = node("div", undefined, parent);
+  grid.className = "form-grid kb-grid";
+  const user = input(grid, "openUBMC 账号", config.username || "");
+  const password = secret(grid, "密码", config.password_set);
+  const clientSecret = secret(grid, "OAuth 应用密钥", config.clientSecret_set);
+  node(
+    "p",
+    "应用密钥由你的授权应用提供。需要验证码时，连接检查会提示你完成身份验证。",
+    parent,
+  );
+  const advanced = node("details", undefined, parent);
+  node("summary", "服务与应用设置", advanced);
+  const fields = {};
+  for (const [key, label] of Object.entries({
+    lightragUrl: "知识库服务 URL",
+    userCenterUrl: "用户中心 URL",
+    oauthBaseUrl: "OAuth 服务 URL",
+    clientId: "OAuth Client ID",
+    redirectUri: "回调 URI",
+    tokenCachePath: "Token 缓存路径",
+  }))
+    fields[key] = input(advanced, label, config[key] || "");
+  const scopes = input(
+    advanced,
+    "Scopes（空格分隔）",
+    (config.scopes || []).join(" "),
+  );
+  const timeout = input(
+    advanced,
+    "请求时限（毫秒）",
+    config.requestTimeoutMs || "",
+    "number",
+  );
+  collect = () => {
+    const value = {
+      username: user.value,
+      password: password(),
+      clientSecret: clientSecret(),
+    };
+    for (const [k, e] of Object.entries(fields))
+      if (e.value.trim()) value[k] = e.value.trim();
+    if (scopes.value.trim()) value.scopes = scopes.value.trim().split(/\s+/);
+    if (timeout.value) value.requestTimeoutMs = Number(timeout.value);
+    return value;
+  };
+}
+function checks() {
+  const parent = $("check-fields");
+  parent.replaceChildren();
+  parent.className = "form-grid";
+  let target = () => null;
+  if (kind === "targets") {
+    const ip = input(parent, "目标 IP");
+    const purpose = select(
+      parent,
+      "用途",
+      [
+        ["bmc", "BMC"],
+        ["os", "OS"],
+      ],
+      "bmc",
+    );
+    const transport = select(
+      parent,
+      "协议",
+      [
+        ["ssh", "SSH"],
+        ["redfish", "Redfish"],
+      ],
+      "ssh",
+    );
+    purpose.onchange = () => {
+      transport.querySelector("option[value=redfish]").disabled =
+        purpose.value === "os";
+      if (purpose.value === "os") transport.value = "ssh";
+    };
+    target = () =>
+      ip.value.trim()
+        ? {
+            ip: ip.value.trim(),
+            purpose: purpose.value,
+            transport: transport.value,
+          }
+        : null;
+  } else if (kind === "conan") {
+    const remote = select(
+      parent,
+      "Conan remote",
+      Object.keys(state.conan.config.credentials || {}).map((n) => [n, n]),
+    );
+    target = () => ({ remote: remote.value });
+  }
+  const desc = {
+    targets: "只检查指定目标的 SSH 或 Redfish 连接。未填写 IP 时不会连接设备。",
+    kb: "访问已配置的知识库服务，检查账号是否可用。",
+    conan: "对选定的已有 remote 执行认证。成功后构建可复用 Conan 的本地缓存。",
+  };
+  $("check-description").textContent = desc[kind];
+  $("check").onclick = () =>
+    action(async () => {
+      const result = await api("/api/check", {
+        kind,
+        target: target(),
+        confirm: true,
+      });
+      notice(reasons[result.code] || "检查未完成。", !result.verified);
+      state = await api("/api/state");
+      renderChecks();
+    });
+  renderChecks();
+}
+function renderChecks() {
+  const parent = $("check-results");
+  parent.replaceChildren();
+  for (const ready of state[kind].readiness || []) {
+    const scope = ready.scope === "default" ? "全局默认" : ready.scope;
+    node(
+      "p",
+      `${scope}${ready.purpose ? " / " + ready.purpose.toUpperCase() + " " + ready.transport : ""}：${ready.configured ? "已配置" : "凭据不完整"}`,
+      parent,
+    );
+  }
+  const entries = state[kind].checks || [];
+  if (!entries.length) {
+    node("p", "尚未验证连接。保存与生效不代表账号已通过认证。", parent);
+    return;
+  }
+  for (const entry of entries) {
+    const t = entry.target;
+    const label = t?.ip
+      ? `${t.ip} / ${t.purpose.toUpperCase()} / ${t.transport}`
+      : t?.remote || "知识库";
+    const row = node(
+      "div",
+      `${label}：${reasons[entry.code] || "检查未完成"}`,
+      parent,
+    );
+    row.className = "check-row" + (entry.verified ? " ok" : "");
+  }
+}
+function renderStorageRecovery() {
+  const affected = state.storage?.roots?.find((root) => root.status !== "ready");
+  const blocked = Boolean(affected);
+  $("storage-recovery").hidden = !blocked;
+  for (const selector of ["aside", "#editor", "#remember", ".connection", "#config-location", "#plugin-maintenance"])
+    document.querySelector(selector).hidden = blocked;
+  if (!blocked) return false;
+  $("storage-recovery-undo").hidden = !state.storage_repair;
+  $("title").textContent = "本机目录需要修复";
+  $("subtitle").textContent = "修复后会继续打开原来的配置页面。";
+  $("saved-state").textContent = "需要修复";
+  $("storage-path").textContent = affected.path;
+  $("storage-message").textContent = affected.status === "repairable"
+    ? "此目录继承了额外读取权限。修复只调整目录权限，保留已有配置。"
+    : "此目录无法自动修复，请检查目录所有者、链接和访问权限。";
+  $("storage-repair").hidden = affected.status !== "repairable";
+  $("storage-repair").onclick = () => action(async () => {
+    await api("/api/plugin", { action: "repair-storage", root_id: affected.root_id,
+      snapshot_token: affected.snapshot_token });
+    state = await api("/api/state");
+    if (renderStorageRecovery()) {
+      notice("目录已修复，请继续处理列出的目录。", false);
+      return;
+    }
+    kind = state.page_session?.kind || "targets";
+    expertTargets = separateBmcAccounts(state.targets.config);
+    render();
+    notice("本机目录已修复，原有配置已保留。");
+  });
+  return true;
+}
+function render() {
+  if (renderStorageRecovery()) return;
+  dirty = false;
+  $("plugin-storage-undo").hidden = !state.storage_repair;
+  const current = state[kind];
+  $("fields").replaceChildren();
+  $("fields").oninput = null;
+  const names = {
+    targets: ["BMC 与 OS", "设置常用账号，设备连接时自动使用。"],
+    kb: ["知识库", "配置独立的 openUBMC 知识库账号与授权应用。"],
+    conan: ["Conan", "为已有的构建仓库保存账号并检查认证。"],
+  };
+  $("title").textContent = names[kind][0];
+  $("subtitle").textContent = names[kind][1];
+  $("saved-state").textContent = !current.saved
+    ? current.legacy_available ? "已有本机配置" : "未保存"
+    : current.revision === current.active_revision
+      ? "已保存并生效"
+      : "有尚未生效的更改";
+  $("source-path").textContent = current.source;
+  $("import").hidden = !current.legacy_available;
+  $("account-mode").hidden = kind !== "targets";
+  $("account-mode").textContent = expertTargets ? "返回常用配置" : "高级账号管理";
+  if (kind === "targets") {
+    if (expertTargets) renderTargets(current.config);
+    else renderSimpleTargets(current.config);
+  }
+  else if (kind === "kb") renderKb(current.config);
+  else
+    collect = (() => {
+      const read = records($("fields"), current.config, true);
+      return () => ({ credentials: read() });
+    })();
+  renderRemember();
+  checks();
+  document
+    .querySelectorAll("[data-tab]")
+    .forEach((button) =>
+      button.setAttribute(
+        "aria-current",
+        button.dataset.tab === kind ? "page" : "false",
+      ),
+    );
+}
+async function save() {
+  const saved = await api("/api/save", {
+    kind,
+    expected_revision: state[kind].revision,
+    config: collect(),
+  });
+  state[kind] = saved;
+  state[kind] = await api("/api/activate", {
+    kind,
+    revision: saved.revision,
+    expected_active_revision: saved.active_revision,
+  });
+  render();
+  notice("配置已生效，后续请求会使用当前配置。");
+  if (state.page_session?.wait_for_save && state.page_session.kind === kind) {
+    finishConfiguration();
+  }
+}
+function finishConfiguration() {
+  closed = true;
+  sessionStorage.removeItem("openubmc-configuration-session:" + location.pathname);
+  notice("配置已生效，可以回到原任务继续。连接检查结果以任务中的提示为准。");
+  document.querySelectorAll("input,select").forEach((e) => { e.disabled = true; });
+}
+$("activate").onclick = () => action(save);
+$("account-mode").onclick = () => {
+  if (dirty && !confirm("有尚未保存的修改，放弃修改并切换？")) return;
+  if (expertTargets && separateBmcAccounts(state.targets.config)) {
+    notice("已有 SSH 与 Redfish 的独立账号。需要使用常用配置时，请先将两种协议选择为同一账号并保存。");
+    return;
+  }
+  expertTargets = !expertTargets;
+  render();
+};
+$("editor").addEventListener("input", () => {
+  dirty = true;
+  $("saved-state").textContent = "未保存的修改";
+});
+$("fields").addEventListener("click", (event) => { if (event.target.closest("button")) dirty = true; });
+window.addEventListener("beforeunload", (event) => { if (dirty && !closed) { event.preventDefault(); event.returnValue = ""; } });
+$("import").onclick = () =>
+  action(async () => {
+    state[kind] = await api("/api/import", {
+      kind,
+      expected_revision: state[kind].revision,
+    });
+    render();
+    notice("原始配置已导入，点击“保存”后生效。");
+  });
+$("editor").onsubmit = (e) => e.preventDefault();
+document.querySelectorAll("[data-tab]").forEach(
+  (button) =>
+    (button.onclick = () => {
+      if (dirty && !confirm("有尚未保存的修改，放弃修改并切换？")) return;
+      kind = button.dataset.tab;
+      render();
+      notice("");
+    }),
+);
+action(async () => {
+  state = await api("/api/state");
+  kind = state.page_session?.kind || "targets";
+  expertTargets = state.targets ? separateBmcAccounts(state.targets.config) : false;
+  $("environment").textContent =
+    `${state.environment.platform} / ${state.environment.hostname}`;
+  $("location").textContent = state.environment.config_home;
+  render();
+  if (expertTargets) notice("已有 SSH 与 Redfish 的独立账号，已保留并打开高级账号管理。");
+});
+
+function separateBmcAccounts(config) {
+  return [config.defaults || {}, ...Object.values(config.targets || {})]
+    .some((entry) => entry.bmc && entry.bmc.ssh !== entry.bmc.redfish);
+}
+
+$("finish").onclick = () =>
+  action(async () => {
+    await api("/api/close", {});
+    closed = true;
+    sessionStorage.removeItem("openubmc-configuration-session:" + location.pathname);
+    notice("本机配置服务已关闭，可以关闭此页面。");
+    document
+      .querySelectorAll("input,select")
+      .forEach((e) => (e.disabled = true));
+  });
+
+let pluginPreview, pluginTransaction;
+async function pluginStatus() {
+  const result = await api("/api/plugin", { action: "status" });
+  const status = $("plugin-status");
+  status.replaceChildren();
+  if (result.available === false) {
+    node("p", "请从已安装的插件打开本机配置页面。", status);
+    return;
+  }
+  for (const [label, value] of [
+    ["版本", result.version || "无法验证"],
+    ["执行环境", result.execution?.wsl_distro
+      ? `Windows → WSL ${result.execution.wsl_distro}`
+      : (result.execution?.host || "无法确认")],
+    ["安装文件", result.integrity ? "完整" : "校验未通过，请重新安装市场版本"],
+    ["Runtime", result.runtime ? "本地模块可加载，服务连接状态见 DSH 工具" : "未就绪，可尝试修复依赖"],
+    ["知识库", result.kb ? "本地模块可加载，服务连接状态见 DSH 工具" : "未就绪，可尝试修复依赖"],
+    ["BMC / OS 凭据", result.local_configuration?.targets?.configured
+      ? `已激活 ${result.local_configuration.targets.active_revision}` : "尚未激活"],
+    ["知识库认证", result.knowledge_authentication === "not_checked"
+      ? (result.local_configuration?.kb?.configured ? "配置已激活，尚未登录验证" : "尚未配置")
+      : result.knowledge_authentication],
+    ["设备认证", "尚未连接检查"],
+    ["启动配置", result.configuration.ready ? "未发现覆盖冲突" : result.configuration.conflict
+      ? "存在自定义或冲突配置，请保留原配置并联系维护者处理"
+      : "发现旧启动覆盖或同名 Skill，可预览修复"],
+  ]) node("p", `${label}：${value}`, status);
+}
+$("plugin-check").onclick = () => action(pluginStatus);
+$("plugin-preview").onclick = () => action(async () => {
+  const result = await api("/api/plugin", { action: "preview" });
+  if (result.available === false) throw new Error("请从已安装的插件打开页面。");
+  pluginPreview = result.preview_id;
+  $("plugin-apply").hidden = !result.would_change;
+  const changes = [
+    result.servers.length ? `启动覆盖 ${result.servers.join("、")}` : "",
+    result.skills.length ? `同名 Skill ${result.skills.map((value) => value.split(/[\\/]/).slice(-2, -1)[0]).join("、")}` : "",
+  ].filter(Boolean).join("；");
+  $("plugin-result").textContent = result.would_change
+    ? `将备份当前配置并处理：${changes}。文件和凭据会保留。`
+    : "没有需要处理的旧启动覆盖或同名 Skill。";
+});
+$("plugin-apply").onclick = () => action(async () => {
+  const result = await api("/api/plugin", { action: "apply", preview_id: pluginPreview });
+  pluginTransaction = result.transaction;
+  $("plugin-apply").hidden = true;
+  $("plugin-undo").hidden = !pluginTransaction;
+  $("plugin-result").textContent = "配置已备份并修复。请重新打开受影响的任务，确认能够恢复。";
+  await pluginStatus();
+});
+$("plugin-undo").onclick = () => action(async () => {
+  await api("/api/plugin", { action: "undo", transaction: pluginTransaction });
+  $("plugin-undo").hidden = true;
+  $("plugin-result").textContent = "已恢复修复前的配置。";
+  await pluginStatus();
+});
+const undoStorage = () => action(async () => {
+  await api("/api/plugin", { action: "undo-storage" });
+  state = await api("/api/state");
+  render();
+  notice("本次目录修复已撤销。", false);
+});
+$("plugin-storage-undo").onclick = undoStorage;
+$("storage-recovery-undo").onclick = undoStorage;
+for (const capability of ["runtime", "kb"]) {
+  $("plugin-" + capability).onclick = () => action(async () => {
+    $("plugin-result").textContent = "正在修复依赖，请保持页面打开。";
+    const result = await api("/api/plugin", { action: "dependencies", capability });
+    $("plugin-result").textContent = result.repaired ? "依赖修复完成。" : "修复未完成，请检查本机网络或联系维护者。";
+    await pluginStatus();
+  });
+}

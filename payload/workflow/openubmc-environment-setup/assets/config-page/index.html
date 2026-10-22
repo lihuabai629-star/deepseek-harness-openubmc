@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>openUBMC 本机配置</title>
+    <link rel="stylesheet" href="page.css" />
+    <script src="page.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <span class="brand">openUBMC</span>
+      <h1>设置</h1>
+      <span class="local">仅在本机保存</span
+      ><button type="button" id="finish">完成配置</button>
+    </header>
+    <div class="workspace">
+      <aside>
+        <nav aria-label="配置类别">
+          <button data-tab="targets" aria-current="page">BMC 与 OS</button
+          ><button data-tab="kb">知识库</button
+          ><button data-tab="conan">Conan</button>
+        </nav>
+      </aside>
+      <main>
+        <div class="section-heading">
+          <div>
+            <h2 id="title">BMC 与 OS</h2>
+            <p id="subtitle">先填写常用账号，再为不同设备设置 IP 覆盖。</p>
+          </div>
+          <span id="saved-state" class="badge">未保存</span>
+        </div>
+        <p id="notice" role="status" aria-live="polite"></p>
+        <section id="storage-recovery" class="storage-recovery" hidden>
+          <h3>本机目录需要修复</h3>
+          <p id="storage-message"></p>
+          <p id="storage-path" class="storage-path"></p>
+          <button type="button" id="storage-repair" class="primary" hidden>修复本机目录</button>
+          <button type="button" id="storage-recovery-undo" hidden>撤销本次目录修复</button>
+        </section>
+        <form id="remember" class="remember" hidden>
+          <h3>连接并记住这台设备</h3>
+          <p>在此输入账号。只有连接验证成功，才会为这个 IP 保存凭据。</p>
+          <div id="remember-fields" class="form-grid"></div>
+          <div class="actions"><span class="spacer"></span><button type="submit" class="primary">连接并记住</button></div>
+        </form>
+        <form id="editor">
+          <div id="fields"></div>
+          <button type="button" id="account-mode" class="add">高级账号管理</button>
+          <div class="actions">
+            <span class="spacer"></span
+            ><button type="button" id="activate" class="primary">
+              保存
+            </button>
+          </div>
+        </form>
+        <details class="connection">
+          <summary>连接检查</summary>
+          <p id="check-description">
+            检查只访问你指定的目标。未填写 IP 时不会连接设备。
+          </p>
+          <div id="check-fields"></div>
+          <button type="button" id="check">检查连接</button>
+          <div id="check-results" aria-live="polite"></div>
+        </details>
+        <details id="config-location">
+          <summary>配置位置</summary>
+          <p id="source-path"></p>
+          <button type="button" id="import" class="quiet">重新导入原始配置</button>
+          <p id="environment"></p>
+          <p id="location"></p>
+          <p>配置保存在当前 Linux / WSL 环境。</p>
+        </details>
+        <details id="plugin-maintenance" class="maintenance">
+          <summary>插件状态与修复</summary>
+          <p>检查当前版本、启动状态和本地依赖。设备连接需另行检查。</p>
+          <div id="plugin-status" role="status" aria-live="polite">尚未检查</div>
+          <div class="actions">
+            <button type="button" id="plugin-check">检查状态</button>
+            <button type="button" id="plugin-preview" hidden>预览启动配置修复</button>
+            <button type="button" id="plugin-apply" hidden>备份并应用修复</button>
+            <button type="button" id="plugin-undo" hidden>撤销本次配置修复</button>
+            <button type="button" id="plugin-runtime">修复 Runtime 依赖</button>
+            <button type="button" id="plugin-kb">修复知识库依赖</button>
+            <button type="button" id="plugin-storage-undo" hidden>撤销本次目录修复</button>
+          </div>
+          <p id="plugin-result" role="status" aria-live="polite"></p>
+        </details>
+      </main>
+    </div>
+    <footer>关闭此页面不会删除配置，也不会停止已有的开发任务。</footer>
+  </body>
+</html>

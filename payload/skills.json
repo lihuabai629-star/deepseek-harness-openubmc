@@ -1,0 +1,64 @@
+{
+  "skills": [
+    {
+      "name": "openubmc-environment-setup",
+      "path": "openubmc-environment-setup"
+    },
+    {
+      "name": "openubmc-debug",
+      "path": "openubmc-debug"
+    },
+    {
+      "name": "openubmc-log-analyzer",
+      "path": "openubmc-log-analyzer"
+    },
+    {
+      "name": "openubmc-developer",
+      "path": "openubmc-developer"
+    },
+    {
+      "name": "openubmc-build",
+      "path": "openubmc-build"
+    },
+    {
+      "name": "openubmc-bingo-build",
+      "path": "openubmc-bingo-build"
+    },
+    {
+      "name": "openubmc-bingo-development",
+      "path": "openubmc-bingo-development"
+    },
+    {
+      "name": "openubmc-upgrade",
+      "path": "openubmc-upgrade"
+    },
+    {
+      "name": "openubmc-live-patch",
+      "path": "openubmc-live-patch"
+    },
+    {
+      "name": "openubmc-dt-testing",
+      "path": "testing"
+    },
+    {
+      "name": "openubmc-publish",
+      "path": "openubmc-publish"
+    },
+    {
+      "name": "openubmc-lua-component",
+      "path": "lua-component"
+    },
+    {
+      "name": "openubmc-qemu-testing",
+      "path": "qemu-testing"
+    },
+    {
+      "name": "openubmc-doc-review",
+      "path": "openubmc-doc-review"
+    },
+    {
+      "name": "openubmc-log-bundle-analyzer",
+      "path": "openubmc-log-bundle-analyzer"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "skills": [
+    {
+      "name": "openubmc-environment-setup",
+      "path": "openubmc-environment-setup"
+    },
+    {
+      "name": "openubmc-debug",
+      "path": "openubmc-debug"
+    },
+    {
+      "name": "openubmc-log-analyzer",
+      "path": "openubmc-log-analyzer"
+    },
+    {
+      "name": "openubmc-developer",
+      "path": "openubmc-developer"
+    },
+    {
+      "name": "openubmc-build",
+      "path": "openubmc-build"
+    },
+    {
+      "name": "openubmc-bingo-build",
+      "path": "openubmc-bingo-build"
+    },
+    {
+      "name": "openubmc-bingo-development",
+      "path": "openubmc-bingo-development"
+    },
+    {
+      "name": "openubmc-upgrade",
+      "path": "openubmc-upgrade"
+    },
+    {
+      "name": "openubmc-live-patch",
+      "path": "openubmc-live-patch"
+    },
+    {
+      "name": "openubmc-dt-testing",
+      "path": "testing"
+    },
+    {
+      "name": "openubmc-publish",
+      "path": "openubmc-publish"
+    },
+    {
+      "name": "openubmc-lua-component",
+      "path": "lua-component"
+    },
+    {
+      "name": "openubmc-qemu-testing",
+      "path": "qemu-testing"
+    },
+    {
+      "name": "openubmc-doc-review",
+      "path": "openubmc-doc-review"
+    },
+    {
+      "name": "openubmc-log-bundle-analyzer",
+      "path": "openubmc-log-bundle-analyzer"
+    }
+  ],
+  "workflowVersion": "2.2.0",
+  "workflowCommit": "88103e5a8b42434d787ae60034552429a20ae824",
+  "pluginVersion": "0.4.0",
+  "supplementarySkills": {
+    "version": "2.1.9",
+    "sourceCommit": "38960986e93a2e24dbcd2a77f5c8b6447f908b98",
+    "files": {
+      "openubmc-developer/scripts/community_checks.py": "ccefec03c31f544508e0aecd39827b1b7366ed027dcc315312c1c3e63fbc0407",
+      "openubmc-developer/scripts/interface_coverage.py": "0a01c7d70d7e03077e49a8231822ab41e712cee35b7f3fa37df73c6d95601961",
+      "openubmc-developer/references/community-checks.md": "d9c9e49cdbf0620911136b4dc0af42361312212ed4615cc347941014597cfe15",
+      "openubmc-developer/references/interface-coverage.md": "37b2a569469a2f03126ddf40cf4ef49d970bbbfb09be7684b1ce161fb1bfcaf3",
+      "openubmc-developer/resources/community/compliance/LICENSE": "ce6ec526b29beb153a1bcc368ed429a89742e6e517694c0c4a3886e0bbe443cc",
+      "openubmc-developer/resources/community/compliance/scripts/compliance-lint.cli.test.mjs": "4cec92da1664f0cf005b2816740669e0e36404057614a4340a4b4a8dde523717",
+      "openubmc-developer/resources/community/compliance/scripts/compliance-lint.mjs": "7e9c85822dff4d1d27d981f272806acdcb17dfe8cb3ddf6897f0932a8134de27",
+      "openubmc-developer/resources/community/compliance/scripts/compliance-lint.test.mjs": "3f81838cde898a4fe26307d72117ff7da378cc4013afab7bc21ef90eaf4f3d9b",
+      "openubmc-developer/resources/community/concurrency/LICENSE": "ce6ec526b29beb153a1bcc368ed429a89742e6e517694c0c4a3886e0bbe443cc",
+      "openubmc-developer/resources/community/concurrency/evals/test_collect_candidates.py": "80290a3d053f1eb8630298e89ca3682d21dc7f51a294156e19d2a8b2ede8c52d",
+      "openubmc-developer/resources/community/concurrency/references/lifetime.md": "73eafc1274bd6306b6bf2c6c134cb5faf49b6bc6d94a33352cfc29d10ce2ffa7",
+      "openubmc-developer/resources/community/concurrency/references/lua-numeric-gc.md": "5a66af302247f67a682d66c4ebdfaa7c055a039bf8bb613987dbe7f4a52d838f",
+      "openubmc-developer/resources/community/concurrency/references/patterns.md": "6f3825a455e3dda4606d5d719a830955dd5621cb31b9b3329a700733fd998185",
+      "openubmc-developer/resources/community/concurrency/scripts/collect_candidates.py": "c2abbf80952e6a93d52655ed5a3514e8bd2cc5119d7b607f7ef24f0488b9e7d7",
+      "openubmc-developer/resources/community/source.json": "0bf23aad2b8b5b9ab394588cb317d5b950d8cfa1923d95e2f695b664ba00ed5a",
+      "openubmc-developer/resources/community/redfish-diff/LICENSE": "ce6ec526b29beb153a1bcc368ed429a89742e6e517694c0c4a3886e0bbe443cc",
+      "openubmc-developer/resources/community/redfish-diff/references/methodology.md": "08485854462ae558382457109aae849bc135ff5b0326ad4e14bf2b719f4a9179",
+      "openubmc-developer/resources/community/redfish-diff/scripts/analyze_redfish_diff.py": "b00c3798bed4330c49d87ff2535dc765919c152835f738b8438755f7fd635306",
+      "openubmc-developer/resources/community/redfish-diff/scripts/tests/test_semantic_diff.py": "cf21a5a25e5790969f97b254871e4caef135374a4db6f2238647e76c997b0b97",
+      "openubmc-developer/resources/community/web-backend/LICENSE": "ce6ec526b29beb153a1bcc368ed429a89742e6e517694c0c4a3886e0bbe443cc",
+      "openubmc-developer/resources/community/web-backend/references/plugin-patterns.md": "70bf4136d8e616fd4a7b33008cf7e51f256c93c101371bb82d91642c0ecbbf99",
+      "openubmc-developer/resources/community/web-backend/scripts/rackmount_web_backend_check.py": "c11ae705b901dd25cd54e12b176abea7c0eebc6bfaba52452a95bab91d5c1513",
+      "openubmc-developer/resources/community/web-backend/scripts/test_rackmount_web_backend_check.py": "73d4d7ed54774f47845ce60d553744157569df935fb7b31b380bafcb4e419ce2",
+      "openubmc-developer/resources/interface-coverage/LICENSE": "ce6ec526b29beb153a1bcc368ed429a89742e6e517694c0c4a3886e0bbe443cc",
+      "openubmc-developer/resources/interface-coverage/scripts/doc-coverage.mjs": "b00325947c5a4a70e5a0518dab4dc52a9aa0b8525b8cc501ee9647e464b61e0a",
+      "openubmc-developer/resources/interface-coverage/scripts/doc-coverage.test.mjs": "4d30b1e67ec7e3dc19f9e14e71e13bf7af14899a17f86508c8abe75b4812d5cb",
+      "openubmc-environment-setup/references/credential-exposure-response.md": "5615535b1ff52e83fdd6085685edbebc6bb507590ac6a8fc9e7ae8ea74649ff3"
+    }
+  },
+  "dshVersion": "0.2.0-rc.2",
+  "qualifiedHosts": [
+    "0.1.7-rc.2",
+    "0.2.0-rc.2",
+    "0.2.1-rc.2"
+  ],
+  "authoritySchema": "dsh-openubmc/session-authority/v1",
+  "dshCommit": "db7e1c4571d9a0c4a38fd4e07eb49e4290cc35e1"
+}

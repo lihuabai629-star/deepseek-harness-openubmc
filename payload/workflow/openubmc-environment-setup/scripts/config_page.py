@@ -1,0 +1,866 @@
+#!/usr/bin/env python3
+"""Current-user local configuration page for Windows and Linux."""
+
+from __future__ import annotations
+import argparse
+import copy
+import hashlib
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import ipaddress
+import json
+import os
+from pathlib import Path
+import secrets
+import signal
+import shutil
+import subprocess
+import socket
+import sys
+import threading
+import time
+from urllib.parse import urlsplit
+import webbrowser
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "openubmc-target-runtime"))
+from openubmc_target_runtime.configuration import (
+    LocalConfigurationStore,
+    ConfigurationError,
+    ConfigurationConflict,
+)
+from openubmc_target_runtime.credential_file import (
+    configuration_home,
+    read_private_text,
+)
+from openubmc_target_runtime.credential_memory import import_legacy_targets
+
+
+def _platform_label():
+    if sys.platform == "win32":
+        return "Windows"
+    return "WSL" if "microsoft" in os.uname().release.lower() else "Linux"
+
+
+def _stop_owned_process(process):
+    if sys.platform == "win32":
+        subprocess.run(["taskkill.exe", "/PID", str(process.pid), "/T", "/F"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       creationflags=subprocess.CREATE_NO_WINDOW, timeout=5)
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+
+
+def _masked(config):
+    value = copy.deepcopy(config)
+    records = [value, *value.get("credentials", {}).values()]
+    for record in records:
+        for name in ("password", "clientSecret"):
+            if name in record:
+                record[name + "_set"] = bool(record.pop(name))
+    return value
+
+
+def _secret_edits(config, previous):
+    value = copy.deepcopy(config)
+    pairs = [(value, previous)]
+    pairs += [
+        (record, previous.get("credentials", {}).get(name, {}))
+        for name, record in value.get("credentials", {}).items()
+    ]
+    for record, old in pairs:
+        for name in ("password", "clientSecret"):
+            record.pop(name + "_set", None)
+            if name not in record and name not in old:
+                continue
+            edit = record.get(name, {"action": "keep"})
+            if not isinstance(edit, dict) or edit.get("action") not in {
+                "keep",
+                "replace",
+                "remove",
+            }:
+                raise ConfigurationError(
+                    "Choose keep, replace or remove for secret fields"
+                )
+            if edit["action"] == "replace":
+                if not isinstance(edit.get("value"), str):
+                    raise ConfigurationError("A replacement secret must be text")
+                record[name] = edit["value"]
+            elif edit["action"] == "keep":
+                selected = old
+                if "source" in edit:
+                    source = edit["source"]
+                    if not isinstance(source, str) or source not in previous.get(
+                        "credentials", {}
+                    ):
+                        raise ConfigurationConflict(
+                            "Original credential record is unavailable"
+                        )
+                    selected = previous["credentials"][source]
+                record[name] = selected.get(name, "")
+            else:
+                record[name] = ""
+    return value
+
+
+class PluginMaintenance:
+    """Bounded local operations through the immutable plugin CLI."""
+
+    def __init__(self, plugin_root, *, environment=None, timeout=660):
+        self.root = Path(plugin_root)
+        self.timeout = timeout
+        self.environment = dict(os.environ if environment is None else environment)
+        self.home = Path(self.environment.get("USERPROFILE") or self.environment.get("HOME") or Path.home())
+        self.codex = Path(self.environment.get("CODEX_HOME", str(self.home/".codex")))
+        self.preview_id = None
+        self.preview_config = None
+        self.preview_operation = None
+        self.transaction = None
+        self.storage_transactions = []
+
+    def command(self, *arguments):
+        options = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW}
+                   if sys.platform == "win32" else {"start_new_session": True})
+        process = subprocess.Popen(
+            [sys.executable, "-I", "-B", str(self.root/"scripts/pluginctl.py"),
+             *arguments, "--home", str(self.home), "--codex-home", str(self.codex)],
+            env=self.environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, **options,
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=self.timeout)
+        except BaseException:
+            _stop_owned_process(process)
+            try:
+                process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                _stop_owned_process(process)
+                process.wait(timeout=5)
+            finally:
+                process.stdout.close()
+                process.stderr.close()
+            raise
+        try:
+            value = json.loads(stdout or stderr)
+        except ValueError:
+            raise ValueError("plugin_operation_failed") from None
+        if process.returncode not in (0, 2) or not isinstance(value, dict):
+            raise ValueError("plugin_operation_failed")
+        return value
+
+    def config_bytes(self):
+        path = self.codex/"config.toml"
+        if path.is_symlink():
+            raise ConfigurationConflict("configuration_conflict")
+        return path.read_bytes() if path.exists() else b""
+
+    def dispatch(self, data):
+        action = data.get("action")
+        if action == "repair-storage":
+            root_id, token = data.get("root_id"), data.get("snapshot_token")
+            if root_id not in {"data", "cache", "config", "state"} or not isinstance(token, str):
+                raise ConfigurationError("Select a current private-root snapshot")
+            report = self.command("repair-storage", "--root-id", root_id,
+                                  "--expected-token", token)
+            if not report.get("ok"):
+                raise ConfigurationConflict("Private-root snapshot changed")
+            self.storage_transactions.append((root_id, report["transaction"]))
+            return {"status": report["status"], "root_id": root_id}
+        if action == "undo-storage":
+            if not self.storage_transactions:
+                raise ConfigurationConflict("No directory repair to undo")
+            root_id, transaction = self.storage_transactions[-1]
+            report = self.command("restore-storage", "--root-id", root_id,
+                                  "--transaction", transaction)
+            if not report.get("ok"):
+                raise ConfigurationConflict("Directory changed after repair")
+            self.storage_transactions.pop()
+            return {"status": "restored", "root_id": root_id}
+        if action == "status":
+            report = self.command("doctor")
+            config = report.get("codex_configuration", {})
+            config_home = configuration_home(self.environment)
+            sources = {
+                "targets": Path(self.environment.get("OPENUBMC_CREDENTIALS_FILE") or config_home/"openubmc/credentials.json"),
+                "conan": config_home/"openubmc/conan.json",
+                "kb": Path(self.environment.get("OPENUBMC_KB_CONFIG") or config_home/"openubmc/kb-mcp.json"),
+            }
+            local_configuration = {}
+            for kind, source in sources.items():
+                try:
+                    state = LocalConfigurationStore(source, kind=kind).status()
+                    local_configuration[kind] = {
+                        "configured": state.get("active_revision") is not None,
+                        "active_revision": state.get("active_revision"),
+                    }
+                except ConfigurationError:
+                    local_configuration[kind] = {"configured": False, "active_revision": None, "error": "configuration_invalid"}
+            execution_host = self.environment.get("OPENUBMC_EXECUTION_HOST") or (
+                "windows-native" if sys.platform == "win32" else
+                "wsl" if _platform_label() == "WSL" else "linux")
+            return {
+                "version": report.get("version"),
+                "source_commit": report.get("source_commit"),
+                "integrity": report.get("package_integrity", False),
+                "runtime": report.get("capabilities", {}).get("runtime", {}).get("startup_ready", False),
+                "kb": report.get("capabilities", {}).get("kb", {}).get("startup_ready", False),
+                "execution": {
+                    "host": execution_host,
+                    "wsl_distro": self.environment.get("OPENUBMC_SELECTED_WSL_DISTRO"),
+                    "native_windows_build_supported": False,
+                },
+                "dependencies": {
+                    name: {
+                        "ready": value.get("dependencies_ready", False),
+                        "startup_ready": value.get("startup_ready", False),
+                    }
+                    for name, value in report.get("capabilities", {}).items()
+                },
+                "local_configuration": local_configuration,
+                "knowledge_authentication": "not_checked",
+                "remote_target_authentication": "not_checked",
+                "configuration": {"ready": config.get("ready", False),
+                    "conflict": bool(config.get("conflicts")),
+                    "servers": config.get("changes", {}).get("mcp_servers", []),
+                    "skills": config.get("changes", {}).get("skills", [])},
+            }
+        if action == "preview":
+            before = self.config_bytes()
+            status = self.command("doctor").get("codex_configuration", {})
+            operation = "repair-overrides" if status.get("changes", {}).get("mcp_servers") else "migrate"
+            arguments = (operation, "--preview") if operation == "repair-overrides" else (operation, "--disable-only", "--preview")
+            report = self.command(*arguments)
+            if not report.get("ok") or before != self.config_bytes():
+                raise ConfigurationConflict("configuration_conflict")
+            self.preview_id = secrets.token_urlsafe(24)
+            self.preview_config = before
+            self.preview_operation = operation
+            return {"preview_id": self.preview_id,
+                    "servers": report["changes"]["mcp_servers"],
+                    "skills": report["changes"].get("skills", []),
+                    "operation": operation,
+                    "would_change": report["would_change"]}
+        if action == "apply":
+            if not self.preview_id or not self.preview_operation or data.get("preview_id") != self.preview_id or self.config_bytes() != self.preview_config:
+                raise ConfigurationConflict("configuration_conflict")
+            self.preview_id = None
+            operation = self.preview_operation
+            self.preview_operation = None
+            arguments = (operation, "--expected-config-digest", hashlib.sha256(self.preview_config).hexdigest())
+            if operation == "migrate":
+                arguments = (operation, "--disable-only", "--expected-config-digest", hashlib.sha256(self.preview_config).hexdigest())
+            report = self.command(*arguments)
+            if not report.get("ok"):
+                raise ConfigurationConflict("configuration_conflict")
+            self.transaction = report.get("transaction")
+            return {"changed": report["changed"], "transaction": self.transaction}
+        if action == "undo":
+            if not self.transaction or data.get("transaction") != self.transaction:
+                raise ConfigurationConflict("configuration_conflict")
+            report = self.command("restore-legacy", "--transaction", self.transaction)
+            if not report.get("ok"):
+                raise ConfigurationConflict("configuration_conflict")
+            self.transaction = None
+            return {"restored": True}
+        if action == "dependencies":
+            capability = data.get("capability")
+            if capability not in ("runtime", "kb"):
+                raise ValueError("invalid_capability")
+            result = self.command("prepare", "--repair", "--capability", capability)
+            return {"repaired": result.get("ok") is True, "capability": capability}
+        raise ValueError("invalid_plugin_action")
+
+
+class LocalConfigurationServer:
+    def __init__(
+        self, config_home: Path, *, checker=None, authorized_targets=(), sources=None, maintenance=None,
+        kind="targets", focus_target=None, wait_for_save=False, purpose="bmc", transport="ssh",
+    ):
+        self.config_home = Path(config_home).expanduser().resolve()
+        self.stores = {
+            "targets": LocalConfigurationStore(
+                self.config_home / "openubmc" / "credentials.json", kind="targets"
+            ),
+            "conan": LocalConfigurationStore(
+                self.config_home / "openubmc" / "conan.json", kind="conan"
+            ),
+            "kb": LocalConfigurationStore(
+                self.config_home / "openubmc" / "kb-mcp.json", kind="kb"
+            ),
+        }
+        for source_kind, path in (sources or {}).items():
+            self.stores[source_kind] = LocalConfigurationStore(path, kind=source_kind)
+        self.maintenance = maintenance
+        if kind not in self.stores:
+            raise ConfigurationError("Unknown configuration kind")
+        self.page_session = {"kind": kind, "focus_target": focus_target, "wait_for_save": wait_for_save,
+                             "purpose": purpose, "transport": transport}
+        self.completion = None
+        self.checker = checker
+        self.authorized_targets = tuple(authorized_targets)
+        self.session_token = secrets.token_urlsafe(32)
+        self.verifications = {}
+        self.last_activity = time.monotonic()
+        self._lock = threading.Lock()
+        owner = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def setup(self):
+                super().setup()
+                self.connection.settimeout(5)
+
+            def log_message(self, *_args):
+                pass
+
+            def send_body(self, status, value, kind="application/json"):
+                body = (
+                    json.dumps(value, ensure_ascii=True).encode()
+                    if kind == "application/json"
+                    else value
+                )
+                self.send_response(status)
+                self.send_header("Content-Type", kind + "; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Referrer-Policy", "no-referrer")
+                self.send_header(
+                    "Content-Security-Policy",
+                    "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+                )
+                self.end_headers()
+                self.wfile.write(body)
+
+            def allowed(self, write=False):
+                return (
+                    ipaddress.ip_address(self.client_address[0]).is_loopback
+                    and self.headers.get_all("Host", []) == [owner.host]
+                    and secrets.compare_digest(
+                        self.headers.get("X-OpenUBMC-Session", ""), owner.session_token
+                    )
+                    and (
+                        not write
+                        or self.headers.get_all("Origin", []) == [owner.origin]
+                    )
+                )
+
+            def do_GET(self):
+                if self.headers.get_all("Host", []) != [owner.host]:
+                    return self.send_body(403, {"error": "invalid_host"})
+                if self.path == "/favicon.ico":
+                    return self.send_body(204, b"", "image/x-icon")
+                if self.path == "/api/state":
+                    if not self.allowed():
+                        return self.send_body(403, {"error": "invalid_session"})
+                    return self.respond(lambda: owner.state())
+                assets = {
+                    "/": ("index.html", "text/html"),
+                    "/page.js": ("page.js", "text/javascript"),
+                    "/page.css": ("page.css", "text/css"),
+                }
+                if self.path not in assets:
+                    return self.send_body(404, {"error": "not_found"})
+                name, kind = assets[self.path]
+                path = (
+                    Path(__file__).resolve().parents[1]
+                    / "assets"
+                    / "config-page"
+                    / name
+                )
+                if not path.is_file():
+                    return self.send_body(404, {"error": "not_found"})
+                self.send_body(200, path.read_bytes(), kind)
+
+            def do_POST(self):
+                if not self.allowed(write=True):
+                    return self.send_body(403, {"error": "invalid_session_or_origin"})
+                try:
+                    if (
+                        self.headers.get("Transfer-Encoding")
+                        or self.headers.get_content_type() != "application/json"
+                    ):
+                        raise ValueError()
+                    length = int(self.headers.get("Content-Length", "0"))
+                    if not 0 < length <= 1024 * 1024:
+                        raise ValueError()
+                    data = json.loads(self.rfile.read(length))
+                    if not isinstance(data, dict):
+                        raise ValueError()
+                except (ValueError, OSError, RecursionError):
+                    return self.send_body(400, {"error": "invalid_request"})
+                self.respond(lambda: owner.dispatch(self.path, data))
+
+            def respond(self, callback):
+                try:
+                    owner.last_activity = time.monotonic()
+                    result = callback()
+                except ConfigurationConflict:
+                    return self.send_body(
+                        409,
+                        {
+                            "error": "configuration_conflict",
+                            "message": "配置已被更新，请刷新页面后重试。",
+                        },
+                    )
+                except (ConfigurationError, ValueError, TypeError, KeyError):
+                    return self.send_body(
+                        400,
+                        {
+                            "error": "configuration_invalid",
+                            "message": "配置格式无效，请检查字段与凭据引用。",
+                        },
+                    )
+                except Exception:
+                    return self.send_body(
+                        500,
+                        {
+                            "error": "local_operation_failed",
+                            "message": "本地操作未完成，原有配置仍可通过状态页检查。",
+                        },
+                    )
+                self.send_body(200, result)
+
+        self.http = ThreadingHTTPServer(
+            (str(ipaddress.ip_address(socket.INADDR_LOOPBACK)), 0), Handler
+        )
+        self.http.daemon_threads = False
+        self.host = f"{self.http.server_address[0]}:{self.http.server_address[1]}"
+        self.origin = "http://" + self.host
+        self.url = self.origin + "/#" + self.session_token
+        self.thread = threading.Thread(target=self.http.serve_forever, daemon=True)
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, *_args):
+        self.http.shutdown()
+        self.http.server_close()
+        self.thread.join(timeout=2)
+
+    def editable_config(self, kind):
+        store = self.stores[kind]
+        if store.status()["saved"] or not store.source.exists():
+            return store.read_saved()
+        text = read_private_text(store.source, max_bytes=1024 * 1024)
+        return json.loads(text) if kind != "targets" or text.lstrip().startswith("{") else import_legacy_targets(text)
+
+    def view(self, kind):
+        store = self.stores[kind]
+        status = store.status()
+        config = store.read_active() if status["active_revision"] else {}
+        readiness = []
+        if kind == "targets":
+            for scope, overrides in [
+                ("default", {}),
+                *config.get("targets", {}).items(),
+            ]:
+                for purpose in ("bmc", "os"):
+                    references = {
+                        **config.get("defaults", {}).get(purpose, {}),
+                        **overrides.get(purpose, {}),
+                    }
+                    for transport, name in references.items():
+                        record = config.get("credentials", {}).get(name, {})
+                        readiness.append(
+                            {
+                                "scope": scope,
+                                "purpose": purpose,
+                                "transport": transport,
+                                "configured": bool(
+                                    record.get("user")
+                                    and (
+                                        record.get("password")
+                                        or transport == "ssh"
+                                        and record.get("identity_file")
+                                    )
+                                ),
+                            }
+                        )
+        elif kind == "conan":
+            readiness = [
+                {
+                    "scope": name,
+                    "configured": bool(record.get("user") and record.get("password")),
+                }
+                for name, record in config.get("credentials", {}).items()
+            ]
+        else:
+            readiness = [
+                {
+                    "scope": "KB",
+                    "configured": all(
+                        config.get(name)
+                        for name in ("username", "password", "clientSecret")
+                    ),
+                }
+            ]
+        return {
+            **status,
+            "readiness": readiness,
+            "config": _masked(self.editable_config(kind)),
+            "legacy_available": store.source.is_file(),
+            "source": str(store.source),
+            "checks": [
+                value
+                for (selected, _), value in self.verifications.items()
+                if selected == kind and value["revision"] == status["active_revision"]
+            ],
+        }
+
+    def state(self):
+        with self._lock:
+            storage = (self.maintenance.command("storage-status")
+                       if self.maintenance is not None and sys.platform == "win32"
+                       else {"ok": True, "roots": []})
+            if not storage.get("ok"):
+                return {
+                    "storage": storage,
+                    "storage_repair": bool(self.maintenance and self.maintenance.storage_transactions),
+                    "environment": {
+                        "platform": _platform_label(),
+                        "hostname": socket.gethostname(),
+                        "config_home": str(self.config_home),
+                    },
+                    "page_session": self.page_session,
+                }
+            selected = self.view(self.page_session["kind"])
+            configured = bool(selected["active_revision"]) and bool(selected["readiness"]) and all(
+                item["configured"] for item in selected["readiness"]
+            )
+            return {
+                "storage": storage,
+                "storage_repair": bool(self.maintenance and self.maintenance.storage_transactions),
+                **{kind: self.view(kind) for kind in self.stores},
+                "environment": {
+                    "platform": _platform_label(),
+                    "hostname": socket.gethostname(),
+                    "config_home": str(self.config_home),
+                },
+                "authorized_targets": list(self.authorized_targets),
+                "page_session": self.page_session,
+                "configuration_entry": {
+                    "url": self.url,
+                    "reason": "configuration_ready" if configured else "configuration_required",
+                    "environment": _platform_label(),
+                },
+            }
+
+    def dispatch(self, path, data):
+        with self._lock:
+            if path == "/api/close":
+                threading.Timer(0.1, self.http.shutdown).start()
+                return {"closed": True}
+            if path == "/api/plugin":
+                if self.maintenance is None:
+                    return {"available": False}
+                return self.maintenance.dispatch(data)
+            kind = data["kind"]
+            store = self.stores[kind]
+            if path == "/api/save":
+                config = _secret_edits(data["config"], self.editable_config(kind))
+                store.save(config, expected_revision=data["expected_revision"])
+            elif path == "/api/connect-and-remember":
+                return self.connect_and_remember(data)
+            elif path == "/api/import":
+                text = read_private_text(store.source, max_bytes=1024 * 1024)
+                config = (
+                    json.loads(text)
+                    if kind != "targets" or text.lstrip().startswith("{")
+                    else import_legacy_targets(text)
+                )
+                store.save(config, expected_revision=data["expected_revision"])
+            elif path == "/api/activate":
+                store.activate(
+                    data["revision"],
+                    expected_active_revision=data["expected_active_revision"],
+                )
+                for target in self.authorized_targets:
+                    if kind == "targets":
+                        self.check(kind, target)
+                if kind == self.page_session["kind"]:
+                    self.completion = self.completion_receipt(kind)
+            elif path == "/api/check":
+                target = data.get("target")
+                if kind == "targets" and not target:
+                    return {"verified": False, "code": "target_required"}
+                if (
+                    target not in self.authorized_targets
+                    and data.get("confirm") is not True
+                ):
+                    return {"verified": False, "code": "confirmation_required"}
+                return self.check(kind, target)
+            else:
+                raise ConfigurationError("Unknown local action")
+            return self.view(kind)
+
+    def connect_and_remember(self, data):
+        if data.get("kind") != "targets" or set(data) != {
+            "kind", "target", "user", "password", "expected_revision", "expected_active_revision"
+        }:
+            raise ConfigurationError("Select a complete target account")
+        target = data["target"]
+        if not isinstance(target, dict) or set(target) != {"ip", "purpose", "transport"}:
+            raise ConfigurationError("Select the complete target scope")
+        try:
+            target = {**target, "ip": str(ipaddress.ip_address(target["ip"]))}
+        except (ValueError, TypeError):
+            raise ConfigurationError("Target requires a literal IP address") from None
+        if target["purpose"] not in {"bmc", "os"} or target["transport"] not in {"ssh", "redfish"}:
+            raise ConfigurationError("Invalid target purpose or transport")
+        user, password = data["user"], data["password"]
+        if not isinstance(user, str) or not user.strip() or not isinstance(password, str) or not password:
+            raise ConfigurationError("A complete username and password are required")
+        if "\0" in user or "\0" in password:
+            raise ConfigurationError("Invalid account value")
+
+        store = self.stores["targets"]
+        status = store.status()
+        if (status["revision"] != data["expected_revision"]
+                or status["active_revision"] != data["expected_active_revision"]
+                or status["revision"] != status["active_revision"]):
+            raise ConfigurationConflict("Configuration changed before connection check")
+        source_text = (read_private_text(store.source, max_bytes=1024 * 1024)
+                       if status["active_revision"] is None and
+                       (store.source.exists() or store.source.is_symlink()) else None)
+        config = copy.deepcopy(store.read_active() if status["active_revision"] else self.editable_config("targets"))
+        config.setdefault("schema_version", 1)
+        credentials = config.setdefault("credentials", {})
+        targets = config.setdefault("targets", {})
+        address = next((key for key in targets if str(ipaddress.ip_address(key.strip())) == target["ip"]), target["ip"])
+        references = targets.setdefault(address, {}).setdefault(target["purpose"], {})
+        old_name = references.get(target["transport"])
+        name = "remembered-" + secrets.token_hex(12)
+        while name in credentials:
+            name = "remembered-" + secrets.token_hex(12)
+        credentials[name] = {"user": user.strip(), "password": password}
+        references[target["transport"]] = name
+        if old_name and old_name != name:
+            used = [*config.get("defaults", {}).values(), *targets.values()]
+            if not any(old_name in refs.values() for purposes in used for refs in purposes.values()):
+                credentials.pop(old_name, None)
+        store._validate(config)
+
+        try:
+            result = (self.checker("targets", config, target, revision=status["active_revision"],
+                                   source=store.source) if self.checker
+                      else {"verified": False, "code": "check_unavailable"})
+        except Exception:
+            result = {"verified": False, "code": "connection_failed"}
+        allowed = {"authentication_failed", "network_error", "host_identity_failed", "tls_error",
+                   "interaction_required", "permission_denied", "timeout", "check_unavailable",
+                   "connection_failed", "credentials_missing"}
+        code = result.get("code") if isinstance(result, dict) else None
+        verified = code == "connected" and result.get("verified") is True
+        if not verified:
+            return {"verified": False, "code": code if code in allowed else "connection_failed", "target": target}
+        committed = store.save_and_activate(
+            config, expected_revision=status["revision"],
+            expected_active_revision=status["active_revision"], expected_source_text=source_text,
+        )
+        receipt = {"verified": True, "code": "connected", "target": target,
+                   "revision": committed["active_revision"], "checked_at": int(time.time()),
+                   "remembered": True}
+        self.verifications[("targets", json.dumps(target, sort_keys=True))] = receipt
+        if self.page_session["kind"] == "targets":
+            self.completion = self.completion_receipt("targets", verified_target=target)
+        return {**receipt, "configuration": self.view("targets")}
+
+    def completion_receipt(self, kind, *, verified_target=None):
+        view = self.view(kind)
+        readiness = view["readiness"]
+        receipt = {
+            "event": "configuration_saved", "kind": kind,
+            "revision": view["active_revision"],
+            "configured": bool(readiness) and all(item["configured"] for item in readiness),
+            "checks": view["checks"],
+        }
+        if kind == "targets":
+            from openubmc_target_runtime import CredentialResolver
+            from openubmc_target_runtime.credentials import CredentialConfigurationError
+            resolver = CredentialResolver(config_path=self.stores[kind].source, environ={})
+            focus = verified_target["ip"] if verified_target else self.page_session["focus_target"]
+            scopes = [verified_target] if verified_target else self.authorized_targets or [{"ip": focus or "default-configuration.invalid",
+                "purpose": self.page_session["purpose"], "transport": self.page_session["transport"]}]
+            receipt.update(configured=True, focus_target=focus, associated_os=None)
+            try:
+                if focus:
+                    receipt["associated_os"] = resolver.associated_os(task_id="configuration", bmc_host=focus)
+                    if not verified_target and not self.authorized_targets and self.page_session["purpose"] == "os":
+                        if receipt["associated_os"] is None:
+                            return {**receipt, "configured": False, "reason": "target_required"}
+                        scopes[0]["ip"] = receipt["associated_os"]
+                for scope in scopes:
+                    resolver.resolve_local(task_id="configuration", host=scope["ip"],
+                        purpose=scope["purpose"], transport=scope["transport"])
+            except CredentialConfigurationError as error:
+                receipt.update(configured=False, reason=error.code)
+        return receipt
+
+    def check(self, kind, target):
+        store = self.stores[kind]
+        revision = store.status()["active_revision"]
+        if revision is None:
+            return {"verified": False, "code": "activation_required"}
+        if kind == "targets":
+            if not isinstance(target, dict) or set(target) != {
+                "ip",
+                "purpose",
+                "transport",
+            }:
+                raise ConfigurationError("Select the complete target scope")
+            target = {**target, "ip": str(ipaddress.ip_address(target["ip"]))}
+            if target["purpose"] not in {"bmc", "os"} or target["transport"] not in {
+                "ssh",
+                "redfish",
+            }:
+                raise ConfigurationError("Invalid target purpose or transport")
+        if kind == "conan" and (
+            not isinstance(target, dict)
+            or set(target) != {"remote"}
+            or target["remote"] not in store.read_active().get("credentials", {})
+        ):
+            raise ConfigurationError("Select a configured Conan remote")
+        try:
+            result = (
+                self.checker(
+                    kind,
+                    store.read_active(),
+                    target,
+                    revision=revision,
+                    source=store.source,
+                )
+                if self.checker
+                else {"verified": False, "code": "check_unavailable"}
+            )
+        except Exception:
+            result = {"verified": False, "code": "connection_failed"}
+        allowed = {
+            "connected",
+            "remote_missing",
+            "credentials_missing",
+            "authentication_failed",
+            "network_error",
+            "host_identity_failed",
+            "tls_error",
+            "interaction_required",
+            "permission_denied",
+            "timeout",
+            "check_unavailable",
+            "connection_failed",
+        }
+        code = (
+            result.get("code") if result.get("code") in allowed else "connection_failed"
+        )
+        if store.status()["active_revision"] != revision:
+            return {"verified": False, "code": "configuration_changed"}
+        receipt = {
+            "verified": result.get("verified") is True and code == "connected",
+            "code": code,
+            "target": target,
+            "revision": revision,
+            "checked_at": int(time.time()),
+        }
+        self.verifications[(kind, json.dumps(target, sort_keys=True))] = receipt
+        return receipt
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config-home", type=Path)
+    parser.add_argument("--home", type=Path)
+    parser.add_argument("--codex-home", type=Path)
+    parser.add_argument(
+        "--open-browser",
+        action="store_true",
+        help="open the printed loopback URL in a browser after starting the page",
+    )
+    # Kept as a compatibility alias for existing scripts.  The page no longer
+    # opens a browser implicitly; callers opt in with --open-browser.
+    parser.add_argument("--no-browser", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--kind", choices=["targets", "kb", "conan"], default="targets")
+    parser.add_argument("--focus-target", help="Target IP to prefill; does not authorize a connection")
+    parser.add_argument("--wait-for-save", action="store_true", help="Report a secret-free completion and exit after the requested configuration is activated")
+    parser.add_argument("--target", action="append", default=[])
+    parser.add_argument("--purpose", choices=["bmc", "os"], default="bmc")
+    parser.add_argument("--transport", choices=["ssh", "redfish"], default="ssh")
+    args = parser.parse_args()
+    if args.home is not None:
+        os.environ["HOME"] = str(args.home)
+    if args.codex_home is not None:
+        os.environ["CODEX_HOME"] = str(args.codex_home)
+
+    def stop(_signum, _frame):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, stop)
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from config_checks import BoundedConfigurationChecker
+    from openubmc_target_runtime.credentials import LocalCredentialSource
+
+    plugin_root = Path(__file__).resolve().parents[3]
+    maintenance = (PluginMaintenance(plugin_root)
+                   if (plugin_root/"plugin-lock.json").is_file() else None)
+    storage_ready = (maintenance is None or sys.platform != "win32"
+                     or maintenance.command("storage-status").get("ok") is True)
+
+    selected = (
+        LocalCredentialSource().select_path() if args.config_home is None and storage_ready else None
+    )
+    sources = {}
+    if selected is not None:
+        sources["targets"] = selected
+    kb_source = os.environ.get("OPENUBMC_KB_CONFIG") or os.environ.get(
+        "OPENUBMC_MCP_CONFIG"
+    )
+    if kb_source and args.config_home is None:
+        sources["kb"] = Path(kb_source)
+    config_home = args.config_home or configuration_home()
+    targets = [
+        {
+            "ip": str(ipaddress.ip_address(host)),
+            "purpose": args.purpose,
+            "transport": args.transport,
+        }
+        for host in args.target
+    ]
+    with LocalConfigurationServer(
+        config_home,
+        checker=BoundedConfigurationChecker(),
+        sources=sources,
+        authorized_targets=targets,
+        kind=args.kind,
+        focus_target=str(ipaddress.ip_address(args.focus_target)) if args.focus_target else
+            (targets[0]["ip"] if targets and args.purpose == "bmc" else None),
+        wait_for_save=args.wait_for_save,
+        purpose=args.purpose, transport=args.transport,
+        maintenance=maintenance,
+    ) as server:
+        print(server.url, flush=True)
+        if args.open_browser and not args.no_browser:
+            if _platform_label() == "WSL" and shutil.which("wslview"):
+                subprocess.Popen(
+                    ["wslview", server.url],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            else:
+                webbrowser.open(server.url)
+        try:
+            while server.thread.is_alive():
+                server.thread.join(timeout=1)
+                if args.wait_for_save and server.completion is not None:
+                    break
+                if time.monotonic() - server.last_activity > 900:
+                    break
+        except KeyboardInterrupt:
+            pass
+        if args.wait_for_save:
+            print(json.dumps(server.completion or {"event": "configuration_cancelled", "kind": args.kind}), flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
