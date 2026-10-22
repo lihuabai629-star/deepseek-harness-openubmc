@@ -20,6 +20,8 @@ dsh --profile web --no-open --host 127.0.0.1 --port 3080
 
 Open the authenticated URL printed by DSH. Configure your own model through DSH's existing settings. Target credentials and Runtime history live under the selected `DSH_HOME`, outside the plugin; knowledge credentials use the existing per-user openUBMC configuration. The archive carries no account, model key or device authorization. Loading a profile does not send a device operation. The Web Plugins page can install the same archive through its package specification field.
 
+Keep `DSH_HOME` and the workspace in persistent directories outside `/tmp`. A sandboxed shell may have a private temporary directory and cannot execute Skill scripts stored in the Host's `/tmp`.
+
 ## Local configuration
 
 The bundle adds a single `openubmc` entry. Override its interpreter paths or private data locations in the profile's `cordis.patch.yml`:

@@ -20,6 +20,8 @@ dsh --profile web --no-open --host 127.0.0.1 --port 3080
 
 打开 DSH 打印的认证 URL。通过 DSH 现有设置配置自己的模型。目标凭据和 Runtime 历史保存在选定的 `DSH_HOME` 中，位于插件目录之外；知识库凭据沿用 openUBMC 现有用户配置。归档不携带账号、模型密钥或设备授权。加载 profile 不会发送设备操作。Web 插件页也可通过软件包规格输入框安装同一归档。
 
+将 `DSH_HOME` 和工作区放在 `/tmp` 之外的持久目录。沙箱 shell 可能使用私有临时目录，无法执行保存在 Host `/tmp` 中的 Skill 脚本。
+
 ## 本地配置
 
 bundle 添加一个 `openubmc` 条目。在 profile 的 `cordis.patch.yml` 中覆盖解释器路径或私有数据位置：
